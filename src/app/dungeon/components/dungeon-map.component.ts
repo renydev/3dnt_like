@@ -12,23 +12,27 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
       <div class="floor-header">
         <span class="floor-theme-icon">{{ floor()?.theme?.icon }}</span>
         <div class="floor-info">
-          <h2 class="floor-title">Andar {{ floor()?.floorNumber }}</h2>
+          <h2 class="floor-title">
+            Andar {{ floor()?.floorNumber }}/20 — {{ floor()?.theme?.godName }}
+          </h2>
           <p class="floor-theme">{{ floor()?.theme?.name }}</p>
+          <p class="floor-domain">{{ floor()?.theme?.godDomain }}</p>
         </div>
         <div class="floor-progress">
-          <span class="progress-label">Salas limpas</span>
+          <span class="progress-label">Limpas</span>
           <span class="progress-value">{{ clearedCount() }}/{{ floor()?.totalRooms }}</span>
         </div>
       </div>
 
+      @if (floor()?.theme?.specialRule && !isSimple()) {
+        <div class="special-rule">
+          <span class="sr-icon">⚠️</span>
+          <span>{{ floor()?.theme?.specialRule }}</span>
+        </div>
+      }
+
       <div class="map-container">
         <svg class="connections-layer" [attr.viewBox]="svgViewBox()" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
           @for (conn of connections(); track conn.key) {
             <line
               [attr.x1]="conn.x1" [attr.y1]="conn.y1"
@@ -41,12 +45,7 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
         <div class="rooms-layer">
           @for (room of floor()?.rooms; track room.id) {
             <div
-              class="room-node"
-              [class.visible]="room.isVisible"
-              [class.current]="room.isCurrent"
-              [class.cleared]="room.cleared"
-              [class.reachable]="isReachable(room)"
-              [class]="'room-node room-' + room.type + (room.isVisible ? ' visible' : '') + (room.isCurrent ? ' current' : '') + (room.cleared ? ' cleared' : '') + (isReachable(room) ? ' reachable' : '')"
+              [class]="getRoomClass(room)"
               [style.left.px]="getRoomX(room)"
               [style.top.px]="getRoomY(room)"
               (click)="onRoomClick(room)"
@@ -55,12 +54,8 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
               @if (room.isVisible) {
                 <div class="room-inner">
                   <span class="room-icon">{{ getRoomIcon(room) }}</span>
-                  @if (room.cleared) {
-                    <span class="cleared-mark">✓</span>
-                  }
-                  @if (room.isCurrent) {
-                    <span class="current-pulse"></span>
-                  }
+                  @if (room.cleared) { <span class="cleared-mark">✓</span> }
+                  @if (room.isCurrent) { <span class="current-pulse"></span> }
                 </div>
                 <span class="room-label">{{ getRoomLabel(room) }}</span>
               } @else {
@@ -73,7 +68,6 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
         </div>
       </div>
 
-      <!-- Info da sala atual -->
       @if (currentRoom()) {
         <div class="current-room-info">
           <div class="info-header">
@@ -93,7 +87,7 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
           }
           @if (currentRoom()!.cleared && currentRoom()!.type === 'boss') {
             <button class="btn-next-floor" (click)="nextFloor()">
-              🔽 Descer para o Próximo Andar
+              🔽 Avançar para o Próximo Andar
             </button>
           }
         </div>
@@ -112,8 +106,16 @@ export class DungeonMapComponent {
   CELL_H = 110;
   COLS = 5;
 
+  isSimple = computed(() =>
+    this.floor()?.theme?.specialRule?.includes('Masmorra mais simples') ?? false
+  );
+
   clearedCount = computed(() =>
     this.floor()?.rooms.filter(r => r.cleared).length ?? 0
+  );
+
+  maxRow = computed(() =>
+    Math.max(...(this.floor()?.rooms.map(r => r.row) ?? [0]))
   );
 
   svgViewBox = computed(() => {
@@ -121,44 +123,42 @@ export class DungeonMapComponent {
     return `0 0 ${this.COLS * this.CELL_W + 20} ${rows * this.CELL_H + 20}`;
   });
 
-  maxRow = computed(() =>
-    Math.max(...(this.floor()?.rooms.map(r => r.row) ?? [0]))
-  );
-
   connections = computed(() => {
     const rooms = this.floor()?.rooms ?? [];
     const result: any[] = [];
     const seen = new Set<string>();
-
     rooms.forEach(room => {
       room.connections.forEach(connId => {
         const key = [Math.min(room.id, connId), Math.max(room.id, connId)].join('-');
         if (seen.has(key)) return;
         seen.add(key);
-
         const dest = rooms.find(r => r.id === connId);
         if (!dest) return;
-
         const x1 = this.getRoomX(room) + 32;
         const y1 = this.getRoomY(room) + 32;
         const x2 = this.getRoomX(dest) + 32;
         const y2 = this.getRoomY(dest) + 32;
-
         let state = 'hidden';
         if (room.isVisible && dest.isVisible) state = 'visible';
         else if (room.isVisible || dest.isVisible) state = 'partial';
-
         result.push({ key, x1, y1, x2, y2, state });
       });
     });
     return result;
   });
 
+  getRoomClass(room: DungeonRoom): string {
+    const classes = ['room-node', `room-${room.type}`];
+    if (room.isVisible) classes.push('visible');
+    if (room.isCurrent) classes.push('current');
+    if (room.cleared) classes.push('cleared');
+    if (this.isReachable(room)) classes.push('reachable');
+    return classes.join(' ');
+  }
+
   getRoomX(room: DungeonRoom): number {
     const maxRow = this.maxRow();
-    if (room.row === 0 || room.row === maxRow) {
-      return Math.floor(this.COLS / 2) * this.CELL_W + 10;
-    }
+    if (room.row === 0 || room.row === maxRow) return Math.floor(this.COLS / 2) * this.CELL_W + 10;
     return room.col * this.CELL_W + 10;
   }
 
@@ -166,13 +166,8 @@ export class DungeonMapComponent {
     return room.row * this.CELL_H + 10;
   }
 
-  getRoomIcon(room: DungeonRoom): string {
-    return ROOM_ICONS[room.type];
-  }
-
-  getRoomLabel(room: DungeonRoom): string {
-    return ROOM_LABELS[room.type];
-  }
+  getRoomIcon(room: DungeonRoom): string { return ROOM_ICONS[room.type]; }
+  getRoomLabel(room: DungeonRoom): string { return ROOM_LABELS[room.type]; }
 
   isReachable(room: DungeonRoom): boolean {
     const current = this.currentRoom();
@@ -181,17 +176,10 @@ export class DungeonMapComponent {
   }
 
   onRoomClick(room: DungeonRoom): void {
-    if (!room.isVisible) return;
-    if (this.isReachable(room)) {
-      this.gameState.moveToRoom(room.id);
-    }
+    if (!room.isVisible || !this.isReachable(room)) return;
+    this.gameState.moveToRoom(room.id);
   }
 
-  enterRoom(): void {
-    this.gameState.screen.set('encounter');
-  }
-
-  nextFloor(): void {
-    this.gameState.nextFloor();
-  }
+  enterRoom(): void { this.gameState.screen.set('encounter'); }
+  nextFloor(): void { this.gameState.nextFloor(); }
 }

@@ -236,3 +236,26 @@
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.4; transform: scale(1.15); }
 }
+
+.floor-domain {
+  color: var(--color-text-muted);
+  font-size: 0.7rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.special-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.4);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #e74c3c;
+  font-style: italic;
+  line-height: 1.4;
+
+  .sr-icon { flex-shrink: 0; }
+}

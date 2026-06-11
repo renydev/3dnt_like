@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "valkaria",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ng", "serve", "--port", "4200", "--force-esbuild"],
+      "port": 4200,
+      "autoPort": false
+    }
+  ]
+}

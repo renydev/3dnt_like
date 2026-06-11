@@ -4,12 +4,14 @@ import { GameStateService } from './core/services/game-state.service';
 import { DungeonMapComponent } from './dungeon/components/dungeon-map.component';
 import { CharacterHudComponent } from './dungeon/components/character-hud.component';
 import { EncounterScreenComponent } from './dungeon/components/encounter-screen.component';
+import { FloorProgressComponent } from './dungeon/components/floor-progress.component';
+import { CharacterCreationComponent } from './dungeon/components/character-creation.component';
 import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, DungeonMapComponent, CharacterHudComponent, EncounterScreenComponent],
+  imports: [CommonModule, DungeonMapComponent, CharacterHudComponent, EncounterScreenComponent, FloorProgressComponent, CharacterCreationComponent],
   template: `
     <div class="game-wrapper">
 
@@ -28,7 +30,7 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
               <div class="logo-edition">Roguelike • Sistema 3D&T</div>
             </div>
             <div class="menu-buttons">
-              <button class="btn-menu-primary" (click)="gameState.screen.set('character_select')">
+              <button class="btn-menu-primary" (click)="gameState.screen.set('character_create')">
                 ⚔️ Nova Aventura
               </button>
               <button class="btn-menu-secondary" disabled>
@@ -43,38 +45,10 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
         </div>
       }
 
-      <!-- SELEÇÃO DE PERSONAGEM -->
-      @if (gameState.screen() === 'character_select') {
-        <div class="screen char-select-screen">
-          <div class="screen-header">
-            <button class="btn-back" (click)="gameState.screen.set('menu')">← Voltar</button>
-            <h2>Escolha seu Herói</h2>
-          </div>
-          <div class="char-grid">
-            @for (char of presets; track $index; let i = $index) {
-              <div class="char-card" (click)="gameState.startGame(i)">
-                <div class="char-card-icon">{{ getClassIcon(char.class) }}</div>
-                <div class="char-card-info">
-                  <h3>{{ char.name }}</h3>
-                  <p class="char-card-sub">{{ char.race | titlecase }} {{ char.class | titlecase }} • Nv {{ char.level }}</p>
-                  <div class="char-card-stats">
-                    <span>F {{ char.forca.base }}</span>
-                    <span>H {{ char.habilidade.base }}</span>
-                    <span>R {{ char.resistencia.base }}</span>
-                    <span>A {{ char.armadura }}</span>
-                    @if (char.pontosMagia.max > 0) {
-                      <span>PM {{ char.pontosMagia.max }}</span>
-                    }
-                  </div>
-                  <div class="char-card-advantages">
-                    @for (v of char.vantagens; track v) {
-                      <span class="advantage-tag">{{ v }}</span>
-                    }
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
+      <!-- CRIAÇÃO DE PERSONAGEM -->
+      @if (gameState.screen() === 'character_create') {
+        <div class="screen">
+          <app-character-creation />
         </div>
       }
 
@@ -84,6 +58,7 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
           <div class="game-layout">
             <div class="game-left">
               <app-character-hud />
+              <app-floor-progress />
               @if (gameState.screen() === 'dungeon') {
                 <app-dungeon-map />
               } @else {
@@ -113,7 +88,7 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
             <h2>O Herói Caiu</h2>
             <p>As sombras de Valkaria reclamaram mais uma alma...</p>
             <p class="floor-reached">Chegou ao Andar {{ gameState.floorNumber() }}</p>
-            <button class="btn-menu-primary" (click)="gameState.screen.set('character_select')">⚔️ Tentar Novamente</button>
+            <button class="btn-menu-primary" (click)="gameState.screen.set('character_create')">⚔️ Tentar Novamente</button>
             <button class="btn-menu-secondary" (click)="gameState.goToMenu()">🏠 Menu Principal</button>
           </div>
         </div>
@@ -126,7 +101,7 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
             <div class="overlay-icon">🏆</div>
             <h2>Valkaria Conquistada!</h2>
             <p>As trevas foram dissipadas. O herói se torna lenda!</p>
-            <button class="btn-menu-primary" (click)="gameState.screen.set('character_select')">⚔️ Jogar Novamente</button>
+            <button class="btn-menu-primary" (click)="gameState.screen.set('character_create')">⚔️ Jogar Novamente</button>
             <button class="btn-menu-secondary" (click)="gameState.goToMenu()">🏠 Menu Principal</button>
           </div>
         </div>
