@@ -6,12 +6,13 @@ import { CharacterHudComponent } from './dungeon/components/character-hud.compon
 import { EncounterScreenComponent } from './dungeon/components/encounter-screen.component';
 import { FloorProgressComponent } from './dungeon/components/floor-progress.component';
 import { CharacterCreationComponent } from './dungeon/components/character-creation.component';
+import { DebugMapComponent } from './debug/debug-map.component';
 import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, DungeonMapComponent, CharacterHudComponent, EncounterScreenComponent, FloorProgressComponent, CharacterCreationComponent],
+  imports: [CommonModule, DungeonMapComponent, CharacterHudComponent, EncounterScreenComponent, FloorProgressComponent, CharacterCreationComponent, DebugMapComponent],
   template: `
     <div class="game-wrapper">
 
@@ -42,6 +43,16 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
             </div>
             <p class="menu-credit">Fan-game baseado em Valkaria (Tormenta RPG / Jambô) • Sistema 3D&T</p>
           </div>
+          <button class="btn-debug" (click)="gameState.screen.set('debug_map')" title="Visualizar mapas dos andares">
+            🗺️ Debug Mapas
+          </button>
+        </div>
+      }
+
+      <!-- DEBUG: visualizador de mapas -->
+      @if (gameState.screen() === 'debug_map') {
+        <div class="screen">
+          <app-debug-map />
         </div>
       }
 

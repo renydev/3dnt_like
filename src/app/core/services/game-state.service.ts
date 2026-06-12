@@ -3,7 +3,7 @@ import { Character, PRESET_CHARACTERS } from '../models/character.model';
 import { DungeonFloor, DungeonRoom, VALKARIA_FLOORS } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
 
-export type GameScreen = 'menu' | 'character_select' | 'character_create' | 'dungeon' | 'encounter' | 'game_over' | 'victory';
+export type GameScreen = 'menu' | 'character_select' | 'character_create' | 'dungeon' | 'encounter' | 'game_over' | 'victory' | 'debug_map';
 
 @Injectable({ providedIn: 'root' })
 export class GameStateService {

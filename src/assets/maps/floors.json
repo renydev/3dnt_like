@@ -1,0 +1,310 @@
+[
+  {
+    "floorNumber": 1,
+    "themeId": "allihanna",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Clareira de Entrada",      "connections": [1, 2, 3] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Toca das Feras",           "connections": [4, 5] },
+      { "id": 2, "row": 1, "col": 2, "type": "rest",     "name": "Riacho Subterrâneo",        "connections": [5] },
+      { "id": 3, "row": 1, "col": 3, "type": "trap",     "name": "Raízes Enredantes",         "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 0, "type": "treasure", "name": "Ninho Abandonado",          "connections": [7] },
+      { "id": 5, "row": 2, "col": 2, "type": "monster",  "name": "Território do Urso",        "connections": [7] },
+      { "id": 6, "row": 2, "col": 4, "type": "monster",  "name": "Covil do Leopardo",         "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Santuário do Grande Urso",  "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 2,
+    "themeId": "ragnar",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Portão de Batalha",         "connections": [1, 2, 3] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Horda de Goblins",          "connections": [4, 5] },
+      { "id": 2, "row": 1, "col": 2, "type": "monster",  "name": "Berserkers Orcs",           "connections": [4, 5, 6] },
+      { "id": 3, "row": 1, "col": 3, "type": "monster",  "name": "Ogres de Vanguarda",        "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 0, "type": "rest",     "name": "Armeiro Abandonado",        "connections": [7, 8] },
+      { "id": 5, "row": 2, "col": 2, "type": "trap",     "name": "Campo Minado com Estacas",  "connections": [7, 8] },
+      { "id": 6, "row": 2, "col": 4, "type": "monster",  "name": "Troll da Guerra",           "connections": [8] },
+      { "id": 7, "row": 3, "col": 1, "type": "treasure", "name": "Tesouro de Batalha",        "connections": [9] },
+      { "id": 8, "row": 3, "col": 3, "type": "monster",  "name": "Capitão Hobgoblin",         "connections": [9] },
+      { "id": 9, "row": 3, "col": 2, "type": "boss",     "name": "Forte do Warchief Gromthar","connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 3,
+    "themeId": "glorienn",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Arco de Mármore Élfico",      "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "empty",    "name": "Corredor de Runas",            "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "monster",  "name": "Arqueiros de Emboscada",       "connections": [4, 5] },
+      { "id": 3, "row": 2, "col": 0, "type": "treasure", "name": "Câmara do Grimório Arcano",    "connections": [6] },
+      { "id": 4, "row": 2, "col": 2, "type": "puzzle",   "name": "Runa Élfica Bloqueante",       "connections": [6, 7] },
+      { "id": 5, "row": 2, "col": 4, "type": "trap",     "name": "Rede de Vento Automática",     "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "rest",     "name": "Fonte Sagrada de Glórienn",    "connections": [8] },
+      { "id": 7, "row": 3, "col": 3, "type": "monster",  "name": "Mago Élfico de Elite",         "connections": [8] },
+      { "id": 8, "row": 3, "col": 2, "type": "boss",     "name": "Torre do Arqueiro Arcano",     "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 4,
+    "themeId": "lena",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Portal do Além",             "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "puzzle",   "name": "Enigma dos Mortos",          "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "empty",    "name": "Corredor Espectral",         "connections": [4, 5] },
+      { "id": 3, "row": 2, "col": 0, "type": "trap",     "name": "Toque da Morte Imediata",    "connections": [6] },
+      { "id": 4, "row": 2, "col": 2, "type": "puzzle",   "name": "Câmara do Destino",          "connections": [6, 7] },
+      { "id": 5, "row": 2, "col": 4, "type": "rest",     "name": "Antecâmara do Silêncio",     "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "monster",  "name": "Espectros Eternos",          "connections": [8] },
+      { "id": 7, "row": 3, "col": 3, "type": "puzzle",   "name": "Julgamento de Lena",         "connections": [8] },
+      { "id": 8, "row": 3, "col": 2, "type": "boss",     "name": "Trono da Ceifadora",         "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 5,
+    "themeId": "hyninn",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Entrada Dissimulada",          "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 0, "type": "trap",     "name": "Corredor dos Dardos",           "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "empty",    "name": "Hall Suspeito",                 "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 4, "type": "trap",     "name": "Câmara das Lâminas",            "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "monster",  "name": "Mimic Guardião",                "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "trap",     "name": "Câmara de Gás Venenoso",        "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "trap",     "name": "Chão Falso Sobre Vala",         "connections": [8, 9] },
+      { "id":  7, "row": 3, "col": 0, "type": "treasure", "name": "Tesouro do Mestre Ladrão",      "connections": [10] },
+      { "id":  8, "row": 3, "col": 2, "type": "rest",     "name": "Sala Segura Oculta",            "connections": [10] },
+      { "id":  9, "row": 3, "col": 4, "type": "trap",     "name": "Armadilha Mestra Final",        "connections": [10] },
+      { "id": 10, "row": 3, "col": 2, "type": "boss",     "name": "Câmara das Mil Armadilhas",     "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 6,
+    "themeId": "marah",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Jardim de Entrada de Marah",    "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "social",   "name": "Fonte dos Presentes",           "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "rest",     "name": "Câmara de Cura Dourada",        "connections": [3, 4] },
+      { "id": 3, "row": 2, "col": 1, "type": "social",   "name": "Audiência das Ninfas",          "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 3, "type": "treasure", "name": "Câmara das Rosas Eternas",      "connections": [5, 6] },
+      { "id": 5, "row": 3, "col": 1, "type": "social",   "name": "Sala do Julgamento do Coração", "connections": [7] },
+      { "id": 6, "row": 3, "col": 3, "type": "rest",     "name": "Jardim Interior",               "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Trono da Ninfa Rainha Aelindra","connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 7,
+    "themeId": "tenebra",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Portal da Escuridão Total",     "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Câmara dos Vampiros",           "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "trap",     "name": "Fossa Oculta nas Trevas",       "connections": [4, 5] },
+      { "id": 3, "row": 2, "col": 0, "type": "monster",  "name": "Território dos Lobisomens",     "connections": [6] },
+      { "id": 4, "row": 2, "col": 2, "type": "rest",     "name": "Pedra Tépida",                  "connections": [6, 7] },
+      { "id": 5, "row": 2, "col": 4, "type": "trap",     "name": "Correntes Sonoras",             "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "treasure", "name": "Relíquias nas Trevas",          "connections": [8] },
+      { "id": 7, "row": 3, "col": 3, "type": "monster",  "name": "Wights das Sombras",            "connections": [8] },
+      { "id": 8, "row": 3, "col": 2, "type": "boss",     "name": "Câmara do Vampiro Ancião",      "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 8,
+    "themeId": "azgher",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Átrio Solar",                   "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Salão das Múmias",              "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "empty",    "name": "Coridor de Areia",              "connections": [4, 5] },
+      { "id": 3, "row": 2, "col": 0, "type": "puzzle",   "name": "Câmara dos Hieróglifos",        "connections": [6] },
+      { "id": 4, "row": 2, "col": 2, "type": "trap",     "name": "Câmara de Calor Extremo",       "connections": [6, 7] },
+      { "id": 5, "row": 2, "col": 4, "type": "monster",  "name": "Djinn do Deserto",              "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "rest",     "name": "Oásis Subterrâneo",             "connections": [8] },
+      { "id": 7, "row": 3, "col": 3, "type": "treasure", "name": "Câmara do Ouro Desértico",      "connections": [8] },
+      { "id": 8, "row": 3, "col": 2, "type": "boss",     "name": "Pedestal da Grande Esfinge",    "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 9,
+    "themeId": "tauron",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Entrada do Labirinto",          "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 0, "type": "monster",  "name": "Encruzilhada dos Minotauros",   "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "empty",    "name": "Corredor Falso",                "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 4, "type": "trap",     "name": "Paredes que se Movem",          "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "monster",  "name": "Câmara do Berserker",           "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "rest",     "name": "Recanto Esquecido",             "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "trap",     "name": "Labirinto Dentro do Labirinto", "connections": [8, 9] },
+      { "id":  7, "row": 3, "col": 0, "type": "treasure", "name": "Troféu do Gladiador",          "connections": [10] },
+      { "id":  8, "row": 3, "col": 2, "type": "monster",  "name": "Gnoll Caçador de Elite",       "connections": [10] },
+      { "id":  9, "row": 3, "col": 4, "type": "trap",     "name": "Corredor Sem Saída",            "connections": [10] },
+      { "id": 10, "row": 3, "col": 2, "type": "boss",     "name": "Arena do Minotauro Supremo",    "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 10,
+    "themeId": "tanna-toh",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Antessala da Biblioteca",       "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "puzzle",   "name": "Sala dos Enigmas Básicos",      "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "empty",    "name": "Corredor de Tomos",             "connections": [3, 4] },
+      { "id": 3, "row": 2, "col": 0, "type": "trap",     "name": "Paradoxo Temporal",             "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 2, "type": "puzzle",   "name": "Câmara dos Paradoxos",          "connections": [5, 6] },
+      { "id": 5, "row": 3, "col": 1, "type": "treasure", "name": "Câmara dos Pergaminhos Raros",  "connections": [7] },
+      { "id": 6, "row": 3, "col": 3, "type": "puzzle",   "name": "Teste Final de Sabedoria",      "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Câmara do Golem do Saber",      "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 11,
+    "themeId": "lin-wu",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Portão do Dojo Sagrado",        "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 1, "type": "monster",  "name": "Sala dos Aprendizes",           "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "rest",     "name": "Jardim de Meditação",           "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 3, "type": "monster",  "name": "Corredor dos Iniciados",        "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "trap",     "name": "Teste de Agilidade",            "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "monster",  "name": "Arena dos Mestres",             "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "rest",     "name": "Câmara de Preparação",          "connections": [8, 9] },
+      { "id":  7, "row": 3, "col": 0, "type": "treasure", "name": "Sala da Katana Sagrada",        "connections": [10] },
+      { "id":  8, "row": 3, "col": 2, "type": "monster",  "name": "Duelo com o Samurai Fantasma",  "connections": [10] },
+      { "id":  9, "row": 3, "col": 4, "type": "trap",     "name": "Golpe de Treinamento Fatal",    "connections": [10] },
+      { "id": 10, "row": 3, "col": 2, "type": "boss",     "name": "Câmara do Sensei Imortal",      "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 12,
+    "themeId": "wynna",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Portal Feérico de Wynna",       "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 0, "type": "puzzle",   "name": "Câmara de Cores Impossíveis",   "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "monster",  "name": "Glade das Fadas Guerreiras",    "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 4, "type": "trap",     "name": "Bolso Dimensional Hostil",      "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "monster",  "name": "Reduto do Gênio do Vento",      "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "empty",    "name": "Prado Que Muda de Lugar",       "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "puzzle",   "name": "Labirinto de Ilusões",          "connections": [8, 9] },
+      { "id":  7, "row": 3, "col": 0, "type": "rest",     "name": "Lago das Fadas",                "connections": [10] },
+      { "id":  8, "row": 3, "col": 2, "type": "treasure", "name": "Câmara do Pó de Fada",          "connections": [10] },
+      { "id":  9, "row": 3, "col": 4, "type": "trap",     "name": "Dança Eterna Encantada",        "connections": [10] },
+      { "id": 10, "row": 3, "col": 2, "type": "boss",     "name": "Corte da Rainha das Fadas",     "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 13,
+    "themeId": "oceano",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Câmara de Pressurização",       "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Banco dos Tubarões",            "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "trap",     "name": "Corrente Submarina",            "connections": [3, 4] },
+      { "id": 3, "row": 2, "col": 0, "type": "rest",     "name": "Bolha de Ar Aprisionada",       "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 2, "type": "monster",  "name": "Ninho da Sereia Predadora",     "connections": [5, 6] },
+      { "id": 5, "row": 2, "col": 4, "type": "trap",     "name": "Vórtice de Água",               "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "treasure", "name": "Câmara das Pérolas",            "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Abismo do Kraken",              "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 14,
+    "themeId": "thyatis",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Salão das Chamas Eternas",       "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "trap",     "name": "Jato de Chama Contínuo",         "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "monster",  "name": "Câmara do Ífreet Guerreiro",     "connections": [3, 4] },
+      { "id": 3, "row": 2, "col": 0, "type": "trap",     "name": "Rio de Lava",                    "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 2, "type": "rest",     "name": "Câmara Menos Quente",            "connections": [5, 6] },
+      { "id": 5, "row": 2, "col": 4, "type": "monster",  "name": "Salamandras de Fogo",            "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "trap",     "name": "Gás Inflamável Comprimido",      "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Núcleo do Elemental Primordial", "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 15,
+    "themeId": "sszzaas",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Ninho da Entrada",               "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Câmara da Cobra Rei",            "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "trap",     "name": "Câmara de Gás Venenoso",         "connections": [3, 4] },
+      { "id": 3, "row": 2, "col": 0, "type": "rest",     "name": "Antídoto Abandonado",            "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 2, "type": "monster",  "name": "Tocas da Hidra",                 "connections": [5, 6] },
+      { "id": 5, "row": 2, "col": 4, "type": "trap",     "name": "Espinhos Envenenados",           "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "treasure", "name": "Câmara das Escamas",             "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Ninho da Naga Rainha",           "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 16,
+    "themeId": "keenn",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Portão de Ferro",                "connections": [1, 2, 3] },
+      { "id": 1, "row": 1, "col": 1, "type": "monster",  "name": "Câmara dos Cavaleiros",          "connections": [4, 5] },
+      { "id": 2, "row": 1, "col": 2, "type": "trap",     "name": "Prensa de Ferro",                "connections": [4, 5, 6] },
+      { "id": 3, "row": 1, "col": 3, "type": "monster",  "name": "Corredor dos Paladinos",         "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 0, "type": "monster",  "name": "Sala do Golem de Ferro",         "connections": [7, 8] },
+      { "id": 5, "row": 2, "col": 2, "type": "rest",     "name": "Câmara de Descanso dos Campeões","connections": [7, 8] },
+      { "id": 6, "row": 2, "col": 4, "type": "trap",     "name": "Canhão de Bolas de Ferro",       "connections": [8] },
+      { "id": 7, "row": 3, "col": 1, "type": "treasure", "name": "Armório dos Campeões",           "connections": [9] },
+      { "id": 8, "row": 3, "col": 3, "type": "monster",  "name": "Duelo do Guerreiro Colossal",    "connections": [9] },
+      { "id": 9, "row": 3, "col": 2, "type": "boss",     "name": "Arena do Cavaleiro de Ferro",    "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 17,
+    "themeId": "megalokk",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Portão Colossal",                "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 0, "type": "monster",  "name": "Câmara do Gigante das Tempestades", "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "rest",     "name": "Câmara Menos Perigosa",          "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 4, "type": "trap",     "name": "Pisoteamento de Colossal",       "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "monster",  "name": "Território da Hidra de 12 Cabeças", "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "treasure", "name": "Câmara do Tesouro Antigo",       "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "monster",  "name": "Ninho do Dragão Ancião",         "connections": [8, 9] },
+      { "id":  7, "row": 3, "col": 0, "type": "rest",     "name": "Passagem Baixa",                 "connections": [10] },
+      { "id":  8, "row": 3, "col": 2, "type": "trap",     "name": "Rugido Paralisante",             "connections": [10] },
+      { "id":  9, "row": 3, "col": 4, "type": "monster",  "name": "Emboscada do Colossal",          "connections": [10] },
+      { "id": 10, "row": 3, "col": 2, "type": "boss",     "name": "Caverna do Tiranossauro Colossal", "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 18,
+    "themeId": "nimb",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Nexo do Caos",                  "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 0, "type": "trap",     "name": "Teleporte Aleatório",            "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "monster",  "name": "Câmara do Slaad",               "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 4, "type": "puzzle",   "name": "Paradoxo da Realidade",         "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "trap",     "name": "Inversão de Gravidade",         "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "rest",     "name": "Ilha de Estabilidade",          "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "monster",  "name": "Câmara do Beholder Louco",      "connections": [8, 9] },
+      { "id":  7, "row": 3, "col": 0, "type": "puzzle",   "name": "Efeito Aleatório de Nimb",      "connections": [10] },
+      { "id":  8, "row": 3, "col": 2, "type": "trap",     "name": "Explosão da Realidade",         "connections": [10] },
+      { "id":  9, "row": 3, "col": 4, "type": "monster",  "name": "Câmara da Criatura Sem Forma",  "connections": [10] },
+      { "id": 10, "row": 3, "col": 2, "type": "boss",     "name": "Coração do Caos de Nimb",       "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 19,
+    "themeId": "khalmyr",
+    "rooms": [
+      { "id": 0, "row": 0, "col": 2, "type": "entrance", "name": "Átrio do Tribunal Eterno",       "connections": [1, 2] },
+      { "id": 1, "row": 1, "col": 1, "type": "social",   "name": "Câmara da Verdade",              "connections": [3, 4] },
+      { "id": 2, "row": 1, "col": 3, "type": "monster",  "name": "Sala dos Guardiões da Lei",      "connections": [3, 4] },
+      { "id": 3, "row": 2, "col": 0, "type": "puzzle",   "name": "Julgamento do Passado",          "connections": [5, 6] },
+      { "id": 4, "row": 2, "col": 2, "type": "rest",     "name": "Câmara do Descanso Justo",       "connections": [5, 6] },
+      { "id": 5, "row": 2, "col": 4, "type": "trap",     "name": "Teste de Culpa",                 "connections": [7] },
+      { "id": 6, "row": 3, "col": 1, "type": "treasure", "name": "Tesouro dos Justos",             "connections": [7] },
+      { "id": 7, "row": 3, "col": 2, "type": "boss",     "name": "Salão do Paladino Supremo",      "connections": [] }
+    ]
+  },
+  {
+    "floorNumber": 20,
+    "themeId": "valkaria",
+    "rooms": [
+      { "id":  0, "row": 0, "col": 2, "type": "entrance", "name": "Câmara Final de Valkaria",       "connections": [1, 2, 3] },
+      { "id":  1, "row": 1, "col": 1, "type": "monster",  "name": "Réplica do Grande Urso Sagrado", "connections": [4, 5] },
+      { "id":  2, "row": 1, "col": 2, "type": "rest",     "name": "Câmara de Preparação Final",     "connections": [4, 5, 6] },
+      { "id":  3, "row": 1, "col": 3, "type": "monster",  "name": "Réplica do Warchief Gromthar",   "connections": [5, 6] },
+      { "id":  4, "row": 2, "col": 0, "type": "monster",  "name": "Réplica da Ceifadora",           "connections": [7, 8] },
+      { "id":  5, "row": 2, "col": 2, "type": "monster",  "name": "Réplica do Vampiro Ancião",      "connections": [7, 8] },
+      { "id":  6, "row": 2, "col": 4, "type": "monster",  "name": "Réplica do Paladino Supremo",   "connections": [8] },
+      { "id":  7, "row": 3, "col": 1, "type": "treasure", "name": "Câmara das Recompensas Finais",  "connections": [9] },
+      { "id":  8, "row": 3, "col": 3, "type": "trap",     "name": "Reflexo da Maior Fraqueza",      "connections": [9] },
+      { "id":  9, "row": 3, "col": 2, "type": "boss",     "name": "Trono do Avatar de Valkaria",    "connections": [] }
+    ]
+  }
+]
