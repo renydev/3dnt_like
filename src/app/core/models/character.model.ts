@@ -1,5 +1,10 @@
-export type CharacterClass = 'guerreiro' | 'mago' | 'ladino' | 'clerigo' | 'ranger';
-export type CharacterRace = 'humano' | 'elfo' | 'anao' | 'halfling' | 'meio-elfo';
+export type CharacterClass =
+  | 'guerreiro' | 'mago' | 'ladino' | 'clerigo' | 'ranger'
+  | 'bardo' | 'druida' | 'paladino';
+
+export type CharacterRace =
+  | 'humano' | 'elfo' | 'anao' | 'halfling' | 'gnomo'
+  | 'meio-elfo' | 'meio-orc' | 'lefou' | 'minotauro' | 'goblin';
 
 export interface Attribute {
   base: number;
@@ -128,8 +133,11 @@ export const CLASS_ICONS: Record<CharacterClass, string> = {
   guerreiro: '⚔️',
   mago: '🔮',
   ladino: '🗡️',
-  clerigo: '✨',
-  ranger: '🏹'
+  clerigo: '🌟',
+  ranger: '🏹',
+  bardo: '🎵',
+  druida: '🌿',
+  paladino: '🛡️',
 };
 
 export const CLASS_COLORS: Record<CharacterClass, string> = {
@@ -137,5 +145,8 @@ export const CLASS_COLORS: Record<CharacterClass, string> = {
   mago: '#8e44ad',
   ladino: '#2c3e50',
   clerigo: '#f39c12',
-  ranger: '#27ae60'
+  ranger: '#16a085',
+  bardo: '#e67e22',
+  druida: '#27ae60',
+  paladino: '#2980b9',
 };

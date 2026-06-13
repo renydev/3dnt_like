@@ -32,25 +32,26 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
       }
 
       <div class="map-container">
-        <svg class="connections-layer" [attr.viewBox]="svgViewBox()" preserveAspectRatio="xMidYMid meet">
-          @for (conn of connections(); track conn.key) {
-            <line
-              [attr.x1]="conn.x1" [attr.y1]="conn.y1"
-              [attr.x2]="conn.x2" [attr.y2]="conn.y2"
-              [class]="'conn-line ' + conn.state"
-            />
-          }
-        </svg>
+        <div class="map-inner" [style.width.px]="mapWidth()" [style.height.px]="mapHeight()">
+          <svg class="connections-layer" [attr.viewBox]="svgViewBox()" [attr.width]="mapWidth()" [attr.height]="mapHeight()">
+            @for (conn of connections(); track conn.key) {
+              <line
+                [attr.x1]="conn.x1" [attr.y1]="conn.y1"
+                [attr.x2]="conn.x2" [attr.y2]="conn.y2"
+                [class]="'conn-line ' + conn.state"
+              />
+            }
+          </svg>
 
-        <div class="rooms-layer">
-          @for (room of floor()?.rooms; track room.id) {
-            <div
-              [class]="getRoomClass(room)"
-              [style.left.px]="getRoomX(room)"
-              [style.top.px]="getRoomY(room)"
-              (click)="onRoomClick(room)"
-              [title]="room.isVisible ? room.name : '???'"
-            >
+          <div class="rooms-layer">
+            @for (room of floor()?.rooms; track room.id) {
+              <div
+                [class]="getRoomClass(room)"
+                [style.left.px]="getRoomX(room)"
+                [style.top.px]="getRoomY(room)"
+                (click)="onRoomClick(room)"
+                [title]="room.isVisible ? room.name : '???'"
+              >
               @if (room.isVisible) {
                 <div class="room-inner">
                   <span class="room-icon">{{ getRoomIcon(room) }}</span>
@@ -64,7 +65,8 @@ import { DungeonRoom, ROOM_ICONS, ROOM_LABELS, RoomType } from '../../core/model
                 </div>
               }
             </div>
-          }
+            }
+          </div>
         </div>
       </div>
 
@@ -118,10 +120,16 @@ export class DungeonMapComponent {
     Math.max(...(this.floor()?.rooms.map(r => r.row) ?? [0]))
   );
 
-  svgViewBox = computed(() => {
-    const rows = this.maxRow() + 1;
-    return `0 0 ${this.COLS * this.CELL_W + 20} ${rows * this.CELL_H + 20}`;
-  });
+  maxCol = computed(() =>
+    Math.max(...(this.floor()?.rooms.map(r => r.col) ?? [4]))
+  );
+
+  mapWidth = computed(() => (this.maxCol() + 1) * this.CELL_W + 20);
+  mapHeight = computed(() => (this.maxRow() + 1) * this.CELL_H + 20);
+
+  svgViewBox = computed(() =>
+    `0 0 ${this.mapWidth()} ${this.mapHeight()}`
+  );
 
   connections = computed(() => {
     const rooms = this.floor()?.rooms ?? [];
@@ -134,10 +142,10 @@ export class DungeonMapComponent {
         seen.add(key);
         const dest = rooms.find(r => r.id === connId);
         if (!dest) return;
-        const x1 = this.getRoomX(room) + 32;
-        const y1 = this.getRoomY(room) + 32;
-        const x2 = this.getRoomX(dest) + 32;
-        const y2 = this.getRoomY(dest) + 32;
+        const x1 = this.getRoomX(room);
+        const y1 = this.getRoomY(room);
+        const x2 = this.getRoomX(dest);
+        const y2 = this.getRoomY(dest);
         let state = 'hidden';
         if (room.isVisible && dest.isVisible) state = 'visible';
         else if (room.isVisible || dest.isVisible) state = 'partial';
@@ -157,8 +165,6 @@ export class DungeonMapComponent {
   }
 
   getRoomX(room: DungeonRoom): number {
-    const maxRow = this.maxRow();
-    if (room.row === 0 || room.row === maxRow) return Math.floor(this.COLS / 2) * this.CELL_W + 10;
     return room.col * this.CELL_W + 10;
   }
 
