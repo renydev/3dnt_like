@@ -12,6 +12,14 @@ export interface Attribute {
   max: number;
 }
 
+export interface StatusEffect {
+  id: string;
+  name: string;
+  icon: string;
+  duration: number; // rodadas restantes, -1 = permanente
+  description: string;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -39,14 +47,13 @@ export interface Character {
   gold: number;
   items: string[];
   statusEffects: StatusEffect[];
-}
 
-export interface StatusEffect {
-  id: string;
-  name: string;
-  icon: string;
-  duration: number; // rodadas restantes, -1 = permanente
-  description: string;
+  // Evolução — pontos disponíveis para gastar em atributos
+  levelUpPoints?: number;
+
+  // Metadados visuais
+  isCompanion?: boolean;
+  portraitIcon?: string; // emoji ou caminho de asset
 }
 
 // Fichas pré-definidas 3D&T style
@@ -68,7 +75,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     desvantagens: ['Código de Honra'],
     gold: 30,
     items: ['Espada Longa', 'Escudo de Madeira', 'Poção de Cura'],
-    statusEffects: []
+    statusEffects: [],
+    levelUpPoints: 0,
+    portraitIcon: '⚔️',
   },
   {
     name: 'Lyra, a Maga',
@@ -87,7 +96,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     desvantagens: ['Fobia (Morte)'],
     gold: 20,
     items: ['Cajado Arcano', 'Grimório', 'Poção de Mana', 'Poção de Cura'],
-    statusEffects: []
+    statusEffects: [],
+    levelUpPoints: 0,
+    portraitIcon: '🔮',
   },
   {
     name: 'Sombra, o Ladino',
@@ -106,7 +117,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     desvantagens: ['Inimigo (Guilda dos Ladrões)'],
     gold: 50,
     items: ['Adaga +1', 'Ferramentas de Ladrão', 'Corda e Gancho', 'Poção de Cura'],
-    statusEffects: []
+    statusEffects: [],
+    levelUpPoints: 0,
+    portraitIcon: '🗡️',
   },
   {
     name: 'Brenn, o Clérigo',
@@ -125,8 +138,80 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     desvantagens: ['Obrigação (Igreja de Khalmyr)'],
     gold: 15,
     items: ['Maça Benta', 'Escudo Sagrado', 'Símbolo Sagrado', 'Poção de Cura x2'],
-    statusEffects: []
-  }
+    statusEffects: [],
+    levelUpPoints: 0,
+    portraitIcon: '🌟',
+  },
+];
+
+// Companheiros que se juntam ao grupo após derrotar certos andares
+export const COMPANION_POOL: Omit<Character, 'id'>[] = [
+  {
+    name: 'Kira, a Ranger',
+    class: 'ranger',
+    race: 'meio-elfo',
+    level: 1,
+    xp: 0,
+    xpToNextLevel: 100,
+    forca: { base: 2, current: 2, max: 2 },
+    habilidade: { base: 3, current: 3, max: 3 },
+    resistencia: { base: 2, current: 2, max: 2 },
+    armadura: 2,
+    pontosMagia: { base: 2, current: 2, max: 2 },
+    pontosVida: { base: 10, current: 10, max: 10 },
+    vantagens: ['Tiro Preciso', 'Rastreamento'],
+    desvantagens: ['Solitária'],
+    gold: 25,
+    items: ['Arco Longo', 'Aljava (20 flechas)', 'Poção de Cura'],
+    statusEffects: [],
+    levelUpPoints: 0,
+    isCompanion: true,
+    portraitIcon: '🏹',
+  },
+  {
+    name: 'Torin, o Bardo',
+    class: 'bardo',
+    race: 'gnomo',
+    level: 1,
+    xp: 0,
+    xpToNextLevel: 100,
+    forca: { base: 1, current: 1, max: 1 },
+    habilidade: { base: 3, current: 3, max: 3 },
+    resistencia: { base: 2, current: 2, max: 2 },
+    armadura: 1,
+    pontosMagia: { base: 6, current: 6, max: 6 },
+    pontosVida: { base: 10, current: 10, max: 10 },
+    vantagens: ['Inspiração', 'Lábia'],
+    desvantagens: ['Curioso Demais'],
+    gold: 40,
+    items: ['Alaúde Mágico', 'Adaga', 'Poção de Cura', 'Poção de Mana'],
+    statusEffects: [],
+    levelUpPoints: 0,
+    isCompanion: true,
+    portraitIcon: '🎵',
+  },
+  {
+    name: 'Mira, a Druida',
+    class: 'druida',
+    race: 'elfo',
+    level: 1,
+    xp: 0,
+    xpToNextLevel: 100,
+    forca: { base: 1, current: 1, max: 1 },
+    habilidade: { base: 3, current: 3, max: 3 },
+    resistencia: { base: 3, current: 3, max: 3 },
+    armadura: 1,
+    pontosMagia: { base: 8, current: 8, max: 8 },
+    pontosVida: { base: 15, current: 15, max: 15 },
+    vantagens: ['Forma Animal', 'Cura Natural'],
+    desvantagens: ['Juramento da Natureza'],
+    gold: 10,
+    items: ['Cajado de Carvalho', 'Ervas Curativas', 'Poção de Cura x2'],
+    statusEffects: [],
+    levelUpPoints: 0,
+    isCompanion: true,
+    portraitIcon: '🌿',
+  },
 ];
 
 export const CLASS_ICONS: Record<CharacterClass, string> = {

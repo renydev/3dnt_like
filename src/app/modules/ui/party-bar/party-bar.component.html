@@ -1,0 +1,75 @@
+<div class="party-bar">
+  <div class="party-bar-inner">
+
+    @for (char of gs.party(); track char.id) {
+      <button
+        class="party-card"
+        [class.is-player]="!char.isCompanion"
+        [class.has-points]="(char.levelUpPoints ?? 0) > 0"
+        [style.--class-color]="classColor(char)"
+        (click)="openDialog.emit(char)"
+        [title]="char.name"
+      >
+        <div class="card-portrait" [style.border-color]="classColor(char)">
+          <span class="card-icon">{{ char.portraitIcon ?? classIcon(char) }}</span>
+          @if ((char.levelUpPoints ?? 0) > 0) {
+            <span class="level-badge" [title]="(char.levelUpPoints ?? 0) + ' pontos disponíveis'">
+              +{{ char.levelUpPoints }}
+            </span>
+          }
+        </div>
+
+        <div class="card-info">
+          <span class="card-name">{{ char.name.split(',')[0] }}</span>
+          <span class="card-class">Nv.{{ char.level }} {{ char.class | titlecase }}</span>
+
+          <div class="mini-bars">
+            <div class="mini-bar hp" title="PV">
+              <div class="mini-bar-fill hp-fill"
+                [style.width.%]="pct(char.pontosVida.current, char.pontosVida.max)">
+              </div>
+            </div>
+            @if (char.pontosMagia.max > 0) {
+              <div class="mini-bar pm" title="PM">
+                <div class="mini-bar-fill pm-fill"
+                  [style.width.%]="pct(char.pontosMagia.current, char.pontosMagia.max)">
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="mini-stats">
+            <span>F{{ char.forca.current }}</span>
+            <span>H{{ char.habilidade.current }}</span>
+            <span>R{{ char.resistencia.current }}</span>
+            <span>A{{ char.armadura }}</span>
+          </div>
+        </div>
+      </button>
+    }
+
+    @for (slot of emptySlots(); track $index) {
+      <div class="party-card empty-slot">
+        <div class="card-portrait empty">
+          <span class="empty-icon">?</span>
+        </div>
+        <div class="card-info">
+          <span class="card-name muted">Aguardando...</span>
+          <span class="card-class muted">Companheiro</span>
+        </div>
+      </div>
+    }
+
+  </div>
+
+  <div class="party-bar-right">
+    <div class="floor-pill">
+      <span class="floor-num">{{ gs.floorNumber() }}</span>
+      <span class="floor-of">/20</span>
+    </div>
+    <div class="floor-bar-wrap">
+      <div class="floor-bar-fill" [style.width.%]="gs.progressPercent()"></div>
+    </div>
+    <span class="floor-label">{{ gs.currentTheme().godName }}</span>
+  </div>
+</div>

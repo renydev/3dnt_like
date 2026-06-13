@@ -1,0 +1,257 @@
+:host {
+  display: block;
+}
+
+.party-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.55);
+  border-bottom: 1px solid var(--color-border);
+  backdrop-filter: blur(4px);
+}
+
+.party-bar-inner {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ── Card ────────────────────────────────────────────────────────────────────
+
+.party-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(10, 8, 4, 0.7);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  min-width: 150px;
+  max-width: 190px;
+  flex-shrink: 0;
+  position: relative;
+
+  &:hover {
+    border-color: var(--class-color, var(--color-gold));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--class-color, var(--color-gold)) 30%, transparent);
+    transform: translateY(-1px);
+  }
+
+  &.is-player {
+    border-color: rgba(212, 170, 20, 0.4);
+  }
+
+  &.has-points {
+    animation: pulsePoints 2s ease-in-out infinite;
+  }
+
+  &.empty-slot {
+    opacity: 0.35;
+    cursor: default;
+
+    &:hover {
+      transform: none;
+      box-shadow: none;
+      border-color: var(--color-border);
+    }
+  }
+}
+
+// ── Retrato ──────────────────────────────────────────────────────────────────
+
+.card-portrait {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color 0.18s;
+
+  &.empty {
+    border-style: dashed;
+  }
+}
+
+.card-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.empty-icon {
+  font-size: 1.2rem;
+  color: var(--color-text-muted);
+}
+
+.level-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--color-gold);
+  color: #000;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 700;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #000;
+  box-shadow: 0 0 6px var(--color-gold-glow);
+}
+
+// ── Info ─────────────────────────────────────────────────────────────────────
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.card-name {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &.muted {
+    color: var(--color-text-muted);
+  }
+}
+
+.card-class {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  text-transform: capitalize;
+
+  &.muted {
+    opacity: 0.6;
+  }
+}
+
+// ── Mini barras ───────────────────────────────────────────────────────────────
+
+.mini-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.mini-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.mini-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.hp-fill {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+}
+
+.pm-fill {
+  background: linear-gradient(90deg, #3498db, #2980b9);
+}
+
+// ── Mini stats ────────────────────────────────────────────────────────────────
+
+.mini-stats {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+
+  span {
+    font-family: var(--font-display);
+    font-size: 0.58rem;
+    color: var(--color-amber);
+    background: rgba(201, 122, 32, 0.1);
+    padding: 1px 4px;
+    border-radius: 2px;
+  }
+}
+
+// ── Lado direito (progresso) ──────────────────────────────────────────────────
+
+.party-bar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.floor-pill {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  font-family: var(--font-display);
+}
+
+.floor-num {
+  font-size: 1.2rem;
+  color: var(--color-gold);
+  font-weight: 700;
+}
+
+.floor-of {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+}
+
+.floor-bar-wrap {
+  width: 80px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.floor-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-amber), var(--color-gold));
+  transition: width 0.6s ease;
+}
+
+.floor-label {
+  font-size: 0.6rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+// ── Animações ─────────────────────────────────────────────────────────────────
+
+@keyframes pulsePoints {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 170, 20, 0); }
+  50%       { box-shadow: 0 0 0 4px rgba(212, 170, 20, 0.25); }
+}

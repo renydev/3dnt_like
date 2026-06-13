@@ -1,0 +1,112 @@
+@if (char()) {
+  <div class="dialog-backdrop" (click)="onBackdrop($event)">
+    <div class="dialog-box" [style.--class-color]="classColor()">
+
+      <!-- Cabeçalho -->
+      <div class="dialog-header">
+        <div class="dialog-portrait" [style.border-color]="classColor()">
+          <span>{{ char()!.portraitIcon ?? classIcon() }}</span>
+        </div>
+        <div class="dialog-title-block">
+          <h2 class="dialog-name">{{ char()!.name }}</h2>
+          <p class="dialog-sub">
+            Nível {{ char()!.level }} · {{ char()!.race | titlecase }} · {{ char()!.class | titlecase }}
+          </p>
+          <div class="xp-bar-wrap">
+            <div class="xp-bar-fill" [style.width.%]="xpPct()"></div>
+          </div>
+          <p class="xp-label">{{ char()!.xp }} / {{ char()!.xpToNextLevel }} XP</p>
+        </div>
+        <button class="dialog-close" (click)="close.emit()">✕</button>
+      </div>
+
+      <!-- PV / PM -->
+      <div class="vitals-row">
+        <div class="vital-block">
+          <div class="vital-label">❤️ PV</div>
+          <div class="vital-bar-wrap">
+            <div class="vital-bar hp" [style.width.%]="hpPct()"></div>
+          </div>
+          <div class="vital-value">{{ char()!.pontosVida.current }} / {{ char()!.pontosVida.max }}</div>
+        </div>
+        @if (char()!.pontosMagia.max > 0) {
+          <div class="vital-block">
+            <div class="vital-label">✨ PM</div>
+            <div class="vital-bar-wrap">
+              <div class="vital-bar pm" [style.width.%]="pmPct()"></div>
+            </div>
+            <div class="vital-value">{{ char()!.pontosMagia.current }} / {{ char()!.pontosMagia.max }}</div>
+          </div>
+        }
+      </div>
+
+      <!-- Banner de level-up -->
+      @if ((char()!.levelUpPoints ?? 0) > 0) {
+        <div class="levelup-banner">
+          🌟 {{ char()!.levelUpPoints }} ponto(s) disponíve{{ char()!.levelUpPoints === 1 ? 'l' : 'is' }}!
+          Clique em <strong>+</strong> para melhorar um atributo.
+        </div>
+      }
+
+      <!-- Atributos -->
+      <div class="attrs-grid">
+        @for (row of attrRows; track row.key) {
+          <div class="attr-row">
+            <span class="attr-icon">{{ row.icon }}</span>
+            <span class="attr-label">{{ row.label }}</span>
+            <div class="attr-bar-wrap">
+              <div class="attr-bar-fill" [style.width.%]="attrPct(row)"></div>
+            </div>
+            <span class="attr-val">{{ row.value(char()!) }}</span>
+            @if ((char()!.levelUpPoints ?? 0) > 0) {
+              <button class="btn-spend" (click)="spend(row.key)" [title]="'Gastar 1 ponto em ' + row.label">+</button>
+            } @else {
+              <span class="btn-spend-placeholder"></span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Vantagens / Desvantagens -->
+      <div class="tags-section">
+        <div class="tags-group">
+          <span class="tags-title">Vantagens</span>
+          <div class="tags-list">
+            @for (v of char()!.vantagens; track v) {
+              <span class="tag advantage">{{ v }}</span>
+            }
+            @if (!char()!.vantagens.length) {
+              <span class="tag-none">—</span>
+            }
+          </div>
+        </div>
+        <div class="tags-group">
+          <span class="tags-title">Desvantagens</span>
+          <div class="tags-list">
+            @for (d of char()!.desvantagens; track d) {
+              <span class="tag disadvantage">{{ d }}</span>
+            }
+            @if (!char()!.desvantagens.length) {
+              <span class="tag-none">—</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Itens -->
+      <div class="items-section">
+        <span class="tags-title">🎒 Itens</span>
+        <div class="items-list">
+          @for (item of char()!.items; track item) {
+            <span class="item-tag">{{ item }}</span>
+          }
+          @if (!char()!.items.length) {
+            <span class="tag-none">Sem itens</span>
+          }
+        </div>
+        <span class="gold-badge">💰 {{ char()!.gold }} ouro</span>
+      </div>
+
+    </div>
+  </div>
+}

@@ -1,0 +1,275 @@
+// ── Tela principal ────────────────────────────────────────────────────────────
+
+.transition-screen {
+  min-height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(100, 60, 0, 0.25), transparent 70%),
+    var(--color-bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 2rem 1rem;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+
+  &.ready {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// ── Trilha de progresso ───────────────────────────────────────────────────────
+
+.progress-track {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.track-pip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  transition: all 0.3s;
+
+  &.done {
+    background: rgba(212, 170, 20, 0.4);
+    border-color: var(--color-gold);
+  }
+
+  &.current {
+    width: 18px;
+    height: 18px;
+    background: var(--color-gold);
+    border-color: var(--color-gold);
+    box-shadow: 0 0 8px var(--color-gold-glow);
+  }
+}
+
+// ── Banner do andar concluído ─────────────────────────────────────────────────
+
+.cleared-banner {
+  text-align: center;
+}
+
+.cleared-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.cleared-label {
+  font-family: var(--font-display);
+  color: var(--color-gold);
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.cleared-god {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  margin: 0.2rem 0 0;
+  font-style: italic;
+
+  strong {
+    color: var(--color-text);
+  }
+}
+
+// ── Companheiro ───────────────────────────────────────────────────────────────
+
+.companion-join {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(46, 204, 113, 0.08);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  max-width: 480px;
+  width: 100%;
+  animation: slideIn 0.4s ease 0.3s both;
+}
+
+.companion-icon {
+  font-size: 2.5rem;
+}
+
+.companion-name {
+  font-family: var(--font-display);
+  color: #2ecc71;
+  font-size: 1rem;
+  margin: 0 0 0.25rem;
+}
+
+.companion-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+// ── Card do próximo andar ─────────────────────────────────────────────────────
+
+.next-floor-card {
+  max-width: 480px;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  animation: slideIn 0.4s ease 0.15s both;
+}
+
+.next-header {
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.next-floor-badge {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.next-body {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  align-items: flex-start;
+}
+
+.next-icon {
+  font-size: 3rem;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.next-info {
+  flex: 1;
+}
+
+.next-name {
+  font-family: var(--font-display);
+  color: var(--color-gold);
+  font-size: 1.1rem;
+  margin: 0 0 0.3rem;
+}
+
+.next-god {
+  font-size: 0.75rem;
+  color: var(--color-amber);
+  margin: 0 0 0.4rem;
+
+  em {
+    font-style: normal;
+    font-weight: bold;
+  }
+}
+
+.next-desc {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.special-rule-box {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  background: rgba(231, 76, 60, 0.1);
+  border-top: 1px solid rgba(231, 76, 60, 0.25);
+  padding: 0.5rem 1rem;
+  font-size: 0.78rem;
+  color: #e74c3c;
+}
+
+.next-tags {
+  display: flex;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tag-group {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.tag-label {
+  font-size: 0.62rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 2px;
+}
+
+.tag-item {
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+
+  &.gold {
+    color: var(--color-gold);
+    background: rgba(212, 170, 20, 0.08);
+    border-color: rgba(212, 170, 20, 0.25);
+  }
+}
+
+// ── Flavor text ───────────────────────────────────────────────────────────────
+
+.flavor-text {
+  max-width: 400px;
+  text-align: center;
+  font-style: italic;
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+// ── Botão de avançar ──────────────────────────────────────────────────────────
+
+.btn-proceed {
+  padding: 0.85rem 2.5rem;
+  background: linear-gradient(135deg, #3a2000, #7a4a00, #3a2000);
+  border: 1px solid var(--color-gold);
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a3000, #aa6a00, #5a3000);
+    box-shadow: 0 0 20px var(--color-gold-glow);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+// ── Animações ─────────────────────────────────────────────────────────────────
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}

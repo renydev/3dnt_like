@@ -187,5 +187,5 @@ export class DungeonMapComponent {
   }
 
   enterRoom(): void { this.gameState.screen.set('encounter'); }
-  nextFloor(): void { this.gameState.nextFloor(); }
+  nextFloor(): void { this.gameState.proceedToNextFloor(); }
 }

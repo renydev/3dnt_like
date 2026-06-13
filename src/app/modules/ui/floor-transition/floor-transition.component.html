@@ -1,0 +1,86 @@
+<div class="transition-screen" [class.ready]="ready()">
+
+  <!-- Trilha de progresso (20 pips) -->
+  <div class="progress-track">
+    @for (n of floors; track n) {
+      <div
+        class="track-pip"
+        [class.done]="n < gs.floorNumber()"
+        [class.current]="n === gs.floorNumber()"
+      ></div>
+    }
+  </div>
+
+  <!-- Banner do andar concluído -->
+  <div class="cleared-banner">
+    <span class="cleared-icon">🏆</span>
+    <p class="cleared-label">Andar {{ gs.floorNumber() - 1 }} concluído</p>
+    <p class="cleared-god">
+      Desafio de <strong>{{ prevTheme()?.godName }}</strong> superado!
+    </p>
+  </div>
+
+  <!-- Companheiro que entrou para o grupo -->
+  @if (gs.newCompanion()) {
+    <div class="companion-join">
+      <div class="companion-icon">{{ gs.newCompanion()!.portraitIcon }}</div>
+      <div class="companion-text">
+        <p class="companion-name">{{ gs.newCompanion()!.name }}</p>
+        <p class="companion-desc">
+          {{ gs.newCompanion()!.race | titlecase }}
+          {{ gs.newCompanion()!.class | titlecase }}
+          se junta à sua aventura!
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- Card do próximo andar -->
+  <div class="next-floor-card" [style.--theme-color]="nextPaletteColor()">
+    <div class="next-header">
+      <span class="next-floor-badge">Próximo — Andar {{ gs.floorNumber() }}/20</span>
+    </div>
+
+    <div class="next-body">
+      <span class="next-icon">{{ gs.nextTheme()?.icon }}</span>
+      <div class="next-info">
+        <h2 class="next-name">{{ gs.nextTheme()?.name }}</h2>
+        <p class="next-god">
+          Desafio de <em>{{ gs.nextTheme()?.godName }}</em>,
+          {{ gs.nextTheme()?.godDomain }}
+        </p>
+        <p class="next-desc">{{ gs.nextTheme()?.description }}</p>
+      </div>
+    </div>
+
+    @if (gs.nextTheme()?.specialRule && !isSimpleRule()) {
+      <div class="special-rule-box">
+        <span>⚠️</span>
+        <span>{{ gs.nextTheme()!.specialRule }}</span>
+      </div>
+    }
+
+    <div class="next-tags">
+      <div class="tag-group">
+        <span class="tag-label">Monstros</span>
+        @for (m of gs.nextTheme()?.monsterTypes?.slice(0, 3) ?? []; track m) {
+          <span class="tag-item">{{ m }}</span>
+        }
+      </div>
+      <div class="tag-group">
+        <span class="tag-label">Tesouros</span>
+        @for (t of gs.nextTheme()?.treasureTypes?.slice(0, 2) ?? []; track t) {
+          <span class="tag-item gold">{{ t }}</span>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Flavor text do próximo andar -->
+  <p class="flavor-text">"{{ flavorText() }}"</p>
+
+  <button class="btn-proceed" (click)="proceed()" [disabled]="!ready()">
+    {{ ready() ? '⚔️ Adentrar o Próximo Andar' : 'Preparando...' }}
+  </button>
+
+</div>

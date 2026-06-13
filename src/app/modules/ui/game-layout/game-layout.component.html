@@ -1,0 +1,43 @@
+<div class="game-layout">
+
+  <!-- Barra do grupo — topo fixo -->
+  <app-party-bar (openDialog)="openCharDialog($event)" />
+
+  <!-- Corpo principal -->
+  <div class="game-body">
+
+    <!-- Centro: mapa / encontro / transição -->
+    <div class="game-center">
+      @switch (gs.screen()) {
+        @case ('dungeon') {
+          <app-dungeon-map />
+        }
+        @case ('encounter') {
+          <app-encounter-screen />
+        }
+        @case ('floor_transition') {
+          <app-floor-transition />
+        }
+      }
+    </div>
+
+    <!-- Log lateral -->
+    <aside class="log-panel">
+      <div class="log-title">📜 Diário</div>
+      <div class="log-entries">
+        @for (entry of gs.log(); track $index) {
+          <div class="log-entry">{{ entry }}</div>
+        }
+      </div>
+      <button class="btn-menu-back" (click)="gs.goToMenu()">🏠 Menu</button>
+    </aside>
+
+  </div>
+
+  <!-- Dialog de personagem (portal fixo) -->
+  <app-character-dialog
+    [char]="dialogChar()"
+    (close)="closeCharDialog()"
+  />
+
+</div>

@@ -1,0 +1,402 @@
+<div class="creation-wrapper">
+
+  <!-- ── Header ───────────────────────────────────────────────────────────── -->
+  <div class="creation-header">
+    <button class="btn-back" (click)="gameState.screen.set('menu')">← Voltar</button>
+
+    <div class="step-indicator">
+      @for (s of steps; track s.n) {
+        <div class="step"
+          [class.active]="step() === s.n"
+          [class.done]="step() > s.n"
+          (click)="step() > s.n && goToStep(s.n)">
+          <div class="step-circle">{{ step() > s.n ? '✓' : s.n }}</div>
+          <span class="step-label">{{ s.label }}</span>
+        </div>
+        @if (!$last) {
+          <div class="step-line" [class.done]="step() > s.n"></div>
+        }
+      }
+    </div>
+  </div>
+
+  <!-- ── Body ─────────────────────────────────────────────────────────────── -->
+  <div class="creation-body">
+
+    <!-- Painel lateral de preview -->
+    <div class="char-preview">
+      <input class="name-input" [(ngModel)]="charName" placeholder="Nome do herói..." maxlength="24" />
+
+      @if (selectedTier()) {
+        <div class="preview-badge" [style.border-color]="selectedTier()!.color">
+          <span class="pb-icon">{{ selectedTier()!.icon }}</span>
+          <div>
+            <div class="pb-name">{{ selectedTier()!.label }}</div>
+            <div class="pb-diff">{{ selectedTier()!.basePoints }} pontos base</div>
+          </div>
+        </div>
+      }
+
+      @if (selectedRace()) {
+        <div class="preview-badge" [style.border-color]="selectedRace()!.color">
+          <span class="pb-icon">{{ selectedRace()!.icon }}</span>
+          <div>
+            <div class="pb-name">{{ selectedRace()!.name }}</div>
+            <div class="pb-diff">{{ selectedRace()!.difficulty }}</div>
+          </div>
+        </div>
+      }
+
+      @if (selectedClass()) {
+        <div class="preview-badge" [style.border-color]="selectedClass()!.color">
+          <span class="pb-icon">{{ selectedClass()!.icon }}</span>
+          <div>
+            <div class="pb-name">{{ selectedClass()!.name }}</div>
+            <div class="pb-diff">{{ selectedClass()!.role }}</div>
+          </div>
+        </div>
+      }
+
+      @if (selectedClass()) {
+        <div class="preview-stats">
+          @for (stat of statRows(); track stat.label) {
+            <div class="stat-row">
+              <span class="stat-l">{{ stat.label }}</span>
+              <div class="stat-pips">
+                @for (p of pip(stat.value, 6); track $index) {
+                  <div class="pip"
+                    [class.filled]="p"
+                    [style.background]="p ? stat.color : null"
+                    [style.border-color]="p ? stat.color : null">
+                  </div>
+                }
+              </div>
+              <span class="stat-v" [style.color]="stat.color">{{ stat.value }}</span>
+            </div>
+          }
+          <div class="pv-line">
+            <span>PV</span>
+            <strong style="color:#e74c3c">{{ finalStats().pontosVida }}</strong>
+          </div>
+          @if (finalStats().pontosMagia > 0) {
+            <div class="pv-line">
+              <span>PM</span>
+              <strong style="color:#8e44ad">{{ finalStats().pontosMagia }}</strong>
+            </div>
+          }
+        </div>
+      }
+
+      @if (allFreeVantagens().length > 0) {
+        <div class="preview-block">
+          <div class="pb-section-title">Habilidades Grátis</div>
+          @for (v of allFreeVantagens(); track v) {
+            <div class="preview-tag v-tag">✨ {{ v }}</div>
+          }
+        </div>
+      }
+
+      @if (selectedVantagensNames().length > 0) {
+        <div class="preview-block">
+          <div class="pb-section-title">Vantagens</div>
+          @for (v of selectedVantagensNames(); track v) {
+            <div class="preview-tag v-tag">⭐ {{ v }}</div>
+          }
+        </div>
+      }
+
+      @if (selectedDesvantagens().length > 0) {
+        <div class="preview-block">
+          <div class="pb-section-title">Desvantagens</div>
+          @for (id of selectedDesvantagens(); track id) {
+            <div class="preview-tag d-tag">⚠️ {{ getDesv(id)?.name }}</div>
+          }
+        </div>
+      }
+
+      @if (step() === 4) {
+        <div class="points-display"
+          [class.zero]="pointsLeft() === 0"
+          [class.neg]="pointsLeft() < 0">
+          <span class="points-num">{{ pointsLeft() }}</span>
+          <span class="points-label">pontos restantes</span>
+        </div>
+      }
+    </div>
+
+    <!-- Área de conteúdo principal -->
+    <div class="creation-main">
+
+      <!-- ── STEP 1: ORIGEM ──────────────────────────────────────────────── -->
+      @if (step() === 1) {
+        <div class="step-content">
+          <h2 class="step-title">Escolha sua Origem</h2>
+          <p class="step-desc">
+            Defina o poder inicial do seu personagem.
+            Mais pontos permitem mais vantagens e builds mais poderosas.
+          </p>
+
+          <div class="tiers-grid">
+            @for (tier of tiers; track tier.id) {
+              <div
+                class="tier-card"
+                [class.selected]="selectedTier()?.id === tier.id"
+                [style.--tier-color]="tier.color"
+                (click)="selectTier(tier)"
+              >
+                <div class="tier-header">
+                  <span class="tier-icon">{{ tier.icon }}</span>
+                  <div class="tier-title-block">
+                    <div class="tier-label">{{ tier.label }}</div>
+                    <div class="tier-subtitle">{{ tier.subtitle }}</div>
+                  </div>
+                  <div class="tier-points-badge">
+                    <span class="tp-num">{{ tier.basePoints }}</span>
+                    <span class="tp-label">pts</span>
+                  </div>
+                  @if (selectedTier()?.id === tier.id) {
+                    <span class="selected-check">✓</span>
+                  }
+                </div>
+
+                <p class="tier-desc">{{ tier.description }}</p>
+
+                <ul class="tier-extras">
+                  @for (extra of tier.extras; track extra) {
+                    <li>{{ extra }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── STEP 2: RAÇA ────────────────────────────────────────────────── -->
+      @if (step() === 2) {
+        <div class="step-content">
+          <h2 class="step-title">Escolha sua Raça</h2>
+          <p class="step-desc">
+            Sua origem molda seus atributos e talentos inatos.
+            <span class="step-count">{{ gameData.races.length }} raças disponíveis</span>
+          </p>
+
+          <div class="diff-filter">
+            @for (d of ['Todas', 'Fácil', 'Médio', 'Difícil']; track d) {
+              <button class="diff-btn" [class.active]="raceDiffFilter() === d" (click)="raceDiffFilter.set(d)">{{ d }}</button>
+            }
+          </div>
+
+          <div class="cards-grid race-grid">
+            @for (race of filteredRaces(); track race.id) {
+              <div class="option-card race-card"
+                [class.selected]="selectedRace()?.id === race.id"
+                [style.--accent]="race.color"
+                (click)="selectRace(race)">
+
+                <div class="race-card-header">
+                  <span class="card-icon">{{ race.icon }}</span>
+                  <div class="race-card-title">
+                    <div class="card-name">{{ race.name }}</div>
+                    <span class="diff-badge diff-{{ race.difficulty }}">{{ race.difficulty }}</span>
+                  </div>
+                  @if (selectedRace()?.id === race.id) {
+                    <span class="selected-check">✓</span>
+                  }
+                </div>
+
+                <p class="card-lore">{{ race.lore }}</p>
+
+                <div class="modifiers-row">
+                  @if (race.modifiers.forca) {
+                    <span class="mod-chip" [class.pos]="race.modifiers.forca! > 0" [class.neg]="race.modifiers.forca! < 0">
+                      F{{ race.modifiers.forca! > 0 ? '+' : '' }}{{ race.modifiers.forca }}
+                    </span>
+                  }
+                  @if (race.modifiers.habilidade) {
+                    <span class="mod-chip" [class.pos]="race.modifiers.habilidade! > 0" [class.neg]="race.modifiers.habilidade! < 0">
+                      H{{ race.modifiers.habilidade! > 0 ? '+' : '' }}{{ race.modifiers.habilidade }}
+                    </span>
+                  }
+                  @if (race.modifiers.resistencia) {
+                    <span class="mod-chip" [class.pos]="race.modifiers.resistencia! > 0" [class.neg]="race.modifiers.resistencia! < 0">
+                      R{{ race.modifiers.resistencia! > 0 ? '+' : '' }}{{ race.modifiers.resistencia }}
+                    </span>
+                  }
+                  @if (race.modifiers.armadura) {
+                    <span class="mod-chip" [class.pos]="race.modifiers.armadura! > 0" [class.neg]="race.modifiers.armadura! < 0">
+                      A{{ race.modifiers.armadura! > 0 ? '+' : '' }}{{ race.modifiers.armadura }}
+                    </span>
+                  }
+                  @if (race.modifiers.pontosMagia) {
+                    <span class="mod-chip" [class.pos]="race.modifiers.pontosMagia! > 0" [class.neg]="race.modifiers.pontosMagia! < 0">
+                      PM{{ race.modifiers.pontosMagia! > 0 ? '+' : '' }}{{ race.modifiers.pontosMagia }}
+                    </span>
+                  }
+                  @if (race.bonusPoints > 0) {
+                    <span class="mod-chip pos">+{{ race.bonusPoints }}PP</span>
+                  }
+                </div>
+
+                @if (race.freeVantagens.length > 0) {
+                  <div class="free-skills">
+                    @for (v of race.freeVantagens; track v.name) {
+                      <div class="free-skill-item" [title]="v.description">
+                        <span class="fsi-dot">●</span>{{ v.name }}
+                      </div>
+                    }
+                  </div>
+                }
+
+                @if (race.freeDesvantagens.length > 0) {
+                  <div class="free-desv">
+                    @for (d of race.freeDesvantagens; track d.name) {
+                      <div class="free-desv-item" [title]="d.description">⚠️ {{ d.name }}</div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── STEP 3: CLASSE ──────────────────────────────────────────────── -->
+      @if (step() === 3) {
+        <div class="step-content">
+          <h2 class="step-title">Escolha sua Classe</h2>
+          <p class="step-desc">
+            Seu papel no labirinto.
+            <span class="step-count">{{ gameData.classes.length }} classes disponíveis</span>
+          </p>
+
+          <div class="diff-filter">
+            @for (d of ['Todas', 'Iniciante', 'Intermediário', 'Avançado']; track d) {
+              <button class="diff-btn" [class.active]="classDiffFilter() === d" (click)="classDiffFilter.set(d)">{{ d }}</button>
+            }
+          </div>
+
+          <div class="cards-grid class-grid">
+            @for (cls of filteredClasses(); track cls.id) {
+              <div class="option-card class-card"
+                [class.selected]="selectedClass()?.id === cls.id"
+                [style.--accent]="cls.color"
+                (click)="selectClass(cls)">
+
+                <div class="class-card-header">
+                  <span class="class-big-icon" [style.color]="cls.color">{{ cls.icon }}</span>
+                  <div>
+                    <div class="card-name">{{ cls.name }}</div>
+                    <div class="class-role">{{ cls.role }}</div>
+                    <span class="diff-badge" [style.background]="diffColor(cls.difficulty)">{{ cls.difficulty }}</span>
+                  </div>
+                  @if (selectedClass()?.id === cls.id) {
+                    <span class="selected-check">✓</span>
+                  }
+                </div>
+
+                <p class="card-lore">{{ cls.lore }}</p>
+
+                <div class="stats-bar-row">
+                  @for (s of classStatBars(cls); track s.label) {
+                    <div class="stat-bar-item">
+                      <span class="sbi-label">{{ s.label }}</span>
+                      <div class="sbi-track">
+                        <div class="sbi-fill" [style.width.%]="s.pct" [style.background]="cls.color"></div>
+                      </div>
+                      <span class="sbi-val">{{ s.value }}</span>
+                    </div>
+                  }
+                </div>
+
+                <div class="free-skills">
+                  @for (v of cls.freeVantagens; track v.name) {
+                    <div class="free-skill-item" [title]="v.description">
+                      <span class="fsi-dot">⚡</span>{{ v.name }}
+                    </div>
+                  }
+                </div>
+
+                <p class="class-playstyle">{{ cls.playstyle }}</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── STEP 4: VANTAGENS ───────────────────────────────────────────── -->
+      @if (step() === 4) {
+        <div class="step-content">
+          <h2 class="step-title">Vantagens &amp; Desvantagens</h2>
+          <p class="step-desc">
+            Você tem <strong class="pts-strong">{{ totalPoints() }} pontos</strong> para gastar
+            ({{ selectedTier()?.label }} · {{ selectedTier()?.basePoints }}pts base).
+            Desvantagens devolvem pontos (máx. 2).
+          </p>
+
+          <div class="vd-layout">
+            <div class="vd-col">
+              <div class="vd-col-title">⭐ Vantagens</div>
+              @for (cat of categories; track cat.id) {
+                <div class="vd-category">
+                  <div class="vd-cat-label">{{ cat.icon }} {{ cat.label }}</div>
+                  @for (v of vantagensByCategory(cat.id); track v.id) {
+                    <div class="vd-item"
+                      [class.selected]="isVantagemSelected(v.id)"
+                      [class.disabled]="!canSelectVantagem(v)"
+                      (click)="toggleVantagem(v)">
+                      <div class="vdi-top">
+                        <span class="vdi-icon">{{ v.icon }}</span>
+                        <span class="vdi-name">{{ v.name }}</span>
+                        <span class="vdi-cost">{{ isVantagemSelected(v.id) ? '−' : '+' }}{{ v.cost }}pt</span>
+                      </div>
+                      <p class="vdi-effect">{{ v.effect }}</p>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="vd-col">
+              <div class="vd-col-title">⚠️ Desvantagens <span class="desv-limit">(máx. 2)</span></div>
+              @for (d of desvantagens; track d.id) {
+                <div class="vd-item desv-item"
+                  [class.selected]="isDesvSelected(d.id)"
+                  [class.disabled]="!canSelectDesv(d)"
+                  (click)="toggleDesv(d)">
+                  <div class="vdi-top">
+                    <span class="vdi-icon">{{ d.icon }}</span>
+                    <span class="vdi-name">{{ d.name }}</span>
+                    <span class="vdi-cost refund">+{{ d.refund }}pt</span>
+                  </div>
+                  <p class="vdi-effect desv-effect">{{ d.penalty }}</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+
+  <!-- ── Footer ───────────────────────────────────────────────────────────── -->
+  <div class="creation-footer">
+    @if (step() > 1) {
+      <button class="btn-prev" (click)="prevStep()">← Anterior</button>
+    } @else {
+      <div></div>
+    }
+
+    @if (step() < 4) {
+      <button class="btn-next" [disabled]="!canAdvance()" (click)="nextStep()">
+        Próximo →
+      </button>
+    } @else {
+      <button class="btn-confirm" [disabled]="!canConfirm()" (click)="confirm()">
+        ⚔️ Entrar no Labirinto
+      </button>
+    }
+  </div>
+
+</div>
