@@ -94,6 +94,109 @@
   }
 }
 
+// ── Painel de combate ─────────────────────────────────────────────────────────
+
+.log-panel.combat-panel {
+  background: rgba(4, 4, 12, 0.92);
+  border-left-color: #1a1a30;
+}
+
+.combat-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.phase-chip {
+  font-size: 0.65rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+  border: 1px solid;
+
+  &.phase-player_turn { color: #7ec8e3; border-color: #2a5a6a; background: rgba(126,200,227,0.08); }
+  &.phase-enemy_turn  { color: #e38989; border-color: #6a2a2a; background: rgba(227,137,137,0.08); animation: blink 0.7s infinite alternate; }
+  &.phase-victory     { color: #7ee3a0; border-color: #2a6a40; background: rgba(126,227,160,0.08); }
+  &.phase-defeat      { color: #e38989; border-color: #6a2a2a; }
+}
+
+@keyframes blink { from { opacity: 0.5; } to { opacity: 1; } }
+
+.combat-entries {
+  flex: 1;
+}
+
+.combat-line {
+  border-left-color: #1a1a30 !important;
+  font-style: normal !important;
+
+  &.ll-player { color: #7ec8e3; border-left-color: #2a5a6a !important; }
+  &.ll-enemy  { color: #e38989; border-left-color: #6a2a2a !important; }
+  &.ll-heal   { color: #7ee3a0; border-left-color: #2a6a40 !important; }
+  &.ll-system { color: #b8a06a; font-style: italic !important; }
+  &.ll-miss   { color: #444; }
+}
+
+// ── Resumo de inimigos (rodapé do painel) ────────────────────────────────────
+
+.enemies-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid #12122a;
+  flex-shrink: 0;
+}
+
+.enemy-strip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  &.dead-strip { opacity: 0.3; filter: grayscale(1); }
+}
+
+.es-icon { font-size: 1rem; flex-shrink: 0; }
+
+.es-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.es-name {
+  font-size: 0.65rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.es-bar-wrap {
+  height: 4px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.es-bar {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8b0000, #e74c3c);
+  transition: width 0.4s;
+
+  &.low { background: linear-gradient(90deg, #600, #e74c3c); }
+}
+
+.es-hp {
+  font-size: 0.6rem;
+  color: #555;
+  white-space: nowrap;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
 // ── Responsivo ────────────────────────────────────────────────────────────────
 
 @media (max-width: 700px) {

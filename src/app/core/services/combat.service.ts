@@ -7,14 +7,35 @@ import { generateEnemy } from '../data/enemies.data';
 function d6() { return Math.ceil(Math.random() * 6); }
 function d6n(n: number) { let t = 0; for (let i = 0; i < n; i++) t += d6(); return t; }
 
+/**
+ * Teste de acerto 3D&T:
+ * Se H_atk >= H_def → acerto automático.
+ * Caso contrário rola 1d6; acerta se resultado <= max(1, 6 - diferença).
+ * 1 é sempre um acerto.
+ */
+function hitCheck(atkH: number, defH: number): { hit: boolean; roll: number; threshold: number } {
+  const diff = Math.max(0, defH - atkH);
+  if (diff === 0) return { hit: true, roll: 0, threshold: 0 };
+  const threshold = Math.max(1, 6 - diff);
+  const roll = d6();
+  return { hit: roll <= threshold, roll, threshold };
+}
+
 @Injectable({ providedIn: 'root' })
 export class CombatService {
   private gs = inject(GameStateService);
 
-  enemy = signal<Enemy | null>(null);
+  /** Lista de todos os inimigos do combate atual (até 4) */
+  enemies = signal<Enemy[]>([]);
+
+  /** Inimigo alvo atual = primeiro vivo da lista */
+  enemy = computed<Enemy | null>(() => this.enemies().find(e => e.hp > 0) ?? null);
+
   phase = signal<CombatPhase>('player_turn');
   log = signal<CombatLogEntry[]>([]);
   abilitiesUsed = signal<Set<string>>(new Set());
+  /** Habilidades usadas por cada companheiro neste combate (id → set de ability ids) */
+  companionAbilitiesUsed = signal<Map<string, Set<string>>>(new Map());
   enemyWeakenedTurns = signal(0);
   enemyWeakenAmount = signal(0);
 
@@ -26,17 +47,25 @@ export class CombatService {
   canUseAbility(ab: CombatAbility): boolean {
     const char = this.gs.character();
     if (!char) return false;
-    if (char.pontosMagia.current < ab.pmCost) return false;
+    if (char.poderFogo.current < ab.pfCost) return false;
     if (ab.usesPerCombat && this.abilitiesUsed().has(ab.id)) return false;
     return true;
   }
 
-  initCombat(floor: number, isBoss: boolean): void {
-    const e = generateEnemy(floor, isBoss);
-    this.enemy.set(e);
+  initCombat(floor: number, isBoss: boolean, enemyGroup?: Enemy[]): void {
+    let group: Enemy[];
+    if (enemyGroup && enemyGroup.length > 0) {
+      group = enemyGroup;
+    } else {
+      group = [generateEnemy(floor, isBoss)];
+    }
+    this.enemies.set(group);
     this.phase.set('player_turn');
-    this.log.set([{ text: `${e.name} surge das sombras!`, type: 'system' }]);
+
+    const names = group.map(e => e.name).join(', ');
+    this.log.set([{ text: `${names} surgem das sombras!`, type: 'system' }]);
     this.abilitiesUsed.set(new Set());
+    this.companionAbilitiesUsed.set(new Map());
     this.enemyWeakenedTurns.set(0);
     this.enemyWeakenAmount.set(0);
   }
@@ -46,22 +75,21 @@ export class CombatService {
   playerAttack(): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
-    const enemy = this.enemy();
-    if (!char || !enemy) return;
+    const target = this.enemy();
+    if (!char || !target) return;
 
-    const dmg = this.calcPhysicalDamage(char.forca.current, enemy.armadura);
-    this.applyDamageToEnemy(dmg, char.forca.current, enemy.armadura, false);
+    this.resolveMeleeAttack(char, target);
     this.afterPlayerAction();
   }
 
   playerUseAbility(ab: CombatAbility): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
-    const enemy = this.enemy();
-    if (!char || !enemy) return;
+    const target = this.enemy();
+    if (!char || !target) return;
     if (!this.canUseAbility(ab)) return;
 
-    if (ab.pmCost > 0) this.spendPM(ab.pmCost, char);
+    if (ab.pfCost > 0) this.spendPF(ab.pfCost, char);
     if (ab.usesPerCombat) {
       this.abilitiesUsed.update(s => new Set([...s, ab.id]));
     }
@@ -77,42 +105,103 @@ export class CombatService {
         const amt = 2;
         this.enemyWeakenedTurns.set(3);
         this.enemyWeakenAmount.set(amt);
-        this.addLog(`${ab.icon} ${ab.name} — ${enemy.name} perde ${amt} de Força por 2 turnos!`, 'player');
+        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde ${amt} de Força por 2 turnos!`, 'player');
         this.afterPlayerAction();
         return;
       }
       case 'double_attack': {
-        const dmg1 = this.calcPhysicalDamage(char.forca.current, enemy.armadura);
-        const dmg2 = this.calcPhysicalDamage(char.forca.current, enemy.armadura);
-        this.addLog(`${ab.icon} ${ab.name} — Ataque 1: ${dmg1} dano!`, 'player');
-        this.applyDamageToEnemyRaw(dmg1);
-        if (!this.checkVictory()) {
-          this.addLog(`⚔️ Ataque 2: ${dmg2} dano!`, 'player');
-          this.applyDamageToEnemyRaw(dmg2);
+        this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name} — Ataque 1`);
+        const stillAlive = this.enemy();
+        if (stillAlive) {
+          this.resolveMeleeAttack(char, stillAlive, `${ab.icon} Ataque 2`);
         }
         this.afterPlayerAction();
         return;
       }
       case 'holy_strike': {
-        const physDmg = this.calcPhysicalDamage(char.forca.current, enemy.armadura);
-        const holyDmg = d6n(ab.bonusDice ?? 1);
-        const total = physDmg + holyDmg;
-        this.addLog(`${ab.icon} ${ab.name} — ${physDmg} físico + ${holyDmg} sagrado = ${total} dano!`, 'player');
-        this.applyDamageToEnemyRaw(total);
+        const { hit, roll, threshold } = hitCheck(char.habilidade.current, target.habilidade);
+        if (!hit) {
+          this.addLog(`${ab.icon} ${ab.name} — ERROU! (1d6=${roll} > ${threshold}) ${target.name} esquivou!`, 'miss');
+          this.afterPlayerAction();
+          return;
+        }
+        const atkPower = char.forca.current + char.habilidade.current + d6() + d6n(ab.bonusDice ?? 1);
+        const defPower = target.armadura + target.habilidade + d6();
+        const dmg = Math.max(1, atkPower - defPower);
+        this.addLog(`${ab.icon} ${ab.name} — Atq(${atkPower}) vs Def(${defPower}) = ${dmg} dano!`, 'player');
+        this.applyDamageToEnemy(target.id, dmg);
         this.afterPlayerAction();
         return;
       }
       case 'magic_damage':
       case 'pierce': {
-        const stat = char.habilidade.current;
-        const bonus = d6n(ab.bonusDice ?? 1);
-        const rawDmg = bonus + stat;
-        const armor = ab.ignoresArmor ? 0 : Math.floor(enemy.armadura / 2);
-        const dmg = Math.max(1, rawDmg - armor);
-        this.addLog(`${ab.icon} ${ab.name} — ${bonus}+H(${stat})=${rawDmg} vs A(${armor}) = ${dmg} dano!`, 'player');
-        this.applyDamageToEnemyRaw(dmg);
+        if (ab.isRanged) {
+          this.resolveRangedAttack(char, target, ab);
+        } else {
+          this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor);
+        }
         this.afterPlayerAction();
         return;
+      }
+    }
+  }
+
+  /** Ataca um inimigo específico (pelo id). Fallback para o primeiro vivo. */
+  playerAttackTarget(targetId: string): void {
+    if (this.phase() !== 'player_turn') return;
+    const char = this.gs.character();
+    const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
+                ?? this.enemies().find(e => e.hp > 0);
+    if (!char || !target) return;
+    this.resolveMeleeAttack(char, target);
+    this.afterPlayerAction();
+  }
+
+  /** Usa habilidade em um inimigo específico. */
+  playerUseAbilityTarget(ab: CombatAbility, targetId: string): void {
+    if (this.phase() !== 'player_turn') return;
+    const char = this.gs.character();
+    const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
+                ?? this.enemies().find(e => e.hp > 0);
+    if (!char || !target) return;
+    if (!this.canUseAbility(ab)) return;
+
+    if (ab.pfCost > 0) this.spendPF(ab.pfCost, char);
+    if (ab.usesPerCombat) this.abilitiesUsed.update(s => new Set([...s, ab.id]));
+
+    switch (ab.effect) {
+      case 'heal': {
+        const h = this.healPlayer(ab, char);
+        this.addLog(`${ab.icon} ${char.name} usa ${ab.name} — recupera ${h} PV!`, 'heal');
+        this.afterPlayerAction(); return;
+      }
+      case 'weaken': {
+        this.enemyWeakenedTurns.set(3); this.enemyWeakenAmount.set(2);
+        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde 2 de Força por 2 turnos!`, 'player');
+        this.afterPlayerAction(); return;
+      }
+      case 'double_attack': {
+        this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name} — Ataque 1`);
+        const still = this.enemies().find(e => e.id === targetId && e.hp > 0)
+                   ?? this.enemies().find(e => e.hp > 0);
+        if (still) this.resolveMeleeAttack(char, still, `${ab.icon} Ataque 2`);
+        this.afterPlayerAction(); return;
+      }
+      case 'holy_strike': {
+        const { hit, roll, threshold } = hitCheck(char.habilidade.current, target.habilidade);
+        if (!hit) { this.addLog(`${ab.icon} ${ab.name} — ERROU!`, 'miss'); this.afterPlayerAction(); return; }
+        const atkP = char.forca.current + char.habilidade.current + d6() + d6n(ab.bonusDice ?? 1);
+        const defP = target.armadura + target.habilidade + d6();
+        const dmg  = Math.max(1, atkP - defP);
+        this.addLog(`${ab.icon} ${ab.name} — Atq(${atkP}) vs Def(${defP}) = ${dmg} dano!`, 'player');
+        this.applyDamageToEnemy(target.id, dmg);
+        this.afterPlayerAction(); return;
+      }
+      case 'magic_damage':
+      case 'pierce': {
+        if (ab.isRanged) this.resolveRangedAttack(char, target, ab);
+        else this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor);
+        this.afterPlayerAction(); return;
       }
     }
   }
@@ -120,16 +209,23 @@ export class CombatService {
   playerFlee(): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
-    const enemy = this.enemy();
-    if (!char || !enemy) return;
+    const enemies = this.enemies();
+    if (!char || enemies.length === 0) return;
+
+    // Não é possível fugir de combates com boss
+    if (enemies.some(e => e.isBoss)) {
+      this.addLog('🚫 Não é possível fugir de um Chefão!', 'system');
+      return;
+    }
+
     const roll = d6() + char.habilidade.current;
-    const diff = 6 + (enemy.isBoss ? 3 : 0);
+    const diff = 6;
     if (roll >= diff) {
       this.addLog(`🏃 ${char.name} foge com sucesso! (${roll} vs ${diff})`, 'system');
       this.phase.set('player_turn');
       setTimeout(() => this.gs.resolveEncounter('flee'), 600);
     } else {
-      this.addLog(`🚫 Fuga falhou! (${roll} vs ${diff}) — o inimigo ataca!`, 'system');
+      this.addLog(`🚫 Fuga falhou! (${roll} vs ${diff}) — os inimigos atacam!`, 'system');
       this.enemyTurn();
     }
   }
@@ -138,58 +234,110 @@ export class CombatService {
 
   private afterPlayerAction(): void {
     if (this.checkVictory()) return;
-    this.phase.set('enemy_turn');
-    setTimeout(() => this.enemyTurn(), 900);
+    this.phase.set('companion_turn');
+    setTimeout(() => this.companionTurn(), 700);
   }
 
   private enemyTurn(): void {
     const char = this.gs.character();
-    const enemy = this.enemy();
-    if (!char || !enemy) return;
+    if (!char) return;
+
+    const aliveEnemies = this.enemies().filter(e => e.hp > 0);
+    if (aliveEnemies.length === 0) { this.checkVictory(); return; }
 
     if (this.enemyWeakenedTurns() > 0) {
       this.enemyWeakenedTurns.update(n => n - 1);
     }
+    const weakened = this.enemyWeakenedTurns() > 0;
 
-    const effectiveF = Math.max(1, enemy.forca - (this.enemyWeakenedTurns() > 0 ? this.enemyWeakenAmount() : 0));
-    const attackRoll = d6() + effectiveF;
-    const defenseRoll = d6() + char.armadura;
-    const dmg = Math.max(1, attackRoll - defenseRoll);
+    for (const enemy of aliveEnemies) {
+      const effF = Math.max(1, enemy.forca - (weakened ? this.enemyWeakenAmount() : 0));
+      const effH = enemy.habilidade;
 
-    this.addLog(
-      `${enemy.icon} ${enemy.name} ataca! [${attackRoll}] vs defesa [${defenseRoll}] → ${dmg} dano!`,
-      'enemy'
-    );
-    this.damagePlayer(dmg, char);
+      const { hit, roll: hitRoll, threshold } = hitCheck(effH, char.habilidade.current);
+      if (!hit) {
+        this.addLog(
+          `${enemy.icon} ${enemy.name} ataca mas ERRA! (1d6=${hitRoll} > ${threshold}) — ${char.name} esquivou!`,
+          'miss'
+        );
+        continue;
+      }
 
-    if (this.checkDefeat()) return;
+      const atkPower = effF + effH + d6();
+      const defPower = char.armadura + char.habilidade.current + d6();
+      const dmg = Math.max(1, atkPower - defPower);
+
+      const hitInfo = threshold > 0 ? ` (1d6=${hitRoll}≤${threshold})` : '';
+      this.addLog(
+        `${enemy.icon} ${enemy.name} ataca!${hitInfo} Atq(${atkPower}) vs Def(${defPower}) → ${dmg} dano!`,
+        'enemy'
+      );
+      this.damagePlayer(dmg, char);
+
+      if (this.checkDefeat()) return;
+    }
+
     this.phase.set('player_turn');
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  private calcPhysicalDamage(forca: number, armor: number): number {
-    const atk = d6() + forca;
-    const def = d6() + armor;
-    return Math.max(1, atk - def);
+  private resolveMeleeAttack(
+    char: Character,
+    enemy: Enemy,
+    label = '⚔️ Ataque',
+    bonusDice = 0,
+    ignoresArmor = false
+  ): void {
+    const { hit, roll: hitRoll, threshold } = hitCheck(char.habilidade.current, enemy.habilidade);
+    if (!hit) {
+      this.addLog(`${label} — ERROU! (1d6=${hitRoll} > ${threshold}) ${enemy.name} esquivou!`, 'miss');
+      return;
+    }
+
+    const atkPower = char.forca.current + char.habilidade.current + d6() + d6n(bonusDice);
+    const defPower = ignoresArmor ? 0 : (enemy.armadura + enemy.habilidade + d6());
+    const dmg = Math.max(1, ignoresArmor ? atkPower : atkPower - defPower);
+
+    const hitInfo = threshold > 0 ? ` (1d6=${hitRoll}≤${threshold})` : '';
+    if (ignoresArmor) {
+      this.addLog(`${label}${hitInfo} — F+H+d6=${atkPower} (ignora armadura) = ${dmg} dano em ${enemy.name}!`, 'player');
+    } else {
+      this.addLog(`${label}${hitInfo} — Atq(${atkPower}) vs Def(${defPower}) = ${dmg} dano em ${enemy.name}!`, 'player');
+    }
+    this.applyDamageToEnemy(enemy.id, dmg);
   }
 
-  private applyDamageToEnemy(dmg: number, forca: number, armor: number, ignoresArmor: boolean): void {
-    const enemy = this.enemy();
-    if (!enemy) return;
-    const char = this.gs.character();
-    const atkRoll = d6() + forca;
-    const defRoll = ignoresArmor ? 0 : (d6() + armor);
-    const finalDmg = ignoresArmor ? Math.max(1, forca + d6()) : Math.max(1, atkRoll - defRoll);
-    this.addLog(
-      `⚔️ Você ataca! [${atkRoll}] vs defesa [${defRoll}] → ${finalDmg} dano em ${enemy.name}!`,
-      'player'
+  private resolveRangedAttack(char: Character, enemy: Enemy, ab: CombatAbility): void {
+    const { hit, roll: hitRoll, threshold } = hitCheck(char.habilidade.current, enemy.habilidade);
+    if (!hit) {
+      this.addLog(`${ab.icon} ${ab.name} — ERROU! (1d6=${hitRoll} > ${threshold}) ${enemy.name} esquivou!`, 'miss');
+      return;
+    }
+
+    const atkPower = char.poderFogo.current + char.habilidade.current + d6() + d6n(ab.bonusDice ?? 0);
+    const defPower = ab.ignoresArmor ? 0 : (enemy.armadura + enemy.habilidade + d6());
+    const dmg = Math.max(1, ab.ignoresArmor ? atkPower : atkPower - defPower);
+
+    const hitInfo = threshold > 0 ? ` (1d6=${hitRoll}≤${threshold})` : '';
+    if (ab.ignoresArmor) {
+      this.addLog(`${ab.icon} ${ab.name}${hitInfo} — PF+H+d6=${atkPower} (ignora armadura) = ${dmg} dano em ${enemy.name}!`, 'player');
+    } else {
+      this.addLog(`${ab.icon} ${ab.name}${hitInfo} — Atq(${atkPower}) vs Def(${defPower}) = ${dmg} dano em ${enemy.name}!`, 'player');
+    }
+    this.applyDamageToEnemy(enemy.id, dmg);
+  }
+
+  private applyDamageToEnemy(enemyId: string, dmg: number): void {
+    this.enemies.update(list =>
+      list.map(e => e.id === enemyId ? { ...e, hp: Math.max(0, e.hp - dmg) } : e)
     );
-    this.applyDamageToEnemyRaw(finalDmg);
-  }
-
-  private applyDamageToEnemyRaw(dmg: number): void {
-    this.enemy.update(e => e ? { ...e, hp: Math.max(0, e.hp - dmg) } : e);
+    // Verificar se esse inimigo morreu e conceder XP/ouro
+    const killed = this.enemies().find(e => e.id === enemyId && e.hp === 0);
+    if (killed) {
+      this.addLog(`💀 ${killed.name} foi abatido! (+${killed.xpReward} XP, +${killed.goldReward} PO)`, 'system');
+      this.gs.addXp(killed.xpReward, killed.goldReward);
+    }
   }
 
   private damagePlayer(dmg: number, char: Character): void {
@@ -203,7 +351,7 @@ export class CombatService {
   private healPlayer(ab: CombatAbility, char: Character): number {
     let amount: number;
     if (ab.id === 'imposicao') {
-      amount = char.level * char.resistencia.current;
+      amount = char.resistencia.current * 2;
     } else {
       amount = d6n(ab.bonusDice ?? 1) + char.habilidade.current;
     }
@@ -216,20 +364,18 @@ export class CombatService {
     return healed;
   }
 
-  private spendPM(amount: number, char: Character): void {
+  private spendPF(amount: number, char: Character): void {
     this.gs.character.update(c => c ? {
       ...c,
-      pontosMagia: { ...c.pontosMagia, current: Math.max(0, c.pontosMagia.current - amount) }
+      poderFogo: { ...c.poderFogo, current: Math.max(0, c.poderFogo.current - amount) }
     } : c);
   }
 
   private checkVictory(): boolean {
-    const enemy = this.enemy();
-    if (!enemy || enemy.hp > 0) return false;
+    const alive = this.enemies().filter(e => e.hp > 0);
+    if (alive.length > 0) return false;
     this.phase.set('victory');
-    this.addLog(`🏆 ${enemy.name} foi derrotado!`, 'system');
-    this.gs.addLog(`✅ Derrotou ${enemy.name} (+${enemy.xpReward} XP, +${enemy.goldReward} PO)`);
-    this.gs.character.update(c => c ? { ...c, gold: c.gold + enemy.goldReward } : c);
+    this.addLog('🏆 Todos os inimigos foram derrotados!', 'system');
     setTimeout(() => this.gs.resolveEncounter('victory'), 1200);
     return true;
   }

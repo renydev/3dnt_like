@@ -1,7 +1,7 @@
 <div class="game-layout">
 
   <!-- Barra do grupo — topo fixo -->
-  <app-party-bar (openDialog)="openCharDialog($event)" />
+  <app-party-bar [compact]="inCombat()" (openDialog)="openCharDialog($event)" />
 
   <!-- Corpo principal -->
   <div class="game-body">
@@ -21,23 +21,73 @@
       }
     </div>
 
-    <!-- Log lateral -->
-    <aside class="log-panel">
-      <div class="log-title">📜 Diário</div>
-      <div class="log-entries">
-        @for (entry of gs.log(); track $index) {
-          <div class="log-entry">{{ entry }}</div>
-        }
-      </div>
-      <button class="btn-menu-back" (click)="gs.goToMenu()">🏠 Menu</button>
+    <!-- Painel lateral: diário fora de combate, relatório de combate durante encounter -->
+    <aside class="log-panel" [class.combat-panel]="inCombat()">
+
+      @if (!inCombat()) {
+        <!-- ── Diário ── -->
+        <div class="log-title">📜 Diário</div>
+        <div class="log-entries">
+          @for (entry of gs.log(); track $index) {
+            <div class="log-entry">{{ entry }}</div>
+          }
+        </div>
+        <button class="btn-menu-back" (click)="gs.goToMenu()">🏠 Menu</button>
+
+      } @else {
+        <!-- ── Relatório de Combate ── -->
+        <div class="log-title combat-title">
+          <span>⚔️ Combate</span>
+          <span class="phase-chip" [class]="'phase-' + combat.phase()">
+            {{ phaseLabel() }}
+          </span>
+        </div>
+
+        <div class="log-entries combat-entries" #logEntries>
+          @for (entry of combat.log(); track $index) {
+            <div class="log-entry combat-line" [class]="'ll-' + entry.type">
+              {{ entry.text }}
+            </div>
+          }
+        </div>
+
+        <!-- Inimigos vivos -->
+        <div class="enemies-summary">
+          @for (e of combat.enemies(); track e.id) {
+            <div class="enemy-strip" [class.dead-strip]="e.hp <= 0">
+              <span class="es-icon">{{ e.icon }}</span>
+              <div class="es-info">
+                <span class="es-name">{{ e.name }}</span>
+                <div class="es-bar-wrap">
+                  <div class="es-bar" [style.width.%]="hpPct(e)" [class.low]="hpPct(e) < 30"></div>
+                </div>
+              </div>
+              <span class="es-hp">{{ e.hp }}/{{ e.maxHp }}</span>
+            </div>
+          }
+        </div>
+
+        <button class="btn-menu-back" (click)="gs.goToMenu()">🏠 Menu</button>
+      }
+
     </aside>
 
   </div>
+
+  <!-- Dialog de câmara (cenário ao entrar em uma câmara) -->
+  @if (gs.pendingRoomEntry() !== null) {
+    <app-chamber-dialog />
+  }
 
   <!-- Dialog de personagem (portal fixo) -->
   <app-character-dialog
     [char]="dialogChar()"
     (close)="closeCharDialog()"
   />
+
+  <!-- Dialog de debug (Ctrl+Shift+F2) -->
+  @if (debugOpen()) {
+    <app-debug-dialog (close)="debugOpen.set(false)" />
+  }
 
 </div>

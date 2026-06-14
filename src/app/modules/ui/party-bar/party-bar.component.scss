@@ -249,6 +249,43 @@
   white-space: nowrap;
 }
 
+// ── Modo compacto (durante combate) ──────────────────────────────────────────
+
+.party-bar.compact {
+  padding: 0.25rem 0.75rem;
+
+  .party-card {
+    min-width: 0;
+    max-width: 140px;
+    padding: 0.2rem 0.4rem;
+    gap: 0.35rem;
+  }
+
+  .card-portrait {
+    width: 28px;
+    height: 28px;
+  }
+
+  .card-icon { font-size: 0.95rem; }
+
+  .level-badge {
+    width: 14px; height: 14px;
+    font-size: 0.5rem;
+    top: -3px; right: -3px;
+  }
+
+  .card-class,
+  .mini-stats { display: none; }
+
+  .card-name { font-size: 0.62rem; }
+
+  .mini-bars { margin-top: 1px; }
+
+  .mini-bar { height: 3px; }
+
+  .party-bar-right { display: none; }
+}
+
 // ── Animações ─────────────────────────────────────────────────────────────────
 
 @keyframes pulsePoints {

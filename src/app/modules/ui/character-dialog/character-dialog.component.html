@@ -2,98 +2,172 @@
   <div class="dialog-backdrop" (click)="onBackdrop($event)">
     <div class="dialog-box" [style.--class-color]="classColor()">
 
-      <!-- Cabeçalho -->
+      <!-- ── Cabeçalho ────────────────────────────────────────────── -->
       <div class="dialog-header">
         <div class="dialog-portrait" [style.border-color]="classColor()">
           <span>{{ char()!.portraitIcon ?? classIcon() }}</span>
         </div>
         <div class="dialog-title-block">
           <h2 class="dialog-name">{{ char()!.name }}</h2>
-          <p class="dialog-sub">
-            Nível {{ char()!.level }} · {{ char()!.race | titlecase }} · {{ char()!.class | titlecase }}
-          </p>
-          <div class="xp-bar-wrap">
-            <div class="xp-bar-fill" [style.width.%]="xpPct()"></div>
+          <p class="dialog-sub">{{ char()!.race | titlecase }} · {{ char()!.class | titlecase }}</p>
+          <div class="pe-summary">
+            <span class="pe-label">XP acumulado:</span>
+            <span class="pe-value">{{ totalXp() }}</span>
+            <span class="pe-sep">·</span>
+            <span class="pe-label">PE gastos:</span>
+            <span class="pe-value">{{ peTotal() }}</span>
           </div>
-          <p class="xp-label">{{ char()!.xp }} / {{ char()!.xpToNextLevel }} XP</p>
+          <!-- Progresso para próximo PE -->
+          <div class="xp-track-row">
+            @for (i of [0,1,2,3,4,5,6,7,8,9]; track i) {
+              <div class="xp-pip" [class.xp-pip--filled]="i < xpProgress()"></div>
+            }
+            <span class="xp-next-label">+1 PE a cada 10 XP</span>
+          </div>
         </div>
         <button class="dialog-close" (click)="close.emit()">✕</button>
       </div>
 
-      <!-- PV / PM -->
+      <!-- ── PE disponíveis ───────────────────────────────────────── -->
+      @if (pe() > 0) {
+        <div class="pe-banner">
+          ⭐ <strong>{{ pe() }} PE disponíve{{ pe() === 1 ? 'l' : 'is' }}</strong>
+          — invista em atributos, vantagens ou remova desvantagens
+        </div>
+      }
+
+      <!-- ── PV / PF ──────────────────────────────────────────────── -->
       <div class="vitals-row">
         <div class="vital-block">
           <div class="vital-label">❤️ PV</div>
           <div class="vital-bar-wrap">
             <div class="vital-bar hp" [style.width.%]="hpPct()"></div>
           </div>
-          <div class="vital-value">{{ char()!.pontosVida.current }} / {{ char()!.pontosVida.max }}</div>
+          <div class="vital-value">{{ char()!.pontosVida.current }}/{{ char()!.pontosVida.max }}</div>
         </div>
-        @if (char()!.pontosMagia.max > 0) {
+        @if (char()!.poderFogo.max > 0) {
           <div class="vital-block">
-            <div class="vital-label">✨ PM</div>
+            <div class="vital-label">✨ PF</div>
             <div class="vital-bar-wrap">
-              <div class="vital-bar pm" [style.width.%]="pmPct()"></div>
+              <div class="vital-bar pm" [style.width.%]="pfPct()"></div>
             </div>
-            <div class="vital-value">{{ char()!.pontosMagia.current }} / {{ char()!.pontosMagia.max }}</div>
+            <div class="vital-value">{{ char()!.poderFogo.current }}/{{ char()!.poderFogo.max }}</div>
           </div>
         }
       </div>
 
-      <!-- Banner de level-up -->
-      @if ((char()!.levelUpPoints ?? 0) > 0) {
-        <div class="levelup-banner">
-          🌟 {{ char()!.levelUpPoints }} ponto(s) disponíve{{ char()!.levelUpPoints === 1 ? 'l' : 'is' }}!
-          Clique em <strong>+</strong> para melhorar um atributo.
-        </div>
-      }
-
-      <!-- Atributos -->
+      <!-- ── Atributos com círculos ────────────────────────────────── -->
       <div class="attrs-grid">
         @for (row of attrRows; track row.key) {
           <div class="attr-row">
-            <span class="attr-icon">{{ row.icon }}</span>
+            <span class="attr-abbr">{{ row.abbr }}</span>
             <span class="attr-label">{{ row.label }}</span>
-            <div class="attr-bar-wrap">
-              <div class="attr-bar-fill" [style.width.%]="attrPct(row)"></div>
+            <div class="dots-row">
+              @for (filled of dots(row.value(char()!)); track $index) {
+                <span class="dot" [class.dot--filled]="filled"></span>
+              }
             </div>
-            <span class="attr-val">{{ row.value(char()!) }}</span>
-            @if ((char()!.levelUpPoints ?? 0) > 0) {
-              <button class="btn-spend" (click)="spend(row.key)" [title]="'Gastar 1 ponto em ' + row.label">+</button>
-            } @else {
-              <span class="btn-spend-placeholder"></span>
+            <span class="attr-num">{{ row.value(char()!) }}</span>
+            <button
+              class="btn-inc"
+              [class.btn-inc--active]="canSpend(row.key)"
+              [disabled]="!canSpend(row.key)"
+              (click)="spend(row.key)"
+              [title]="'Custo: ' + upgradeCost(row.key) + ' PE'">
+              +
+            </button>
+            <span class="attr-cost" [class.attr-cost--affordable]="canSpend(row.key)">
+              {{ upgradeCost(row.key) }}PE
+            </span>
+          </div>
+        }
+      </div>
+
+      <!-- ── Vantagens ─────────────────────────────────────────────── -->
+      <div class="tags-section">
+        <div class="tags-group-header">
+          <span class="tags-title">✅ Vantagens</span>
+          <button class="btn-tag-action" (click)="showVantagensMenu.set(!showVantagensMenu())">
+            {{ showVantagensMenu() ? '▲ Fechar' : '+ Comprar' }}
+          </button>
+        </div>
+
+        <div class="tags-list">
+          @for (v of char()!.vantagens; track v) {
+            <span class="tag advantage">{{ v }}</span>
+          }
+          @if (!char()!.vantagens.length) {
+            <span class="tag-none">Nenhuma vantagem</span>
+          }
+        </div>
+
+        @if (showVantagensMenu()) {
+          <div class="catalog-panel">
+            @for (v of availableVantagens(); track v.name) {
+              <div class="catalog-row">
+                <span class="catalog-name">{{ v.name }}</span>
+                <span class="catalog-desc">{{ v.desc }}</span>
+                <button
+                  class="btn-buy"
+                  [disabled]="!canBuyVantagem(v)"
+                  (click)="buyVantagem(v)">
+                  {{ v.cost }} PE
+                </button>
+              </div>
+            }
+            @if (!availableVantagens().length) {
+              <span class="tag-none">Todas as vantagens já adquiridas.</span>
             }
           </div>
         }
       </div>
 
-      <!-- Vantagens / Desvantagens -->
+      <!-- ── Desvantagens ──────────────────────────────────────────── -->
       <div class="tags-section">
-        <div class="tags-group">
-          <span class="tags-title">Vantagens</span>
-          <div class="tags-list">
-            @for (v of char()!.vantagens; track v) {
-              <span class="tag advantage">{{ v }}</span>
-            }
-            @if (!char()!.vantagens.length) {
-              <span class="tag-none">—</span>
-            }
-          </div>
+        <div class="tags-group-header">
+          <span class="tags-title">⚠️ Desvantagens</span>
+          <button class="btn-tag-action btn-tag-desv" (click)="showDesvantagensMenu.set(!showDesvantagensMenu())">
+            {{ showDesvantagensMenu() ? '▲ Fechar' : '+ Tomar (+PE)' }}
+          </button>
         </div>
-        <div class="tags-group">
-          <span class="tags-title">Desvantagens</span>
-          <div class="tags-list">
-            @for (d of char()!.desvantagens; track d) {
+
+        <div class="tags-list">
+          @for (d of char()!.desvantagens; track d) {
+            <div class="desv-row">
               <span class="tag disadvantage">{{ d }}</span>
+              <button
+                class="btn-remove-desv"
+                [disabled]="!canRemoveDesvantagem(d)"
+                (click)="removeDesvantagem(d)"
+                [title]="'Remover custa ' + (desvantagemDef(d)?.reward ?? 1) + ' PE'">
+                ✕ {{ desvantagemDef(d)?.reward ?? 1 }}PE
+              </button>
+            </div>
+          }
+          @if (!char()!.desvantagens.length) {
+            <span class="tag-none">Nenhuma desvantagem</span>
+          }
+        </div>
+
+        @if (showDesvantagensMenu()) {
+          <div class="catalog-panel catalog-panel--desv">
+            @for (d of availableDesvantagens(); track d.name) {
+              <div class="catalog-row">
+                <span class="catalog-name">{{ d.name }}</span>
+                <span class="catalog-desc">{{ d.desc }}</span>
+                <button class="btn-take-desv" (click)="takeDesvantagem(d)">
+                  +{{ d.reward }} PE
+                </button>
+              </div>
             }
-            @if (!char()!.desvantagens.length) {
-              <span class="tag-none">—</span>
+            @if (!availableDesvantagens().length) {
+              <span class="tag-none">Todas as desvantagens já tomadas.</span>
             }
           </div>
-        </div>
+        }
       </div>
 
-      <!-- Itens -->
+      <!-- ── Itens ─────────────────────────────────────────────────── -->
       <div class="items-section">
         <span class="tags-title">🎒 Itens</span>
         <div class="items-list">

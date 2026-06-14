@@ -1,5 +1,19 @@
 export type RoomType = 'entrance' | 'monster' | 'trap' | 'treasure' | 'rest' | 'boss' | 'empty' | 'puzzle' | 'social';
 
+export type RoomChoiceAction = 'enter' | 'flee' | 'safe_enter' | 'rest_wait';
+
+export interface RoomChoice {
+  label: string;
+  description?: string;
+  action: RoomChoiceAction;
+  requiresPericia?: string; // ID da perícia exigida (oculta se party não tiver)
+}
+
+export interface RoomScenario {
+  description: string;
+  choices: RoomChoice[];
+}
+
 export interface DungeonRoom {
   id: number;
   type: RoomType;
@@ -12,6 +26,22 @@ export interface DungeonRoom {
   row: number;
   isCurrent?: boolean;
   isVisible?: boolean;
+  entered?: boolean;
+  scenario?: RoomScenario;
+}
+
+export interface MapHotspot {
+  roomId: number;
+  label: string;
+  cx: number;
+  cy: number;
+  r: number;
+}
+
+export interface ImageMapConfig {
+  url: string;
+  viewBox: string;
+  hotspots: MapHotspot[];
 }
 
 export interface DungeonFloor {
@@ -20,6 +50,7 @@ export interface DungeonFloor {
   rooms: DungeonRoom[];
   totalRooms: number;
   bossRoom: number;
+  imageMap?: ImageMapConfig;
 }
 
 export interface DungeonTheme {
@@ -50,21 +81,22 @@ export const VALKARIA_FLOORS: DungeonTheme[] = [
     godName: 'Allihanna',
     godDomain: 'Deusa da Natureza e das Feras',
     godAlignment: 'neutro',
-    name: 'Floresta Subterrânea de Allihanna',
-    description: 'Túneis que imitam uma floresta selvagem, repletos de feras. A primeira masmorra é direta: combate puro contra animais selvagens de grande porte.',
-    guardianName: 'O Grande Urso Sagrado',
-    guardianDesc: 'Um urso colossal abençoado por Allihanna, com F7 R6. Ataca com garra+mordida.',
-    specialRule: 'Masmorra mais simples — sem regras especiais. Combate direto.',
+    name: 'Masmorra de Allihanna',
+    description: 'Uma floresta selvagem com clareiras interligadas por trilhas. Animais de grande porte protegem cada câmara — elefantes no lago, assassinos da savana nas clareiras abertas e ursos-coruja nas cavernas.',
+    guardianName: 'Fallandi',
+    guardianDesc: 'Meio humano, meio dríade — designado por Allihanna como seu defensor. Acompanhado por um leão e um urso vegetal, luta com todas as forças. Pode propor duelo individual a aventureiros com Lábia (H–3).',
+    specialRule: 'Obrigações e Restrições: não destruir o urso-coruja imenso (câmara 3a) para receber a recompensa extra. Fallandi detecta automaticamente violações.',
     icon: '🌿',
     palette: 'forest',
     challengeType: 'combat',
-    monsterTypes: ['Urso Pardo', 'Crocodilo Gigante', 'Leopardo Sombrio', 'Lobo da Névoa', 'Cobra Constritora'],
-    trapTypes: ['Raiz Enredante', 'Vala Camuflada', 'Espinhos Venenosos'],
-    treasureTypes: ['Ervas Curativas', 'Pele de Fera Mágica', 'Amuleto de Allihanna'],
+    monsterTypes: ['Elefante', 'Assassino da Savana', 'Urso-Coruja', 'Urso-Coruja Imenso'],
+    trapTypes: ['Emboscada na grama alta (surpresa automática se falhar em H–2)', 'Filhotes de elefante provocando a manada'],
+    treasureTypes: ['Anel de Proteção (FD+1)', 'Vestimenta de Druida', 'Itens de Cura Menor', 'Pergaminhos de Paralisia'],
     flavorTexts: [
-      'O cheiro de terra molhada e folhas apodrecidas preenche o ar desta floresta subterrânea.',
-      'Galhos impossíveis crescem das paredes de pedra, carregando folhagens vivas.',
-      'O rugido distante ecoa pelos túneis, anunciando que as feras já sabem da sua presença.'
+      'O cheiro de água atinge os aventureiros muito antes de chegarem à clareira do lago.',
+      'A grama alta da clareira se move levemente — mas não há vento.',
+      'Do fundo da caverna ecoa um pio grave e gutural. Algo muito grande está acordado lá dentro.',
+      'Dólmens formam um semicírculo ao fundo da clareira. Sob um deles brilha uma luz azulada.'
     ]
   },
   {

@@ -1,4 +1,4 @@
-<div class="party-bar">
+<div class="party-bar" [class.compact]="compact()">
   <div class="party-bar-inner">
 
     @for (char of gs.party(); track char.id) {
@@ -21,7 +21,7 @@
 
         <div class="card-info">
           <span class="card-name">{{ char.name.split(',')[0] }}</span>
-          <span class="card-class">Nv.{{ char.level }} {{ char.class | titlecase }}</span>
+          <span class="card-class">{{ char.xp }} XP · {{ char.class | titlecase }}</span>
 
           <div class="mini-bars">
             <div class="mini-bar hp" title="PV">
@@ -29,10 +29,10 @@
                 [style.width.%]="pct(char.pontosVida.current, char.pontosVida.max)">
               </div>
             </div>
-            @if (char.pontosMagia.max > 0) {
-              <div class="mini-bar pm" title="PM">
+            @if (char.poderFogo.max > 0) {
+              <div class="mini-bar pm" title="PF">
                 <div class="mini-bar-fill pm-fill"
-                  [style.width.%]="pct(char.pontosMagia.current, char.pontosMagia.max)">
+                  [style.width.%]="pct(char.poderFogo.current, char.poderFogo.max)">
                 </div>
               </div>
             }
@@ -64,8 +64,8 @@
 
   <div class="party-bar-right">
     <div class="floor-pill">
-      <span class="floor-num">{{ gs.floorNumber() }}</span>
-      <span class="floor-of">/20</span>
+      <span class="floor-num">{{ toRoman(gs.floorNumber()) }}</span>
+      <span class="floor-of">/XX</span>
     </div>
     <div class="floor-bar-wrap">
       <div class="floor-bar-fill" [style.width.%]="gs.progressPercent()"></div>

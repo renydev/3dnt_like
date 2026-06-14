@@ -1,10 +1,32 @@
 export type CharacterClass =
   | 'guerreiro' | 'mago' | 'ladino' | 'clerigo' | 'ranger'
-  | 'bardo' | 'druida' | 'paladino';
+  | 'bardo' | 'druida' | 'paladino' | 'barbaro' | 'monge';
 
 export type CharacterRace =
   | 'humano' | 'elfo' | 'anao' | 'halfling' | 'gnomo'
   | 'meio-elfo' | 'meio-orc' | 'lefou' | 'minotauro' | 'goblin';
+
+export type CharacterRole = 'tank' | 'dps' | 'healer' | 'mage';
+
+export const CLASS_ROLES: Record<CharacterClass, CharacterRole> = {
+  guerreiro: 'tank',
+  paladino:  'tank',
+  barbaro:   'tank',
+  ladino:    'dps',
+  ranger:    'dps',
+  monge:     'dps',
+  clerigo:   'healer',
+  druida:    'healer',
+  mago:      'mage',
+  bardo:     'mage',
+};
+
+export const ROLE_COMPLEMENTS: Record<CharacterRole, [CharacterRole, CharacterRole, CharacterRole]> = {
+  tank:   ['dps', 'healer', 'mage'],
+  dps:    ['tank', 'healer', 'mage'],
+  healer: ['tank', 'dps',   'mage'],
+  mage:   ['tank', 'dps',   'healer'],
+};
 
 export interface Attribute {
   base: number;
@@ -34,14 +56,15 @@ export interface Character {
   habilidade: Attribute;  // H - Habilidade
   resistencia: Attribute; // R - Resistência
   armadura: number;       // A - Armadura
-  pontosMagia: Attribute; // PM - Pontos de Magia
+  poderFogo: Attribute; // PF - Poder de Fogo
 
   // PV = R * 5 no 3D&T
   pontosVida: Attribute;
 
-  // Vantagens/Desvantagens
+  // Vantagens/Desvantagens/Perícias
   vantagens: string[];
   desvantagens: string[];
+  pericias?: string[]; // IDs das perícias compradas (cada uma custa 3 pts)
 
   // Estado
   gold: number;
@@ -56,163 +79,182 @@ export interface Character {
   portraitIcon?: string; // emoji ou caminho de asset
 }
 
-// Fichas pré-definidas 3D&T style
+/**
+ * 10 personagens lendários (tier Lenda = 12 pts distribuídos + bônus racial).
+ * Cada um representa uma classe com a raça mais sinérgica, stats otimizados.
+ * PV = resistencia * 5.
+ */
 export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
+  // ── TANKS ────────────────────────────────────────────────────────────────
   {
-    name: 'Aldric, o Guerreiro',
-    class: 'guerreiro',
-    race: 'humano',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 3, current: 3, max: 3 },
-    habilidade: { base: 2, current: 2, max: 2 },
-    resistencia: { base: 3, current: 3, max: 3 },
+    name: 'Thorvald Chifre-de-Ferro',
+    class: 'barbaro',
+    race: 'minotauro',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 7, current: 7, max: 7 },
+    habilidade: { base: 1, current: 1, max: 1 },
+    resistencia:{ base: 6, current: 6, max: 6 },
     armadura: 3,
-    pontosMagia: { base: 0, current: 0, max: 0 },
-    pontosVida: { base: 15, current: 15, max: 15 },
-    vantagens: ['Força Colossal', 'Armadura Pesada'],
+    poderFogo:  { base: 0, current: 0, max: 0 },
+    pontosVida: { base: 30, current: 30, max: 30 },
+    vantagens: ['Fúria Bárbara', 'Alma Primitiva', 'Chifrada'],
+    desvantagens: ['Instinto Bestial'],
+    gold: 15, items: ['Machado de Guerra', 'Poção de Cura x2'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🪓',
+  },
+  {
+    name: 'Rael Ferrobravo',
+    class: 'guerreiro',
+    race: 'meio-orc',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 6, current: 6, max: 6 },
+    habilidade: { base: 2, current: 2, max: 2 },
+    resistencia:{ base: 4, current: 4, max: 4 },
+    armadura: 4,
+    poderFogo:  { base: 0, current: 0, max: 0 },
+    pontosVida: { base: 20, current: 20, max: 20 },
+    vantagens: ['Ataque Duplo', 'Especialização em Arma', 'Implacável'],
+    desvantagens: ['Má Fama'],
+    gold: 25, items: ['Espada Bastarda', 'Armadura de Cota', 'Poção de Cura'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '⚔️',
+  },
+  {
+    name: 'Seraphina Luzéterna',
+    class: 'paladino',
+    race: 'anao',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 4, current: 4, max: 4 },
+    habilidade: { base: 2, current: 2, max: 2 },
+    resistencia:{ base: 4, current: 4, max: 4 },
+    armadura: 5,
+    poderFogo:  { base: 4, current: 4, max: 4 },
+    pontosVida: { base: 20, current: 20, max: 20 },
+    vantagens: ['Golpe Divino', 'Imposição de Mãos', 'Aura de Proteção', 'Resistência Anã'],
     desvantagens: ['Código de Honra'],
-    gold: 30,
-    items: ['Espada Longa', 'Escudo de Madeira', 'Poção de Cura'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    portraitIcon: '⚔️',
+    gold: 30, items: ['Martelo Sagrado', 'Escudo Bento', 'Poção de Cura x2'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🛡️',
   },
+  // ── DPS ──────────────────────────────────────────────────────────────────
   {
-    name: 'Lyra, a Maga',
-    class: 'mago',
-    race: 'elfo',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 1, current: 1, max: 1 },
-    habilidade: { base: 3, current: 3, max: 3 },
-    resistencia: { base: 2, current: 2, max: 2 },
-    armadura: 1,
-    pontosMagia: { base: 10, current: 10, max: 10 },
-    pontosVida: { base: 10, current: 10, max: 10 },
-    vantagens: ['Magia Aprimorada', 'Sentidos Élficos'],
-    desvantagens: ['Fobia (Morte)'],
-    gold: 20,
-    items: ['Cajado Arcano', 'Grimório', 'Poção de Mana', 'Poção de Cura'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    portraitIcon: '🔮',
-  },
-  {
-    name: 'Sombra, o Ladino',
+    name: 'Sable das Sete Facas',
     class: 'ladino',
-    race: 'halfling',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 2, current: 2, max: 2 },
-    habilidade: { base: 4, current: 4, max: 4 },
-    resistencia: { base: 2, current: 2, max: 2 },
-    armadura: 2,
-    pontosMagia: { base: 0, current: 0, max: 0 },
+    race: 'goblin',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 2, current: 2, max: 2 },
+    habilidade: { base: 8, current: 8, max: 8 },
+    resistencia:{ base: 2, current: 2, max: 2 },
+    armadura: 3,
+    poderFogo:  { base: 0, current: 0, max: 0 },
     pontosVida: { base: 10, current: 10, max: 10 },
-    vantagens: ['Ataque Pelas Costas', 'Furtividade'],
-    desvantagens: ['Inimigo (Guilda dos Ladrões)'],
-    gold: 50,
-    items: ['Adaga +1', 'Ferramentas de Ladrão', 'Corda e Gancho', 'Poção de Cura'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    portraitIcon: '🗡️',
+    vantagens: ['Ataque Furtivo', 'Furtividade Profissional', 'Oportunista'],
+    desvantagens: ['Desconfiado', 'Frágil'],
+    gold: 60, items: ['Adaga Envenenada x3', 'Ferramentas de Ladrão', 'Poção de Cura'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🗡️',
   },
   {
-    name: 'Brenn, o Clérigo',
+    name: 'Kael Olho-de-Falcão',
+    class: 'ranger',
+    race: 'meio-elfo',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 2, current: 2, max: 2 },
+    habilidade: { base: 5, current: 5, max: 5 },
+    resistencia:{ base: 3, current: 3, max: 3 },
+    armadura: 3,
+    poderFogo:  { base: 5, current: 5, max: 5 },
+    pontosVida: { base: 15, current: 15, max: 15 },
+    vantagens: ['Tiro Certeiro', 'Rastreamento', 'Herança Dual'],
+    desvantagens: ['Solitário'],
+    gold: 35, items: ['Arco Longo +1', 'Aljava (30 flechas)', 'Poção de Cura'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🏹',
+  },
+  {
+    name: 'Tenza da Montanha',
+    class: 'monge',
+    race: 'halfling',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 2, current: 2, max: 2 },
+    habilidade: { base: 7, current: 7, max: 7 },
+    resistencia:{ base: 2, current: 2, max: 2 },
+    armadura: 2,
+    poderFogo:  { base: 5, current: 5, max: 5 },
+    pontosVida: { base: 10, current: 10, max: 10 },
+    vantagens: ['Ataque Desarmado', 'Armadura de Ki', 'Sorte de Halfling'],
+    desvantagens: ['Código de Honra'],
+    gold: 20, items: ['Faixa de Ki', 'Poção de Cura x2'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '👊',
+  },
+  // ── HEALERS ──────────────────────────────────────────────────────────────
+  {
+    name: 'Brynn Coração-de-Luz',
     class: 'clerigo',
     race: 'humano',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 2, current: 2, max: 2 },
-    habilidade: { base: 2, current: 2, max: 2 },
-    resistencia: { base: 2, current: 2, max: 2 },
-    armadura: 2,
-    pontosMagia: { base: 6, current: 6, max: 6 },
-    pontosVida: { base: 10, current: 10, max: 10 },
-    vantagens: ['Cura Aprimorada', 'Devoto'],
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 2, current: 2, max: 2 },
+    habilidade: { base: 3, current: 3, max: 3 },
+    resistencia:{ base: 4, current: 4, max: 4 },
+    armadura: 3,
+    poderFogo:  { base: 9, current: 9, max: 9 },
+    pontosVida: { base: 20, current: 20, max: 20 },
+    vantagens: ['Cura Divina', 'Expulsar Mortos-Vivos', 'Versatilidade Humana'],
     desvantagens: ['Obrigação (Igreja de Khalmyr)'],
-    gold: 15,
-    items: ['Maça Benta', 'Escudo Sagrado', 'Símbolo Sagrado', 'Poção de Cura x2'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    portraitIcon: '🌟',
+    gold: 20, items: ['Maça Sagrada', 'Símbolo Divino', 'Poção de Cura x3'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🌟',
+  },
+  {
+    name: 'Zara da Floresta Profunda',
+    class: 'druida',
+    race: 'elfo',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 1, current: 1, max: 1 },
+    habilidade: { base: 4, current: 4, max: 4 },
+    resistencia:{ base: 4, current: 4, max: 4 },
+    armadura: 2,
+    poderFogo:  { base: 10, current: 10, max: 10 },
+    pontosVida: { base: 20, current: 20, max: 20 },
+    vantagens: ['Forma Animal', 'Magia Natural', 'Sentidos Élficos'],
+    desvantagens: ['Juramento da Natureza'],
+    gold: 15, items: ['Cajado de Carvalho', 'Ervas Curativas x3', 'Poção de Cura x2'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🌿',
+  },
+  // ── MAGES ────────────────────────────────────────────────────────────────
+  {
+    name: 'Lyranth das Sombras',
+    class: 'mago',
+    race: 'lefou',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 1, current: 1, max: 1 },
+    habilidade: { base: 4, current: 4, max: 4 },
+    resistencia:{ base: 3, current: 3, max: 3 },
+    armadura: 1,
+    poderFogo:  { base: 14, current: 14, max: 14 },
+    pontosVida: { base: 15, current: 15, max: 15 },
+    vantagens: ['Arcano Avançado', 'Conjuração Aprimorada', 'Visão nas Trevas'],
+    desvantagens: ['Marca do Mal'],
+    gold: 25, items: ['Cajado Sombrio', 'Grimório Proibido', 'Poção de PF x2', 'Poção de Cura'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🔮',
+  },
+  {
+    name: 'Vesper Malandrin',
+    class: 'bardo',
+    race: 'gnomo',
+    level: 1, xp: 0, xpToNextLevel: 100,
+    forca:      { base: 1, current: 1, max: 1 },
+    habilidade: { base: 5, current: 5, max: 5 },
+    resistencia:{ base: 3, current: 3, max: 3 },
+    armadura: 2,
+    poderFogo:  { base: 9, current: 9, max: 9 },
+    pontosVida: { base: 15, current: 15, max: 15 },
+    vantagens: ['Inspiração Bardística', 'Jack of All Trades', 'Ilusionista Nato'],
+    desvantagens: ['Curioso Demais'],
+    gold: 45, items: ['Alaúde Mágico', 'Adaga da Fortuna', 'Poção de PF', 'Poção de Cura x2'],
+    statusEffects: [], levelUpPoints: 0, portraitIcon: '🎵',
   },
 ];
 
-// Companheiros que se juntam ao grupo após derrotar certos andares
-export const COMPANION_POOL: Omit<Character, 'id'>[] = [
-  {
-    name: 'Kira, a Ranger',
-    class: 'ranger',
-    race: 'meio-elfo',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 2, current: 2, max: 2 },
-    habilidade: { base: 3, current: 3, max: 3 },
-    resistencia: { base: 2, current: 2, max: 2 },
-    armadura: 2,
-    pontosMagia: { base: 2, current: 2, max: 2 },
-    pontosVida: { base: 10, current: 10, max: 10 },
-    vantagens: ['Tiro Preciso', 'Rastreamento'],
-    desvantagens: ['Solitária'],
-    gold: 25,
-    items: ['Arco Longo', 'Aljava (20 flechas)', 'Poção de Cura'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    isCompanion: true,
-    portraitIcon: '🏹',
-  },
-  {
-    name: 'Torin, o Bardo',
-    class: 'bardo',
-    race: 'gnomo',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 1, current: 1, max: 1 },
-    habilidade: { base: 3, current: 3, max: 3 },
-    resistencia: { base: 2, current: 2, max: 2 },
-    armadura: 1,
-    pontosMagia: { base: 6, current: 6, max: 6 },
-    pontosVida: { base: 10, current: 10, max: 10 },
-    vantagens: ['Inspiração', 'Lábia'],
-    desvantagens: ['Curioso Demais'],
-    gold: 40,
-    items: ['Alaúde Mágico', 'Adaga', 'Poção de Cura', 'Poção de Mana'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    isCompanion: true,
-    portraitIcon: '🎵',
-  },
-  {
-    name: 'Mira, a Druida',
-    class: 'druida',
-    race: 'elfo',
-    level: 1,
-    xp: 0,
-    xpToNextLevel: 100,
-    forca: { base: 1, current: 1, max: 1 },
-    habilidade: { base: 3, current: 3, max: 3 },
-    resistencia: { base: 3, current: 3, max: 3 },
-    armadura: 1,
-    pontosMagia: { base: 8, current: 8, max: 8 },
-    pontosVida: { base: 15, current: 15, max: 15 },
-    vantagens: ['Forma Animal', 'Cura Natural'],
-    desvantagens: ['Juramento da Natureza'],
-    gold: 10,
-    items: ['Cajado de Carvalho', 'Ervas Curativas', 'Poção de Cura x2'],
-    statusEffects: [],
-    levelUpPoints: 0,
-    isCompanion: true,
-    portraitIcon: '🌿',
-  },
-];
+export const LEGENDARY_CHARACTERS = PRESET_CHARACTERS;
+
+// Pool de companheiros = os mesmos personagens lendários marcados como isCompanion
+export const COMPANION_POOL: Omit<Character, 'id'>[] = PRESET_CHARACTERS.map(c => ({ ...c, isCompanion: true }));
 
 export const CLASS_ICONS: Record<CharacterClass, string> = {
   guerreiro: '⚔️',
@@ -223,6 +265,8 @@ export const CLASS_ICONS: Record<CharacterClass, string> = {
   bardo: '🎵',
   druida: '🌿',
   paladino: '🛡️',
+  barbaro: '🪓',
+  monge: '👊',
 };
 
 export const CLASS_COLORS: Record<CharacterClass, string> = {
@@ -234,4 +278,6 @@ export const CLASS_COLORS: Record<CharacterClass, string> = {
   bardo: '#e67e22',
   druida: '#27ae60',
   paladino: '#2980b9',
+  barbaro: '#a04020',
+  monge: '#d4a017',
 };

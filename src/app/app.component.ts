@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from './core/services/game-state.service';
 import { GameLayoutComponent } from './modules/ui/game-layout/game-layout.component';
-import { CharacterCreationComponent } from './dungeon/components/character-creation.component';
+import { CharacterCreationComponent } from './dungeon/components/character-creation/character-creation.component';
 import { DebugMapComponent } from './debug/debug-map.component';
 import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
 

@@ -5,7 +5,7 @@ export interface Race {
   name: string;
   icon: string;
   lore: string;
-  modifiers: { forca?: number; habilidade?: number; resistencia?: number; armadura?: number; pontosMagia?: number };
+  modifiers: { forca?: number; habilidade?: number; resistencia?: number; armadura?: number; poderFogo?: number };
   freeVantagem: string;
   bonusPoints: number;
   traits: string[];
@@ -17,7 +17,7 @@ export interface ClassDef {
   icon: string;
   role: string;
   lore: string;
-  baseStats: { forca: number; habilidade: number; resistencia: number; armadura: number; pontosMagia: number };
+  baseStats: { forca: number; habilidade: number; resistencia: number; armadura: number; poderFogo: number };
   freeVantagem: string;
   difficulty: 'Iniciante' | 'Intermediário' | 'Avançado';
   difficultyColor: string;
@@ -64,17 +64,17 @@ export const RACES: Race[] = [
     name: 'Elfo',
     icon: '🌿',
     lore: 'Ancestrais e graciosos, os elfos carregam séculos de sabedoria. Ligados à magia desde o nascimento, possuem reflexos sobre-humanos.',
-    modifiers: { habilidade: 1, forca: -1, pontosMagia: 2 },
+    modifiers: { habilidade: 1, forca: -1, poderFogo: 2 },
     freeVantagem: 'Sentidos Élficos',
     bonusPoints: 0,
-    traits: ['+1 Habilidade, −1 Força', '+2 Pontos de Magia', 'Sentidos Élficos grátis']
+    traits: ['+1 Habilidade, −1 Força', '+2 Poder de Fogo', 'Sentidos Élficos grátis']
   },
   {
     id: 'anao',
     name: 'Anão',
     icon: '⛏️',
     lore: 'Forjados nas profundezas da terra, os anões são tão duros quanto o aço. Resistentes ao veneno e especialistas em combate subterrâneo.',
-    modifiers: { resistencia: 1, habilidade: -1, armadura: 1, pontosMagia: -2 },
+    modifiers: { resistencia: 1, habilidade: -1, armadura: 1, poderFogo: -2 },
     freeVantagem: 'Resistência Anã',
     bonusPoints: 0,
     traits: ['+1 Resistência, −1 Habilidade', '+1 Armadura', 'Imune a venenos menores']
@@ -94,10 +94,10 @@ export const RACES: Race[] = [
     name: 'Meio-Elfo',
     icon: '✨',
     lore: 'Herdeiros de dois mundos, os meio-elfos possuem a graça élfica e a resiliência humana. Sua natureza híbrida os torna extraordinariamente versáteis.',
-    modifiers: { habilidade: 1, pontosMagia: 1 },
+    modifiers: { habilidade: 1, poderFogo: 1 },
     freeVantagem: 'Herança Dual',
     bonusPoints: 1,
-    traits: ['+1 Habilidade, +1 PM', '+1 ponto de vantagem extra', 'Herança Dual grátis']
+    traits: ['+1 Habilidade, +1 PF', '+1 ponto de vantagem extra', 'Herança Dual grátis']
   }
 ];
 
@@ -110,7 +110,7 @@ export const CLASSES: ClassDef[] = [
     icon: '⚔️',
     role: 'Tanque / Dano',
     lore: 'Mestres das armas e da guerra, guerreiros se jogam no combate sem hesitar. A linha de frente é sua casa.',
-    baseStats: { forca: 3, habilidade: 2, resistencia: 3, armadura: 3, pontosMagia: 0 },
+    baseStats: { forca: 3, habilidade: 2, resistencia: 3, armadura: 3, poderFogo: 0 },
     freeVantagem: 'Ataque Duplo',
     difficulty: 'Iniciante',
     difficultyColor: '#27ae60',
@@ -121,8 +121,8 @@ export const CLASSES: ClassDef[] = [
     name: 'Mago',
     icon: '🔮',
     role: 'Magia Ofensiva',
-    lore: 'Estudiosos do arcano, magos transformam Pontos de Magia em destruição pura. Frágeis, mas letais à distância.',
-    baseStats: { forca: 1, habilidade: 3, resistencia: 2, armadura: 1, pontosMagia: 8 },
+    lore: 'Estudiosos do arcano, magos transformam Poder de Fogo em destruição pura. Frágeis, mas letais à distância.',
+    baseStats: { forca: 1, habilidade: 3, resistencia: 2, armadura: 1, poderFogo: 8 },
     freeVantagem: 'Conjuração Aprimorada',
     difficulty: 'Avançado',
     difficultyColor: '#8e44ad',
@@ -134,7 +134,7 @@ export const CLASSES: ClassDef[] = [
     icon: '🗡️',
     role: 'Furtividade / Dano',
     lore: 'Sombras são seus aliados. Ladinos atacam de surpresa, exploram fraquezas e desaparecem antes da represália.',
-    baseStats: { forca: 2, habilidade: 4, resistencia: 2, armadura: 2, pontosMagia: 0 },
+    baseStats: { forca: 2, habilidade: 4, resistencia: 2, armadura: 2, poderFogo: 0 },
     freeVantagem: 'Ataque Furtivo',
     difficulty: 'Intermediário',
     difficultyColor: '#e67e22',
@@ -146,7 +146,7 @@ export const CLASSES: ClassDef[] = [
     icon: '✨',
     role: 'Suporte / Cura',
     lore: 'Canalizadores do poder divino, clérigos curam os aliados e purificam o mal. Servem aos deuses de Arton.',
-    baseStats: { forca: 2, habilidade: 2, resistencia: 2, armadura: 2, pontosMagia: 6 },
+    baseStats: { forca: 2, habilidade: 2, resistencia: 2, armadura: 2, poderFogo: 6 },
     freeVantagem: 'Cura Divina',
     difficulty: 'Intermediário',
     difficultyColor: '#f39c12',
@@ -158,7 +158,7 @@ export const CLASSES: ClassDef[] = [
     icon: '🏹',
     role: 'Exploração / Dano',
     lore: 'Guardiões das fronteiras, rangers dominam o combate à distância e o rastreamento. Nenhuma armadilha os pega de surpresa.',
-    baseStats: { forca: 2, habilidade: 3, resistencia: 2, armadura: 2, pontosMagia: 2 },
+    baseStats: { forca: 2, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 2 },
     freeVantagem: 'Rastreamento Élfico',
     difficulty: 'Intermediário',
     difficultyColor: '#16a085',
@@ -217,7 +217,7 @@ export const VANTAGENS: VantagemDef[] = [
     category: 'magia',
     icon: '🔮',
     description: 'Reservas arcanas além do comum.',
-    effect: '+4 Pontos de Magia'
+    effect: '+4 Poder de Fogo'
   },
   {
     id: 'foco_arcano',
@@ -226,7 +226,7 @@ export const VANTAGENS: VantagemDef[] = [
     category: 'magia',
     icon: '🌀',
     description: 'Concentração perfeita reduz o custo mágico.',
-    effect: 'Magias custam −1 PM (mínimo 1)'
+    effect: 'Magias custam −1 PF (mínimo 1)'
   },
   // Defesa
   {

@@ -1,7 +1,14 @@
 import { Injectable, signal, computed } from '@angular/core';
-import { Character, PRESET_CHARACTERS, COMPANION_POOL } from '../models/character.model';
-import { DungeonFloor, DungeonRoom, VALKARIA_FLOORS } from '../models/dungeon.model';
+import {
+  Character, PRESET_CHARACTERS, COMPANION_POOL,
+  CharacterClass, CLASS_ROLES, ROLE_COMPLEMENTS,
+} from '../models/character.model';
+import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
+import { Enemy } from '../models/combat.model';
+import { ALLIHANNA_ROOM_ENEMIES, rollAllihannaEncounter } from '../data/dungeons/allihanna';
+
+function d6() { return Math.ceil(Math.random() * 6); }
 
 export type GameScreen =
   | 'menu'
@@ -29,6 +36,12 @@ export class GameStateService {
 
   /** Companheiro que acabou de se juntar (exibido na transição) */
   newCompanion = signal<Character | null>(null);
+
+  /** Grupo de inimigos para o próximo combate (null = usar geração procedural) */
+  pendingEnemies = signal<Enemy[] | null>(null);
+
+  /** ID da câmara aguardando confirmação do dialog de cenário */
+  pendingRoomEntry = signal<number | null>(null);
 
   readonly TOTAL_FLOORS = 20;
 
@@ -70,7 +83,7 @@ export class GameStateService {
 
   startCustomGame(char: Character): void {
     this.character.set(char);
-    this.companions.set([]);
+    this.companions.set(this._buildInitialParty(char.class));
     this.newCompanion.set(null);
     this.floorNumber.set(1);
     this.generateNewFloor();
@@ -81,6 +94,23 @@ export class GameStateService {
     if (!this.currentFloor()!.theme.specialRule.includes('Masmorra mais simples')) {
       this.addLog(`⚠️ REGRA ESPECIAL: ${this.currentFloor()!.theme.specialRule}`);
     }
+  }
+
+  /**
+   * Monta a party inicial com 3 companheiros IA que equilibram o papel do jogador.
+   * Tank → DPS + Healer + Mage, etc.
+   */
+  private _buildInitialParty(playerClass: CharacterClass): Character[] {
+    const playerRole = CLASS_ROLES[playerClass];
+    const needed = ROLE_COMPLEMENTS[playerRole];
+
+    return needed.map(role => {
+      // Pega o primeiro personagem do pool com esse papel que não seja a classe do jogador
+      const preset = PRESET_CHARACTERS.find(
+        c => CLASS_ROLES[c.class] === role && c.class !== playerClass
+      ) ?? PRESET_CHARACTERS.find(c => CLASS_ROLES[c.class] === role)!;
+      return { ...preset, id: crypto.randomUUID(), isCompanion: true };
+    });
   }
 
   // ── Andares ────────────────────────────────────────────────────────────────
@@ -99,16 +129,84 @@ export class GameStateService {
     const target = floor.rooms.find(r => r.id === roomId);
     if (!target || !target.isVisible) return;
 
+    // Câmaras não triviais não limpas abrem o dialog de cenário
+    if (target.type !== 'entrance' && target.type !== 'empty' && !target.cleared) {
+      this.pendingRoomEntry.set(roomId);
+      return;
+    }
+
+    this._doMoveToRoom(roomId, target, floor);
+  }
+
+  confirmRoomEntry(action: RoomChoiceAction): void {
+    const roomId = this.pendingRoomEntry();
+    this.pendingRoomEntry.set(null);
+    if (roomId === null) return;
+
+    if (action === 'flee') return;
+
+    const floor = this.currentFloor();
+    const target = floor?.rooms.find(r => r.id === roomId);
+    if (!target || !floor) return;
+
+    this._doMoveToRoom(roomId, target, floor);
+
+    if (action === 'safe_enter') {
+      // Atravessou sem conflito (ex.: acalmar animais)
+      this.addLog(`✅ Atravessou a câmara sem conflito.`);
+      this._markRoomCleared(roomId);
+      return;
+    }
+
+    if (action === 'rest_wait') {
+      this.addLog(`⏳ O grupo aguarda com paciência. O caminho fica livre.`);
+      this._markRoomCleared(roomId);
+      return;
+    }
+
+    // action === 'enter': triggar encontro normal
+    const roomGroup = this.floorNumber() === 1 && ALLIHANNA_ROOM_ENEMIES[roomId]
+      ? ALLIHANNA_ROOM_ENEMIES[roomId]()
+      : null;
+    this.pendingEnemies.set(roomGroup);
+    this.screen.set('encounter');
+  }
+
+  private _doMoveToRoom(roomId: number, target: DungeonRoom, floor: DungeonFloor): void {
     const updatedRooms = this.generator.revealConnected(floor.rooms, roomId);
     const movedRooms = this.generator.moveToRoom(updatedRooms, roomId);
-
     this.currentFloor.set({ ...floor, rooms: movedRooms });
     this.currentRoomId.set(roomId);
     this.addLog(`🚶 Avançou para: ${target.name}`);
 
     if (target.type !== 'entrance' && target.type !== 'empty') {
-      this.screen.set('encounter');
+      if (target.cleared) {
+        if (this.floorNumber() === 1 && this._rollAllihannaRandom()) return;
+        return;
+      }
+    } else if (target.entered && this.floorNumber() === 1) {
+      this._rollAllihannaRandom();
     }
+  }
+
+  private _markRoomCleared(roomId: number): void {
+    const floor = this.currentFloor();
+    if (!floor) return;
+    const rooms = floor.rooms.map(r =>
+      r.id === roomId ? { ...r, cleared: true } : r
+    );
+    this.currentFloor.set({ ...floor, rooms });
+  }
+
+  /** Rola 1d6; se 1, inicia encontro aleatório de Allihanna. Retorna true se iniciou. */
+  private _rollAllihannaRandom(): boolean {
+    const roll = d6();
+    if (roll !== 1) return false;
+    const enemies = rollAllihannaEncounter();
+    this.addLog(`⚠️ Encontro aleatório! ${enemies.map(e => e.name).join(', ')} aparecem!`);
+    this.pendingEnemies.set(enemies);
+    this.screen.set('encounter');
+    return true;
   }
 
   resolveEncounter(result: 'victory' | 'flee' | 'defeat'): void {
@@ -177,7 +275,32 @@ export class GameStateService {
     this.screen.set('dungeon');
   }
 
-  // ── Level-up ───────────────────────────────────────────────────────────────
+  // ── XP / Level-up ─────────────────────────────────────────────────────────
+
+  /**
+   * Chamado pelo CombatService ao matar um inimigo.
+   * Cada 10 XP acumulados = 1 ponto distribuível em atributos.
+   */
+  addXp(xpAmount: number, goldAmount: number): void {
+    const char = this.character();
+    if (!char) return;
+
+    const oldXp = char.xp;
+    const newXp = oldXp + xpAmount;
+    const newPoints = Math.floor(newXp / 10) - Math.floor(oldXp / 10);
+
+    this.character.update(c => c ? {
+      ...c,
+      xp: newXp,
+      gold: c.gold + goldAmount,
+      levelUpPoints: (c.levelUpPoints ?? 0) + newPoints,
+    } : c);
+
+    this.addLog(`✨ +${xpAmount} XP, +${goldAmount} PO`);
+    if (newPoints > 0) {
+      this.addLog(`🌟 +${newPoints} ponto${newPoints > 1 ? 's' : ''} de atributo disponível!`);
+    }
+  }
 
   /** Concede XP ao personagem principal e verifica subida de nível. */
   grantXp(amount: number): void {
@@ -201,23 +324,29 @@ export class GameStateService {
     }
   }
 
-  /** Gasta 1 ponto de level-up em um atributo do personagem principal. */
-  spendLevelUpPoint(attr: 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'pontosMagia'): void {
+  /** Custo para ir de N para N+1: N+1 pontos. */
+  private attrUpgradeCost(currentBase: number): number { return currentBase + 1; }
+
+  /** Gasta pontos de level-up em um atributo do personagem principal. */
+  spendLevelUpPoint(attr: 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo'): void {
     const char = this.character();
     if (!char || !char.levelUpPoints) return;
 
-    const updated = { ...char, levelUpPoints: char.levelUpPoints - 1 };
+    const currentBase = attr === 'armadura' ? char.armadura : char[attr].base;
+    const cost = this.attrUpgradeCost(currentBase);
+    if ((char.levelUpPoints ?? 0) < cost) return;
+
+    const updated = { ...char, levelUpPoints: (char.levelUpPoints ?? 0) - cost };
 
     if (attr === 'armadura') {
       updated.armadura = char.armadura + 1;
     } else if (attr === 'resistencia') {
       const newR = char.resistencia.base + 1;
-      const pvBonus = 5;
       updated.resistencia = { base: newR, current: newR, max: newR };
       updated.pontosVida = {
-        base: char.pontosVida.base + pvBonus,
-        current: char.pontosVida.current + pvBonus,
-        max: char.pontosVida.max + pvBonus,
+        base: char.pontosVida.base + 5,
+        current: char.pontosVida.current + 5,
+        max: char.pontosVida.max + 5,
       };
     } else {
       const old = char[attr];
@@ -226,18 +355,21 @@ export class GameStateService {
     }
 
     this.character.set(updated);
-    this.addLog(`📈 ${char.name} melhorou ${attr}!`);
+    this.addLog(`📈 ${char.name} melhorou ${attr}! (custou ${cost}pt)`);
   }
 
-  /** Gasta 1 ponto de level-up em um atributo de um companheiro. */
+  /** Gasta pontos de level-up em um atributo de um companheiro. */
   spendCompanionLevelUpPoint(
     companionId: string,
-    attr: 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'pontosMagia',
+    attr: 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo',
   ): void {
     this.companions.update(list =>
       list.map(c => {
         if (c.id !== companionId || !c.levelUpPoints) return c;
-        const updated = { ...c, levelUpPoints: c.levelUpPoints - 1 };
+        const currentBase = attr === 'armadura' ? c.armadura : c[attr].base;
+        const cost = this.attrUpgradeCost(currentBase);
+        if ((c.levelUpPoints ?? 0) < cost) return c;
+        const updated = { ...c, levelUpPoints: (c.levelUpPoints ?? 0) - cost };
         if (attr === 'armadura') {
           updated.armadura = c.armadura + 1;
         } else if (attr === 'resistencia') {
@@ -259,6 +391,34 @@ export class GameStateService {
   }
 
   // ── Utilitários ────────────────────────────────────────────────────────────
+
+  // ── Debug ──────────────────────────────────────────────────────────────────
+
+  /** Teleporta para um andar específico mantendo o personagem atual. */
+  debugJumpToFloor(floorNumber: number): void {
+    this.pendingEnemies.set(null);
+    this.newCompanion.set(null);
+    this.floorNumber.set(floorNumber);
+    this.generateNewFloor();
+    const theme = this.currentFloor()!.theme;
+    this.screen.set('dungeon');
+    this.addLog(`🛠️ [DEBUG] Teleportado para Andar ${floorNumber} — ${theme.name}`);
+  }
+
+  /** Restaura HP e PF máximos do personagem e companheiros. */
+  debugFullHeal(): void {
+    this.character.update(c => c ? {
+      ...c,
+      pontosVida: { ...c.pontosVida, current: c.pontosVida.max },
+      poderFogo:  { ...c.poderFogo,  current: c.poderFogo.max  },
+    } : c);
+    this.companions.update(list => list.map(c => ({
+      ...c,
+      pontosVida: { ...c.pontosVida, current: c.pontosVida.max },
+      poderFogo:  { ...c.poderFogo,  current: c.poderFogo.max  },
+    })));
+    this.addLog('🛠️ [DEBUG] HP e PF restaurados ao máximo.');
+  }
 
   addLog(msg: string): void {
     this.log.update(l => [...l.slice(-29), msg]);

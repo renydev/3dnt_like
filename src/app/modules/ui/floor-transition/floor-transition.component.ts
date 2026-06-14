@@ -45,6 +45,16 @@ export class FloorTransitionComponent implements OnInit {
     return map[palette] ?? '#d4aa14';
   }
 
+  toRoman(n: number): string {
+    const vals = [10,9,5,4,1];
+    const syms = ['X','IX','V','IV','I'];
+    let result = '';
+    for (let i = 0; i < vals.length; i++) {
+      while (n >= vals[i]) { result += syms[i]; n -= vals[i]; }
+    }
+    return result;
+  }
+
   proceed(): void {
     this.gs.proceedToNextFloor();
   }

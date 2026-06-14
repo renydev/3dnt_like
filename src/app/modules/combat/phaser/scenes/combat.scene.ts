@@ -34,6 +34,15 @@ export class CombatScene extends Phaser.Scene {
     this.enemyHp = this.config.enemy.hpAtual;
   }
 
+  preload(): void {
+    if (this.config.enemy.sprite) {
+      this.load.image(
+        `enemy_sprite`,
+        `assets/monsters_token/${this.config.enemy.sprite}`
+      );
+    }
+  }
+
   create(): void {
     const W = this.scale.width;
     const H = this.scale.height;
@@ -41,9 +50,15 @@ export class CombatScene extends Phaser.Scene {
     // Fundo
     this.add.rectangle(W / 2, H / 2, W, H, 0x1a1a2e);
 
-    // Sprites placeholder (texto até ter assets reais)
+    // Sprite do personagem (emoji)
     this.add.text(W * 0.25, H * 0.3, this.config.character.icon, { fontSize: '64px' }).setOrigin(0.5);
-    this.add.text(W * 0.75, H * 0.3, this.config.enemy.icon, { fontSize: '64px' }).setOrigin(0.5);
+
+    // Sprite do inimigo: imagem PNG se disponível, senão emoji
+    if (this.config.enemy.sprite && this.textures.exists('enemy_sprite')) {
+      this.add.image(W * 0.75, H * 0.3, 'enemy_sprite').setOrigin(0.5).setDisplaySize(96, 96);
+    } else {
+      this.add.text(W * 0.75, H * 0.3, this.config.enemy.icon, { fontSize: '64px' }).setOrigin(0.5);
+    }
 
     // Nomes
     this.add.text(W * 0.25, H * 0.18, this.config.character.nome, { fontSize: '14px', color: '#aef' }).setOrigin(0.5);
@@ -169,7 +184,7 @@ export class CombatScene extends Phaser.Scene {
   private playerAbility(): void {
     const pm = this.config.character.pmAtual;
     if (pm < 1) {
-      this.addLog('PM insuficiente!');
+      this.addLog('PF insuficiente!');
       this.busy = false;
       this.setButtonsEnabled(true);
       return;
