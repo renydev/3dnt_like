@@ -38,6 +38,8 @@ export class CombatService {
   companionAbilitiesUsed = signal<Map<string, Set<string>>>(new Map());
   enemyWeakenedTurns = signal(0);
   enemyWeakenAmount = signal(0);
+  /** Aguardando confirmação do jogador antes de ir para game_over */
+  pendingDefeat = signal(false);
 
   readonly abilities = computed<CombatAbility[]>(() => {
     const cls = this.gs.character()?.class;
@@ -47,7 +49,7 @@ export class CombatService {
   canUseAbility(ab: CombatAbility): boolean {
     const char = this.gs.character();
     if (!char) return false;
-    if (char.poderFogo.current < ab.pfCost) return false;
+    if (char.pontosMana.current < ab.pmCost) return false;
     if (ab.usesPerCombat && this.abilitiesUsed().has(ab.id)) return false;
     return true;
   }
@@ -82,6 +84,25 @@ export class CombatService {
     this.afterPlayerAction();
   }
 
+  playerRangedAttack(): void {
+    if (this.phase() !== 'player_turn') return;
+    const char = this.gs.character();
+    const target = this.enemy();
+    if (!char || !target) return;
+    this.resolveRangedBasic(char, target);
+    this.afterPlayerAction();
+  }
+
+  playerRangedAttackTarget(targetId: string): void {
+    if (this.phase() !== 'player_turn') return;
+    const char = this.gs.character();
+    const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
+                ?? this.enemies().find(e => e.hp > 0);
+    if (!char || !target) return;
+    this.resolveRangedBasic(char, target);
+    this.afterPlayerAction();
+  }
+
   playerUseAbility(ab: CombatAbility): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
@@ -89,7 +110,7 @@ export class CombatService {
     if (!char || !target) return;
     if (!this.canUseAbility(ab)) return;
 
-    if (ab.pfCost > 0) this.spendPF(ab.pfCost, char);
+    if (ab.pmCost > 0) this.spendPM(ab.pmCost);
     if (ab.usesPerCombat) {
       this.abilitiesUsed.update(s => new Set([...s, ab.id]));
     }
@@ -127,8 +148,8 @@ export class CombatService {
         }
         const atkPower = char.forca.current + char.habilidade.current + d6() + d6n(ab.bonusDice ?? 1);
         const defPower = target.armadura + target.habilidade + d6();
-        const dmg = Math.max(1, atkPower - defPower);
-        this.addLog(`${ab.icon} ${ab.name} — Atq(${atkPower}) vs Def(${defPower}) = ${dmg} dano!`, 'player');
+        const { dmg, str: dmgStr1 } = this.fmtDmg(atkPower - defPower);
+        this.addLog(`${ab.icon} ${ab.name} — Atq(${atkPower}) vs Def(${defPower}) = ${dmgStr1} dano!`, 'player');
         this.applyDamageToEnemy(target.id, dmg);
         this.afterPlayerAction();
         return;
@@ -166,7 +187,7 @@ export class CombatService {
     if (!char || !target) return;
     if (!this.canUseAbility(ab)) return;
 
-    if (ab.pfCost > 0) this.spendPF(ab.pfCost, char);
+    if (ab.pmCost > 0) this.spendPM(ab.pmCost);
     if (ab.usesPerCombat) this.abilitiesUsed.update(s => new Set([...s, ab.id]));
 
     switch (ab.effect) {
@@ -192,8 +213,8 @@ export class CombatService {
         if (!hit) { this.addLog(`${ab.icon} ${ab.name} — ERROU!`, 'miss'); this.afterPlayerAction(); return; }
         const atkP = char.forca.current + char.habilidade.current + d6() + d6n(ab.bonusDice ?? 1);
         const defP = target.armadura + target.habilidade + d6();
-        const dmg  = Math.max(1, atkP - defP);
-        this.addLog(`${ab.icon} ${ab.name} — Atq(${atkP}) vs Def(${defP}) = ${dmg} dano!`, 'player');
+        const { dmg, str: dmgStrP } = this.fmtDmg(atkP - defP);
+        this.addLog(`${ab.icon} ${ab.name} — Atq(${atkP}) vs Def(${defP}) = ${dmgStrP} dano!`, 'player');
         this.applyDamageToEnemy(target.id, dmg);
         this.afterPlayerAction(); return;
       }
@@ -271,7 +292,7 @@ export class CombatService {
 
     // Prioridade 1: curar o jogador se HP < 40%
     const healAb = abilities.find(ab => ab.effect === 'heal');
-    if (healAb && playerHpPct < 0.4 && companion.poderFogo.current >= healAb.pfCost) {
+    if (healAb && playerHpPct < 0.4 && companion.pontosMana.current >= healAb.pmCost) {
       this._companionHeal(companion, healAb, player);
       return;
     }
@@ -303,14 +324,14 @@ export class CombatService {
     const used = this.companionAbilitiesUsed().get(companion.id) ?? new Set<string>();
     const usable = abilities.filter(ab => {
       if (ab.effect === 'heal') return false;
-      if (companion.poderFogo.current < ab.pfCost) return false;
+      if (companion.pontosMana.current < ab.pmCost) return false;
       if (ab.usesPerCombat && used.has(ab.id)) return false;
       return true;
     });
     if (usable.length === 0) return null;
-    if (target.isBoss) return usable.reduce((best, ab) => ab.pfCost >= best.pfCost ? ab : best);
+    if (target.isBoss) return usable.reduce((best, ab) => ab.pmCost >= best.pmCost ? ab : best);
     if (hasBoss) {
-      const cheap = usable.filter(ab => ab.pfCost <= 1);
+      const cheap = usable.filter(ab => ab.pmCost <= 1);
       const pool = cheap.length > 0 ? cheap : usable;
       return pool[Math.floor(Math.random() * pool.length)];
     }
@@ -318,7 +339,7 @@ export class CombatService {
   }
 
   private _companionHeal(companion: Character, ab: CombatAbility, player: Character): void {
-    this._spendCompanionPF(companion.id, ab.pfCost);
+    this._spendCompanionPM(companion.id, ab.pmCost);
     if (ab.usesPerCombat) this._markCompanionAbilityUsed(companion.id, ab.id);
     let amount: number;
     let formula: string;
@@ -337,7 +358,7 @@ export class CombatService {
   }
 
   private _companionUseAbility(companion: Character, ab: CombatAbility, target: Enemy): void {
-    this._spendCompanionPF(companion.id, ab.pfCost);
+    this._spendCompanionPM(companion.id, ab.pmCost);
     if (ab.usesPerCombat) this._markCompanionAbilityUsed(companion.id, ab.id);
     const label = `${ab.icon} ${companion.name}: ${ab.name}`;
     switch (ab.effect) {
@@ -361,9 +382,9 @@ export class CombatService {
         const dAtk = d6(); const dBonus = d6n(ab.bonusDice ?? 1);
         const atk = companion.forca.current + companion.habilidade.current + dAtk + dBonus;
         const dDef = d6(); const def = target.armadura + target.habilidade + dDef;
-        const dmg = Math.max(1, atk - def);
+        const { dmg, str: dmgStrH } = this.fmtDmg(atk - def);
         const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
-        this.addLog(`${label}${hitInfo} | ATQ: F${companion.forca.current}+H${companion.habilidade.current}+🎲${dAtk}+✝🎲${dBonus}=${atk} vs DEF: A${target.armadura}+H${target.habilidade}+🎲${dDef}=${def} → ${dmg} dano sagrado em ${target.name}!`, 'player');
+        this.addLog(`${label}${hitInfo} | ATQ: F${companion.forca.current}+H${companion.habilidade.current}+🎲${dAtk}+✝🎲${dBonus}=${atk} vs DEF: A${target.armadura}+H${target.habilidade}+🎲${dDef}=${def} → ${dmgStrH} dano sagrado em ${target.name}!`, 'player');
         this.applyDamageToEnemy(target.id, dmg);
         break;
       }
@@ -403,9 +424,9 @@ export class CombatService {
     } else {
       const dDef = d6();
       const def = enemy.armadura + enemy.habilidade + dDef;
-      const dmg = Math.max(1, atk - def);
+      const { dmg, str: dmgStrM } = this.fmtDmg(atk - def);
       this.addLog(
-        `${label}${hitInfo} | ATQ: F${companion.forca.current}+H${companion.habilidade.current}+🎲${dAtk}${bonusPart}=${atk} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${def} → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | ATQ: F${companion.forca.current}+H${companion.habilidade.current}+🎲${dAtk}${bonusPart}=${atk} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${def} → ${dmgStrM} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -437,20 +458,20 @@ export class CombatService {
     } else {
       const dDef = d6();
       const def = enemy.armadura + enemy.habilidade + dDef;
-      const dmg = Math.max(1, atk - def);
+      const { dmg, str: dmgStrR } = this.fmtDmg(atk - def);
       this.addLog(
-        `${label}${hitInfo} | ATQ: PF${companion.poderFogo.current}+H${companion.habilidade.current}+🎲${dAtk}${bonusPart}=${atk} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${def} → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | ATQ: PF${companion.poderFogo.current}+H${companion.habilidade.current}+🎲${dAtk}${bonusPart}=${atk} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${def} → ${dmgStrR} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
     }
   }
 
-  private _spendCompanionPF(companionId: string, amount: number): void {
+  private _spendCompanionPM(companionId: string, amount: number): void {
     if (amount <= 0) return;
     this.gs.companions.update(list => list.map(c =>
       c.id === companionId
-        ? { ...c, poderFogo: { ...c.poderFogo, current: Math.max(0, c.poderFogo.current - amount) } }
+        ? { ...c, pontosMana: { ...c.pontosMana, current: Math.max(0, c.pontosMana.current - amount) } }
         : c
     ));
   }
@@ -479,14 +500,35 @@ export class CombatService {
     }
     const weakened = this.enemyWeakenedTurns() > 0;
 
+    const aliveParty: Array<{ name: string; armadura: number; habilidade: number; isPlayer: boolean; id?: string }> = [
+      { name: char.name, armadura: char.armadura, habilidade: char.habilidade.current, isPlayer: true },
+      ...this.gs.companions().filter(c => c.pontosVida.current > 0).map(c => ({
+        name: c.name.split(',')[0],
+        armadura: c.armadura,
+        habilidade: c.habilidade.current,
+        isPlayer: false,
+        id: c.id,
+      })),
+    ];
+
+    // Rastreia quantos ataques cada alvo recebeu nesta rodada (penalidade de H)
+    const attacksReceived = new Map<string, number>();
+
     for (const enemy of aliveEnemies) {
       const effF = Math.max(1, enemy.forca - (weakened ? this.enemyWeakenAmount() : 0));
       const effH = enemy.habilidade;
 
-      const { hit, roll: hitRoll, threshold } = hitCheck(effH, char.habilidade.current);
+      const targetMember = aliveParty[Math.floor(Math.random() * aliveParty.length)];
+      const targetKey = targetMember.isPlayer ? 'player' : targetMember.id!;
+      const hPenalty = attacksReceived.get(targetKey) ?? 0;
+      const effTargetH = Math.max(0, targetMember.habilidade - hPenalty);
+      attacksReceived.set(targetKey, hPenalty + 1);
+
+      const { hit, roll: hitRoll, threshold } = hitCheck(effH, effTargetH);
       if (!hit) {
+        const penaltyNote = hPenalty > 0 ? ` (H-${hPenalty} p/ ${hPenalty} atq. anterior${hPenalty > 1 ? 'es' : ''})` : '';
         this.addLog(
-          `${enemy.icon} ${enemy.name} ERRA! 🎯H${effH}vs${char.habilidade.current} | 🎲${hitRoll}>${threshold} — ${char.name} esquivou!`,
+          `${enemy.icon} ${enemy.name} ERRA! 🎯H${effH}vsH${effTargetH}${penaltyNote} | 🎲${hitRoll}>${threshold} — ${targetMember.name} esquivou!`,
           'miss'
         );
         continue;
@@ -495,18 +537,27 @@ export class CombatService {
       const dAtk = d6();
       const dDef = d6();
       const atkPower = effF + effH + dAtk;
-      const defPower = char.armadura + char.habilidade.current + dDef;
-      const dmg = Math.max(1, atkPower - defPower);
-
+      const defPower = targetMember.armadura + effTargetH + dDef;
+      const { dmg, str: dmgStrE } = this.fmtDmg(atkPower - defPower);
       const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
       const weakPart = weakened ? ` [F-${this.enemyWeakenAmount()}]` : '';
       this.addLog(
-        `${enemy.icon} ${enemy.name} ataca!${hitInfo}${weakPart} | ATQ: F${effF}+H${effH}+🎲${dAtk}=${atkPower} vs DEF: A${char.armadura}+H${char.habilidade.current}+🎲${dDef}=${defPower} → ${dmg} dano!`,
+        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | ATQ: F${effF}+H${effH}+🎲${dAtk}=${atkPower} vs DEF: A${targetMember.armadura}+H${effTargetH}+🎲${dDef}=${defPower} → ${dmgStrE} dano!`,
         'enemy'
       );
-      this.damagePlayer(dmg, char);
 
-      if (this.checkDefeat()) return;
+      if (targetMember.isPlayer) {
+        this.damagePlayer(dmg);
+        if (this.checkDefeat()) return;
+      } else {
+        this.gs.companions.update(list => list.map(c =>
+          c.id === targetMember.id
+            ? { ...c, pontosVida: { ...c.pontosVida, current: Math.max(0, c.pontosVida.current - dmg) } }
+            : c
+        ));
+        const fallen = this.gs.companions().find(c => c.id === targetMember.id && c.pontosVida.current === 0);
+        if (fallen) this.addLog(`💀 ${fallen.name.split(',')[0]} caiu em combate!`, 'system');
+      }
     }
 
     this.phase.set('player_turn');
@@ -547,14 +598,36 @@ export class CombatService {
     } else {
       const dDef = d6();
       const defPower = enemy.armadura + enemy.habilidade + dDef;
-      const dmg = Math.max(1, atkPower - defPower);
+      const { dmg, str: dmgStrMel } = this.fmtDmg(atkPower - defPower);
       const bonusPart = bonusDice > 0 ? `+🎲${dBonus}(x${bonusDice})` : '';
       this.addLog(
-        `${label}${hitInfo} | ATQ: F${char.forca.current}+H${char.habilidade.current}+🎲${dAtk}${bonusPart}=${atkPower} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${defPower} → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | ATQ: F${char.forca.current}+H${char.habilidade.current}+🎲${dAtk}${bonusPart}=${atkPower} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
     }
+  }
+
+  private resolveRangedBasic(char: Character, enemy: Enemy): void {
+    const { hit, roll: hitRoll, threshold } = hitCheck(char.habilidade.current, enemy.habilidade);
+    if (!hit) {
+      this.addLog(
+        `🏹 Ataque à Distância ERROU! 🎯H${char.habilidade.current}vs${enemy.habilidade} | 🎲${hitRoll}>${threshold} — ${enemy.name} esquivou!`,
+        'miss'
+      );
+      return;
+    }
+    const dAtk = d6();
+    const atkPower = char.poderFogo.current + char.habilidade.current + dAtk;
+    const dDef = d6();
+    const defPower = enemy.armadura + enemy.habilidade + dDef;
+    const { dmg, str: dmgStrRB } = this.fmtDmg(atkPower - defPower);
+    const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
+    this.addLog(
+      `🏹 Ataque à Distância${hitInfo} | ATQ: PF${char.poderFogo.current}+H${char.habilidade.current}+🎲${dAtk}=${atkPower} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${defPower} → ${dmgStrRB} dano em ${enemy.name}!`,
+      'player'
+    );
+    this.applyDamageToEnemy(enemy.id, dmg);
   }
 
   private resolveRangedAttack(char: Character, enemy: Enemy, ab: CombatAbility): void {
@@ -583,9 +656,9 @@ export class CombatService {
     } else {
       const dDef = d6();
       const defPower = enemy.armadura + enemy.habilidade + dDef;
-      const dmg = Math.max(1, atkPower - defPower);
+      const { dmg, str: dmgStrRA } = this.fmtDmg(atkPower - defPower);
       this.addLog(
-        `${ab.icon} ${ab.name}${hitInfo} | ATQ: PF${char.poderFogo.current}+H${char.habilidade.current}+🎲${dAtk}${bonusPart}=${atkPower} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${defPower} → ${dmg} dano em ${enemy.name}!`,
+        `${ab.icon} ${ab.name}${hitInfo} | ATQ: PF${char.poderFogo.current}+H${char.habilidade.current}+🎲${dAtk}${bonusPart}=${atkPower} vs DEF: A${enemy.armadura}+H${enemy.habilidade}+🎲${dDef}=${defPower} → ${dmgStrRA} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -596,19 +669,16 @@ export class CombatService {
     this.enemies.update(list =>
       list.map(e => e.id === enemyId ? { ...e, hp: Math.max(0, e.hp - dmg) } : e)
     );
-    // Verificar se esse inimigo morreu e conceder XP/ouro
     const killed = this.enemies().find(e => e.id === enemyId && e.hp === 0);
     if (killed) {
-      this.addLog(`💀 ${killed.name} foi abatido! (+${killed.xpReward} XP, +${killed.goldReward} PO)`, 'system');
-      this.gs.addXp(killed.xpReward, killed.goldReward);
+      this.addLog(`💀 ${killed.name} foi abatido!`, 'system');
     }
   }
 
-  private damagePlayer(dmg: number, char: Character): void {
-    const newPV = Math.max(0, char.pontosVida.current - dmg);
+  private damagePlayer(dmg: number): void {
     this.gs.character.update(c => c ? {
       ...c,
-      pontosVida: { ...c.pontosVida, current: newPV }
+      pontosVida: { ...c.pontosVida, current: Math.max(0, c.pontosVida.current - dmg) }
     } : c);
   }
 
@@ -628,10 +698,10 @@ export class CombatService {
     return healed;
   }
 
-  private spendPF(amount: number, char: Character): void {
+  private spendPM(amount: number): void {
     this.gs.character.update(c => c ? {
       ...c,
-      poderFogo: { ...c.poderFogo, current: Math.max(0, c.poderFogo.current - amount) }
+      pontosMana: { ...c.pontosMana, current: Math.max(0, c.pontosMana.current - amount) }
     } : c);
   }
 
@@ -640,8 +710,19 @@ export class CombatService {
     if (alive.length > 0) return false;
     this.phase.set('victory');
     this.addLog('🏆 Todos os inimigos foram derrotados!', 'system');
+
+    // Distribui PE e ouro ao final do combate
+    const defeated = this.enemies();
+    const totalGold = defeated.reduce((s, e) => s + e.goldReward, 0);
+    this.gs.awardCombatPE(defeated, totalGold);
+
     setTimeout(() => this.gs.resolveEncounter('victory'), 1200);
     return true;
+  }
+
+  confirmDefeat(): void {
+    this.pendingDefeat.set(false);
+    this.gs.resolveEncounter('defeat');
   }
 
   private checkDefeat(): boolean {
@@ -649,11 +730,19 @@ export class CombatService {
     if (!char || char.pontosVida.current > 0) return false;
     this.phase.set('defeat');
     this.addLog('💀 Você caiu em combate...', 'system');
-    setTimeout(() => this.gs.resolveEncounter('defeat'), 1500);
+    setTimeout(() => this.pendingDefeat.set(true), 1200);
     return true;
+  }
+
+  /** Formata o dano: se raw < 1 exibe o valor original tachado + o mínimo. */
+  private fmtDmg(raw: number): { dmg: number; str: string } {
+    const dmg = Math.max(1, raw);
+    const str = raw < 1 ? `<s>${raw}</s> ${dmg} (dano mín)` : `${dmg}`;
+    return { dmg, str };
   }
 
   private addLog(text: string, type: CombatLogEntry['type']): void {
     this.log.update(l => [...l.slice(-7), { text, type }]);
+    this.gs.appendJournal(this.gs.floorNumber(), text, type);
   }
 }

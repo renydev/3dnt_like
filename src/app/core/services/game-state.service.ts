@@ -1,12 +1,13 @@
 import { Injectable, signal, computed } from '@angular/core';
 import {
-  Character, PRESET_CHARACTERS, COMPANION_POOL,
-  CharacterClass, CLASS_ROLES, ROLE_COMPLEMENTS,
+  Character, PRESET_CHARACTERS,
+  CharacterClass, CLASS_ROLES,
 } from '../models/character.model';
 import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { ALLIHANNA_ROOM_ENEMIES, rollAllihannaEncounter } from '../data/dungeons/allihanna';
+import { calcCharacterPP, calcCombatPE } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
 
@@ -14,6 +15,7 @@ export type GameScreen =
   | 'menu'
   | 'character_select'
   | 'character_create'
+  | 'companion_select'
   | 'dungeon'
   | 'encounter'
   | 'floor_transition'
@@ -21,14 +23,13 @@ export type GameScreen =
   | 'victory'
   | 'debug_map';
 
-// Andares em que companheiros se juntam ao grupo (após derrotar o chefe)
-const COMPANION_JOIN_FLOORS: Record<number, number> = { 3: 0, 7: 1, 12: 2 };
 
 @Injectable({ providedIn: 'root' })
 export class GameStateService {
   screen = signal<GameScreen>('menu');
   character = signal<Character | null>(null);
   companions = signal<Character[]>([]);
+  companionChoices = signal<Omit<Character, 'id'>[]>([]);
   currentFloor = signal<DungeonFloor | null>(null);
   currentRoomId = signal<number>(0);
   floorNumber = signal<number>(1);
@@ -42,6 +43,25 @@ export class GameStateService {
 
   /** ID da câmara aguardando confirmação do dialog de cenário */
   pendingRoomEntry = signal<number | null>(null);
+
+  /** Diário de combate acumulado durante a run */
+  combatJournal = signal<Array<{ ts: string; floor: number; text: string; type: string }>>([]);
+
+  appendJournal(floor: number, text: string, type: string): void {
+    this.combatJournal.update(j => [...j, { ts: new Date().toISOString(), floor, text, type }]);
+  }
+
+  downloadJournal(): void {
+    const name = this.character()?.name ?? 'aventureiro';
+    const data = JSON.stringify(this.combatJournal(), null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `diario-${name}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   readonly TOTAL_FLOORS = 20;
 
@@ -83,34 +103,57 @@ export class GameStateService {
 
   startCustomGame(char: Character): void {
     this.character.set(char);
-    this.companions.set(this._buildInitialParty(char.class));
+    this.companions.set([]);
     this.newCompanion.set(null);
     this.floorNumber.set(1);
     this.generateNewFloor();
-    this.screen.set('dungeon');
-    this.addLog(`⚔️ ${char.name} adentra o Labirinto de Valkaria!`);
-    this.addLog(`📍 Andar 1/20 — ${this.currentFloor()!.theme.name}`);
-    this.addLog(`🏛️ Desafio de ${this.currentFloor()!.theme.godName}, ${this.currentFloor()!.theme.godDomain}`);
-    if (!this.currentFloor()!.theme.specialRule.includes('Masmorra mais simples')) {
-      this.addLog(`⚠️ REGRA ESPECIAL: ${this.currentFloor()!.theme.specialRule}`);
-    }
+    this.companionChoices.set(this._generateCompanionChoices(char.class));
+    this.screen.set('companion_select');
   }
 
-  /**
-   * Monta a party inicial com 3 companheiros IA que equilibram o papel do jogador.
-   * Tank → DPS + Healer + Mage, etc.
-   */
-  private _buildInitialParty(playerClass: CharacterClass): Character[] {
-    const playerRole = CLASS_ROLES[playerClass];
-    const needed = ROLE_COMPLEMENTS[playerRole];
+  /** Seleciona um companheiro (tela inicial ou após boss) */
+  selectCompanion(choice: Omit<Character, 'id'>): void {
+    const companion: Character = { ...choice, id: crypto.randomUUID(), isCompanion: true };
+    this.companions.update(list => [...list, companion]);
+    this.companionChoices.set([]);
+    this.newCompanion.set(companion);
 
-    return needed.map(role => {
-      // Pega o primeiro personagem do pool com esse papel que não seja a classe do jogador
-      const preset = PRESET_CHARACTERS.find(
-        c => CLASS_ROLES[c.class] === role && c.class !== playerClass
-      ) ?? PRESET_CHARACTERS.find(c => CLASS_ROLES[c.class] === role)!;
-      return { ...preset, id: crypto.randomUUID(), isCompanion: true };
-    });
+    if (this.screen() === 'companion_select') {
+      // Vindo da seleção inicial — entra na dungeon
+      const floor = this.currentFloor()!;
+      this.addLog(`⚔️ ${this.character()!.name} adentra o Labirinto de Valkaria!`);
+      this.addLog(`🤝 ${companion.name} se junta à aventura!`);
+      this.addLog(`📍 Andar 1/20 — ${floor.theme.name}`);
+      this.addLog(`🏛️ Desafio de ${floor.theme.godName}, ${floor.theme.godDomain}`);
+      if (!floor.theme.specialRule.includes('Masmorra mais simples')) {
+        this.addLog(`⚠️ REGRA ESPECIAL: ${floor.theme.specialRule}`);
+      }
+      this.screen.set('dungeon');
+    }
+    // Se estiver em floor_transition, apenas adiciona — a tela continua mostrando
+  }
+
+  /** Gera 3 opções diversas de companheiros (excluindo classe do jogador) */
+  private _generateCompanionChoices(playerClass: CharacterClass): Omit<Character, 'id'>[] {
+    const pool = PRESET_CHARACTERS.filter(c => c.class !== playerClass);
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    const seen = new Set<string>();
+    const picks: Omit<Character, 'id'>[] = [];
+    for (const c of shuffled) {
+      const role = CLASS_ROLES[c.class];
+      if (!seen.has(role)) {
+        seen.add(role);
+        picks.push({ ...c, isCompanion: true });
+      }
+      if (picks.length === 3) break;
+    }
+    for (const c of shuffled) {
+      if (picks.length >= 3) break;
+      if (!picks.find(p => p.class === c.class)) {
+        picks.push({ ...c, isCompanion: true });
+      }
+    }
+    return picks.slice(0, 3);
   }
 
   // ── Andares ────────────────────────────────────────────────────────────────
@@ -209,6 +252,55 @@ export class GameStateService {
     return true;
   }
 
+  /**
+   * O grupo descansa na câmara atual.
+   * Recupera R×2 PV e R PM por membro. Depois, 1/3 de chance de encontro aleatório.
+   * Só pode descansar uma vez por câmara.
+   */
+  restAtRoom(): void {
+    const floor = this.currentFloor();
+    const roomId = this.currentRoomId();
+    if (!floor) return;
+
+    const room = floor.rooms.find(r => r.id === roomId);
+    if (!room || room.rested) return;
+
+    // Cura
+    const heal = (c: import('../models/character.model').Character) => {
+      const hpGain = c.resistencia.current * 2;
+      const pmGain = c.resistencia.current;
+      return {
+        ...c,
+        pontosVida: { ...c.pontosVida, current: Math.min(c.pontosVida.current + hpGain, c.pontosVida.max) },
+        pontosMana:  { ...c.pontosMana,  current: Math.min(c.pontosMana.current  + pmGain,  c.pontosMana.max)  },
+      };
+    };
+
+    this.character.update(c => c ? heal(c) : c);
+    this.companions.update(list => list.map(heal));
+
+    // Marca câmara como descansada
+    const rooms = floor.rooms.map(r => r.id === roomId ? { ...r, rested: true } : r);
+    this.currentFloor.set({ ...floor, rooms });
+
+    this.addLog(`🏕️ O grupo descansou em "${room.name}". PV e PM parcialmente recuperados.`);
+
+    // Rola encontro aleatório (1-2 em 1d6 ≈ 33%)
+    const roll = d6();
+    if (roll <= 2) {
+      const isAllihanna = this.floorNumber() === 1;
+      if (isAllihanna) {
+        const enemies = rollAllihannaEncounter();
+        this.addLog(`⚠️ Encontro aleatório durante o descanso! ${enemies.map(e => e.name).join(', ')} aparecem!`);
+        this.pendingEnemies.set(enemies);
+      } else {
+        this.addLog(`⚠️ Encontro aleatório durante o descanso! Monstros errantes se aproximam!`);
+        this.pendingEnemies.set(null);
+      }
+      this.screen.set('encounter');
+    }
+  }
+
   resolveEncounter(result: 'victory' | 'flee' | 'defeat'): void {
     const floor = this.currentFloor();
     const roomId = this.currentRoomId();
@@ -243,22 +335,19 @@ export class GameStateService {
     const current = this.floorNumber();
     const next = current + 1;
 
+    this.awardFloorCompletionPP();
+
     if (next > this.TOTAL_FLOORS) {
       this.screen.set('victory');
       this.addLog('🏆 VALKARIA ESTÁ LIVRE! Os aventureiros são os Libertadores de Valkaria!');
       return;
     }
 
-    // Verifica se um companheiro se junta neste andar
-    const companionIdx = COMPANION_JOIN_FLOORS[current];
-    if (companionIdx !== undefined && companionIdx < COMPANION_POOL.length) {
-      const companion: Character = { ...COMPANION_POOL[companionIdx], id: crypto.randomUUID() };
-      this.companions.update(list => [...list, companion]);
-      this.newCompanion.set(companion);
-      this.addLog(`🤝 ${companion.name} se junta ao grupo!`);
-    } else {
-      this.newCompanion.set(null);
-    }
+    // A cada boss derrotado, o jogador escolhe um novo companheiro
+    const playerClass = this.character()?.class;
+    const choices = this._generateCompanionChoices(playerClass ?? 'guerreiro');
+    this.companionChoices.set(choices);
+    this.newCompanion.set(null);
 
     this.floorNumber.set(next);
     this.screen.set('floor_transition');
@@ -275,53 +364,98 @@ export class GameStateService {
     this.screen.set('dungeon');
   }
 
-  // ── XP / Level-up ─────────────────────────────────────────────────────────
+  // ── PE / PP / Level-up ────────────────────────────────────────────────────
+
+  /** PP calculado do personagem principal (usa valor real = base + racial). */
+  characterPP = computed(() => {
+    const c = this.character();
+    return c ? calcCharacterPP(c) : 0;
+  });
+
+  /** PP de cada membro da party. */
+  partyPPs = computed(() => this.party().map(calcCharacterPP));
 
   /**
-   * Chamado pelo CombatService ao matar um inimigo.
-   * Cada 10 XP acumulados = 1 ponto distribuível em atributos.
+   * Chamado ao fim de um combate com vitória.
+   * Distribui PE (Pontos de Experiência) igualmente entre os membros da party,
+   * converte PE acumulados em PP (Pontos de Personagem) gastáveis.
+   *
+   * Regras de PE por monstro vs PP médio da party:
+   *   < 0.5× → 0 PE
+   *   0.5–1.5× → 1 PE
+   *   1.5–2.5× → 2 PE
+   *   > 2.5× → floor(ratio × 2) PE
+   *
+   * PE necessários para 1 PP: 10 PE = 1 ponto de atributo.
+   * Terminar a masmorra concede 1 PP extra.
    */
-  addXp(xpAmount: number, goldAmount: number): void {
+  awardCombatPE(defeatedEnemies: Enemy[], goldAmount: number): void {
+    const partyPPs = this.partyPPs();
+    if (partyPPs.length === 0) return;
+
+    const monsterPPs = defeatedEnemies.map(e => e.pp);
+    const result = calcCombatPE(monsterPPs, partyPPs);
+    const pe = result.pePerCharacter;
+
+    if (goldAmount > 0) {
+      this.character.update(c => c ? { ...c, gold: c.gold + goldAmount } : c);
+    }
+
+    if (pe <= 0) {
+      this.addLog(`⚔️ Combate resolvido. Inimigos fracos demais para gerar experiência.`);
+      return;
+    }
+
+    const PE_PER_PP = 10;
+
+    // Personagem principal
+    this.character.update(c => {
+      if (!c) return c;
+      const oldXp = c.xp;
+      const newXp = oldXp + pe;
+      const newPP = Math.floor(newXp / PE_PER_PP) - Math.floor(oldXp / PE_PER_PP);
+      return {
+        ...c,
+        xp: newXp,
+        levelUpPoints: (c.levelUpPoints ?? 0) + newPP,
+      };
+    });
+
+    // Companheiros
+    this.companions.update(list => list.map(c => {
+      const oldXp = c.xp;
+      const newXp = oldXp + pe;
+      const newPP = Math.floor(newXp / PE_PER_PP) - Math.floor(oldXp / PE_PER_PP);
+      return { ...c, xp: newXp, levelUpPoints: (c.levelUpPoints ?? 0) + newPP };
+    }));
+
+    this.addLog(`✨ +${pe} PE por personagem (monstros PP total: ${result.totalMonsterPP})`);
+
+    // Verifica novos pontos para o jogador principal
     const char = this.character();
-    if (!char) return;
+    if (char) {
+      const pp = Math.floor(char.xp / PE_PER_PP) - Math.floor((char.xp - pe) / PE_PER_PP);
+      if (pp > 0) {
+        this.addLog(`🌟 +${pp} PP disponível para distribuir em atributos!`);
+      }
+    }
 
-    const oldXp = char.xp;
-    const newXp = oldXp + xpAmount;
-    const newPoints = Math.floor(newXp / 10) - Math.floor(oldXp / 10);
-
-    this.character.update(c => c ? {
-      ...c,
-      xp: newXp,
-      gold: c.gold + goldAmount,
-      levelUpPoints: (c.levelUpPoints ?? 0) + newPoints,
-    } : c);
-
-    this.addLog(`✨ +${xpAmount} XP, +${goldAmount} PO`);
-    if (newPoints > 0) {
-      this.addLog(`🌟 +${newPoints} ponto${newPoints > 1 ? 's' : ''} de atributo disponível!`);
+    if (goldAmount > 0) {
+      this.addLog(`💰 +${goldAmount} PO`);
     }
   }
 
-  /** Concede XP ao personagem principal e verifica subida de nível. */
-  grantXp(amount: number): void {
-    const char = this.character();
-    if (!char) return;
-    const newXp = char.xp + amount;
-    const toNext = char.xpToNextLevel;
+  /** Concede 1 PP a todos ao completar um andar (chefe derrotado). */
+  private awardFloorCompletionPP(): void {
+    this.character.update(c => c ? { ...c, levelUpPoints: (c.levelUpPoints ?? 0) + 1 } : c);
+    this.companions.update(list => list.map(c => ({ ...c, levelUpPoints: (c.levelUpPoints ?? 0) + 1 })));
+    this.addLog(`🏰 Andar concluído! +1 PP para todos os membros da party.`);
+  }
 
-    if (newXp >= toNext) {
-      const leveled: Character = {
-        ...char,
-        level: char.level + 1,
-        xp: newXp - toNext,
-        xpToNextLevel: Math.round(toNext * 1.5),
-        levelUpPoints: (char.levelUpPoints ?? 0) + 3,
-      };
-      this.character.set(leveled);
-      this.addLog(`🌟 ${char.name} subiu para o Nível ${leveled.level}! +3 pontos para distribuir.`);
-    } else {
-      this.character.set({ ...char, xp: newXp });
-    }
+  /** @deprecated use awardCombatPE */
+  addXp(xpAmount: number, goldAmount: number): void {
+    this.character.update(c => c ? { ...c, gold: c.gold + goldAmount } : c);
+    this.addLog(`💰 +${goldAmount} PO`);
   }
 
   /** Custo para ir de N para N+1: N+1 pontos. */
@@ -412,14 +546,14 @@ export class GameStateService {
     this.character.update(c => c ? {
       ...c,
       pontosVida: { ...c.pontosVida, current: c.pontosVida.max },
-      poderFogo:  { ...c.poderFogo,  current: c.poderFogo.max  },
+      pontosMana: { ...c.pontosMana, current: c.pontosMana.max },
     } : c);
     this.companions.update(list => list.map(c => ({
       ...c,
       pontosVida: { ...c.pontosVida, current: c.pontosVida.max },
-      poderFogo:  { ...c.poderFogo,  current: c.poderFogo.max  },
+      pontosMana: { ...c.pontosMana, current: c.pontosMana.max },
     })));
-    this.addLog('🛠️ [DEBUG] HP e PF restaurados ao máximo.');
+    this.addLog('🛠️ [DEBUG] HP e PM restaurados ao máximo.');
   }
 
   addLog(msg: string): void {
@@ -430,6 +564,8 @@ export class GameStateService {
     this.screen.set('menu');
     this.character.set(null);
     this.companions.set([]);
+    this.companionChoices.set([]);
+    this.newCompanion.set(null);
     this.currentFloor.set(null);
     this.log.set([]);
   }

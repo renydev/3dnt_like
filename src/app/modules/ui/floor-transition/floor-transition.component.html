@@ -16,12 +16,28 @@
     <span class="cleared-icon">🏆</span>
     <p class="cleared-label">Andar {{ toRoman(gs.floorNumber() - 1) }} concluído</p>
     <p class="cleared-god">
-      Desafio de <strong>{{ prevTheme()?.godName }}</strong> superado!
+      Desafio de <strong>{{ prevTheme().godName }}</strong> superado!
     </p>
   </div>
 
-  <!-- Companheiro que entrou para o grupo -->
-  @if (gs.newCompanion()) {
+  <!-- Seleção de companheiro após boss -->
+  @if (gs.companionChoices().length > 0) {
+    <div class="companion-picker">
+      <p class="picker-label">🤝 Escolha um novo companheiro para continuar:</p>
+      <div class="picker-cards">
+        @for (c of gs.companionChoices(); track c.class) {
+          <div class="picker-card" (click)="gs.selectCompanion(c)">
+            <span class="picker-portrait">{{ c.portraitIcon }}</span>
+            <span class="picker-name">{{ c.name }}</span>
+            <span class="picker-class">{{ c.class | titlecase }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Companheiro recém recrutado -->
+  @if (gs.newCompanion() && gs.companionChoices().length === 0) {
     <div class="companion-join">
       <div class="companion-icon">{{ gs.newCompanion()!.portraitIcon }}</div>
       <div class="companion-text">
@@ -64,13 +80,13 @@
       <div class="next-tags">
         <div class="tag-group">
           <span class="tag-label">Monstros</span>
-          @for (m of theme.monsterTypes?.slice(0, 3) ?? []; track m) {
+          @for (m of theme.monsterTypes.slice(0, 3) ?? []; track m) {
             <span class="tag-item">{{ m }}</span>
           }
         </div>
         <div class="tag-group">
           <span class="tag-label">Tesouros</span>
-          @for (t of theme.treasureTypes?.slice(0, 2) ?? []; track t) {
+          @for (t of theme.treasureTypes.slice(0, 2) ?? []; track t) {
             <span class="tag-item gold">{{ t }}</span>
           }
         </div>
@@ -81,8 +97,10 @@
   <!-- Flavor text do próximo andar -->
   <p class="flavor-text">"{{ flavorText() }}"</p>
 
-  <button class="btn-proceed" (click)="proceed()" [disabled]="!ready()">
-    {{ ready() ? '⚔️ Adentrar o Próximo Andar' : 'Preparando...' }}
+  <button class="btn-proceed" (click)="proceed()" [disabled]="!canProceed()">
+    @if (!ready()) { Preparando... }
+    @else if (gs.companionChoices().length > 0) { 🤝 Escolha um companheiro acima }
+    @else { ⚔️ Adentrar o Próximo Andar }
   </button>
 
 </div>

@@ -172,8 +172,61 @@
         </div>
       }
 
-      <!-- ── STEP 2: RAÇA ────────────────────────────────────────────────── -->
+      <!-- ── STEP 2: INÍCIO RÁPIDO ─────────────────────────────────────── -->
       @if (step() === 2) {
+        <div class="step-content">
+          <h2 class="step-title">Início Rápido</h2>
+          <p class="step-desc">
+            Escolha um personagem pronto para entrar no labirinto imediatamente,
+            ou <button class="btn-skip-preset" (click)="skipPreset()">personalize do zero →</button>
+          </p>
+
+          <div class="presets-grid">
+            @for (preset of presets; track preset.id) {
+              <div class="preset-card" [style.--preset-color]="preset.color" (click)="applyPreset(preset)">
+                <div class="preset-header">
+                  <span class="preset-icon">{{ preset.icon }}</span>
+                  <div class="preset-title-block">
+                    <div class="preset-name">{{ preset.name }}</div>
+                    <div class="preset-tag" [style.color]="preset.color">{{ preset.tag }}</div>
+                  </div>
+                </div>
+
+                <p class="preset-desc">{{ preset.description }}</p>
+
+                <ul class="preset-highlights">
+                  @for (h of preset.highlights; track h) {
+                    <li>{{ h }}</li>
+                  }
+                </ul>
+
+                <div class="preset-attrs">
+                  @if (preset.attrs.forca > 0) {
+                    <span class="pa-chip">⚔️ F{{ preset.attrs.forca }}</span>
+                  }
+                  @if (preset.attrs.habilidade > 0) {
+                    <span class="pa-chip">🎯 H{{ preset.attrs.habilidade }}</span>
+                  }
+                  @if (preset.attrs.resistencia > 0) {
+                    <span class="pa-chip">🛡️ R{{ preset.attrs.resistencia }}</span>
+                  }
+                  @if (preset.attrs.armadura > 0) {
+                    <span class="pa-chip">🔰 A{{ preset.attrs.armadura }}</span>
+                  }
+                  @if (preset.attrs.poderFogo > 0) {
+                    <span class="pa-chip">✨ PF{{ preset.attrs.poderFogo }}</span>
+                  }
+                </div>
+
+                <button class="preset-btn" [style.background]="preset.color">Jogar como {{ preset.tag }} →</button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- ── STEP 3: RAÇA ────────────────────────────────────────────────── -->
+      @if (step() === 3) {
         <div class="step-content">
           <h2 class="step-title">Escolha sua Raça</h2>
           <p class="step-desc">
@@ -272,8 +325,8 @@
         </div>
       }
 
-      <!-- ── STEP 3: CLASSE ──────────────────────────────────────────────── -->
-      @if (step() === 3) {
+      <!-- ── STEP 4: CLASSE ──────────────────────────────────────────────── -->
+      @if (step() === 4) {
         <div class="step-content">
           <h2 class="step-title">Escolha sua Classe</h2>
           <p class="step-desc">
@@ -335,8 +388,8 @@
         </div>
       }
 
-      <!-- ── STEP 4: ATRIBUTOS ────────────────────────────────────────────── -->
-      @if (step() === 4) {
+      <!-- ── STEP 5: ATRIBUTOS ────────────────────────────────────────────── -->
+      @if (step() === 5) {
         <div class="step-content">
           <h2 class="step-title">Distribua seus Atributos</h2>
           <p class="step-desc">
@@ -390,8 +443,8 @@
         </div>
       }
 
-      <!-- ── STEP 5: VANTAGENS ───────────────────────────────────────────── -->
-      @if (step() === 5) {
+      <!-- ── STEP 6: VANTAGENS ───────────────────────────────────────────── -->
+      @if (step() === 6) {
         <div class="step-content">
           <h2 class="step-title">Vantagens &amp; Desvantagens</h2>
           <p class="step-desc">
@@ -443,8 +496,8 @@
         </div>
       }
 
-      <!-- ── Step 6: Perícias ───────────────────────────────────────────────── -->
-      @if (step() === 6) {
+      <!-- ── Step 7: Perícias ───────────────────────────────────────────────── -->
+      @if (step() === 7) {
         <div class="step-content">
           <h2 class="step-title">Perícias</h2>
           <p class="step-desc">
@@ -498,13 +551,17 @@
       <div></div>
     }
 
-    @if (step() > 3 && step() < 6) {
+    @if (step() > 4 && step() < 7) {
       <button class="btn-next" [disabled]="!canAdvance()" (click)="nextStep()">
         Próximo →
       </button>
-    } @else if (step() === 6) {
+    } @else if (step() === 7) {
       <button class="btn-confirm" [disabled]="!canConfirm()" (click)="confirm()">
         ⚔️ Entrar no Labirinto
+      </button>
+    } @else if (step() === 2) {
+      <button class="btn-next" (click)="skipPreset()">
+        Personalizar do Zero →
       </button>
     }
   </div>

@@ -45,8 +45,7 @@
 
         <div class="log-entries combat-entries" #logEntries>
           @for (entry of combat.log(); track $index) {
-            <div class="log-entry combat-line" [class]="'ll-' + entry.type">
-              {{ entry.text }}
+            <div class="log-entry combat-line" [class]="'ll-' + entry.type" [innerHTML]="entry.text">
             </div>
           }
         </div>

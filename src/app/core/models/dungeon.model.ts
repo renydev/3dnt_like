@@ -27,6 +27,7 @@ export interface DungeonRoom {
   isCurrent?: boolean;
   isVisible?: boolean;
   entered?: boolean;
+  rested?: boolean;
   scenario?: RoomScenario;
 }
 
@@ -35,7 +36,9 @@ export interface MapHotspot {
   label: string;
   cx: number;
   cy: number;
-  r: number;
+  r?: number;
+  w?: number;
+  h?: number;
 }
 
 export interface ImageMapConfig {

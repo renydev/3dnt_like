@@ -1,0 +1,142 @@
+.companion-select-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem;
+  background: radial-gradient(ellipse at top, #1a0a2e 0%, #0d0d1a 100%);
+  color: #e8dcc8;
+  gap: 2rem;
+}
+
+.cs-header {
+  text-align: center;
+}
+
+.cs-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.cs-icon {
+  font-size: 2rem;
+}
+
+.cs-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #d4aa14;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(212, 170, 20, 0.4);
+}
+
+.cs-subtitle {
+  margin: 0.5rem 0 0;
+  color: #a09070;
+  font-size: 0.95rem;
+}
+
+.cs-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 540px;
+}
+
+.cs-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 170, 20, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+
+  &:hover {
+    border-color: #d4aa14;
+    background: rgba(212, 170, 20, 0.08);
+    transform: translateY(-2px);
+
+    .cs-btn {
+      background: #d4aa14;
+      color: #1a0a2e;
+    }
+  }
+}
+
+.cs-portrait {
+  font-size: 2.8rem;
+  flex-shrink: 0;
+  width: 3.2rem;
+  text-align: center;
+}
+
+.cs-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cs-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f0e6c8;
+}
+
+.cs-class {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #a09070;
+  text-transform: capitalize;
+}
+
+.cs-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.stat {
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  color: #c8b88a;
+}
+
+.cs-vantagens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.2rem;
+}
+
+.tag {
+  font-size: 0.72rem;
+  background: rgba(212, 170, 20, 0.12);
+  border: 1px solid rgba(212, 170, 20, 0.25);
+  border-radius: 20px;
+  padding: 0.1rem 0.5rem;
+  color: #d4aa14;
+}
+
+.cs-btn {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid #d4aa14;
+  color: #d4aa14;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}

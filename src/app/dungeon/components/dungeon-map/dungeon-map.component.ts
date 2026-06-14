@@ -51,7 +51,7 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                   >
                     @if (isReachable(room) && !room.cleared) {
                       <circle
-                        [attr.cx]="hs.cx" [attr.cy]="hs.cy" [attr.r]="hs.r + 8"
+                        [attr.cx]="hs.cx" [attr.cy]="hs.cy" [attr.r]="(hs.r ?? 0) + 8"
                         class="hotspot-halo"
                       />
                     }
@@ -65,7 +65,7 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                       text-anchor="middle" dominant-baseline="middle"
                     >{{ getHotspotIcon(room) }}</text>
                     <text
-                      [attr.x]="hs.cx" [attr.y]="hs.cy + hs.r + 12"
+                      [attr.x]="hs.cx" [attr.y]="hs.cy + (hs.r ?? 0) + 12"
                       class="hotspot-label"
                       text-anchor="middle"
                     >{{ hs.label }}</text>
@@ -97,6 +97,11 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                   ⚔️ Enfrentar o Encontro
                 </button>
               }
+              @if (canRest()) {
+                <button class="btn-rest" [disabled]="currentRoom()!.rested" (click)="rest()">
+                  {{ currentRoom()!.rested ? '💤 Já descansou aqui' : '🏕️ Descansar' }}
+                </button>
+              }
               @if (currentRoom()!.cleared && currentRoom()!.type === 'boss') {
                 <button class="btn-next-floor" (click)="nextFloor()">
                   🔽 Avançar para o Próximo Andar
@@ -121,42 +126,93 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
 
       @else {
         <div class="map-container">
-          <div class="map-inner" [style.width.px]="mapWidth()" [style.height.px]="mapHeight()">
-            <svg class="connections-layer" [attr.viewBox]="svgViewBox()" [attr.width]="mapWidth()" [attr.height]="mapHeight()">
-              @for (conn of connections(); track conn.key) {
-                <line
-                  [attr.x1]="conn.x1" [attr.y1]="conn.y1"
-                  [attr.x2]="conn.x2" [attr.y2]="conn.y2"
-                  [class]="'conn-line ' + conn.state"
-                />
-              }
-            </svg>
+          <svg
+            class="map-svg"
+            [attr.viewBox]="svgViewBox()"
+            [attr.width]="svgW()"
+            [attr.height]="svgH()"
+          >
+            <!-- Conexões -->
+            @for (conn of connections(); track conn.key) {
+              <line
+                [attr.x1]="conn.x1" [attr.y1]="conn.y1"
+                [attr.x2]="conn.x2" [attr.y2]="conn.y2"
+                [class]="'conn-line ' + conn.state"
+              />
+            }
 
-            <div class="rooms-layer">
-              @for (room of floor()?.rooms; track room.id) {
-                <div
-                  [class]="getRoomClass(room)"
-                  [style.left.px]="getRoomX(room)"
-                  [style.top.px]="getRoomY(room)"
-                  (click)="onRoomClick(room)"
-                  [title]="room.isVisible ? room.name : '???'"
-                >
-                  @if (room.isVisible) {
-                    <div class="room-inner">
-                      <span class="room-icon">{{ getRoomIcon(room) }}</span>
-                      @if (room.cleared) { <span class="cleared-mark">✓</span> }
-                      @if (room.isCurrent) { <span class="current-pulse"></span> }
-                    </div>
-                    <span class="room-label">{{ getRoomLabel(room) }}</span>
-                  } @else {
-                    <div class="room-inner hidden-room">
-                      <span class="room-icon">?</span>
-                    </div>
+            <!-- Salas -->
+            @for (room of floor()?.rooms; track room.id) {
+              <g
+                [class]="getSvgRoomClass(room)"
+                (click)="onRoomClick(room)"
+              >
+                <!-- Sombra -->
+                <circle
+                  [attr.cx]="getRoomX(room) + 2"
+                  [attr.cy]="getRoomY(room) + 2"
+                  [attr.r]="R"
+                  class="room-shadow"
+                />
+                <!-- Círculo principal -->
+                <circle
+                  [attr.cx]="getRoomX(room)"
+                  [attr.cy]="getRoomY(room)"
+                  [attr.r]="R"
+                  class="room-circle"
+                />
+                @if (room.isVisible) {
+                  <!-- Halo de sala atual -->
+                  @if (room.isCurrent) {
+                    <circle
+                      [attr.cx]="getRoomX(room)"
+                      [attr.cy]="getRoomY(room)"
+                      [attr.r]="R + 8"
+                      class="room-halo"
+                    />
                   }
-                </div>
-              }
-            </div>
-          </div>
+                  <!-- Halo de sala alcançável -->
+                  @if (isReachable(room) && !room.cleared) {
+                    <circle
+                      [attr.cx]="getRoomX(room)"
+                      [attr.cy]="getRoomY(room)"
+                      [attr.r]="R + 6"
+                      class="room-reach-halo"
+                    />
+                  }
+                  <!-- Ícone -->
+                  <text
+                    [attr.x]="getRoomX(room)"
+                    [attr.y]="getRoomY(room) + 6"
+                    text-anchor="middle"
+                    class="room-icon-text"
+                  >{{ room.cleared ? '🏕️' : getRoomIcon(room) }}</text>
+                  <!-- Label -->
+                  <text
+                    [attr.x]="getRoomX(room)"
+                    [attr.y]="getRoomY(room) + R + 14"
+                    text-anchor="middle"
+                    class="room-label-text"
+                  >{{ getRoomLabel(room) }}</text>
+                  <!-- Check de liberada -->
+                  @if (room.cleared) {
+                    <text
+                      [attr.x]="getRoomX(room) + R - 2"
+                      [attr.y]="getRoomY(room) - R + 10"
+                      class="room-cleared-mark"
+                    >✓</text>
+                  }
+                } @else {
+                  <text
+                    [attr.x]="getRoomX(room)"
+                    [attr.y]="getRoomY(room) + 6"
+                    text-anchor="middle"
+                    class="room-icon-text room-hidden-icon"
+                  >?</text>
+                }
+              </g>
+            }
+          </svg>
         </div>
 
         @if (currentRoom()) {
@@ -174,6 +230,11 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
             @if (!currentRoom()!.cleared && currentRoom()!.type !== 'entrance' && currentRoom()!.type !== 'empty') {
               <button class="btn-encounter" (click)="enterRoom()">
                 ⚔️ Entrar na Sala
+              </button>
+            }
+            @if (canRest()) {
+              <button class="btn-rest" [disabled]="currentRoom()!.rested" (click)="rest()">
+                {{ currentRoom()!.rested ? '💤 Já descansou aqui' : '🏕️ Descansar' }}
               </button>
             }
             @if (currentRoom()!.cleared && currentRoom()!.type === 'boss') {
@@ -194,8 +255,12 @@ export class DungeonMapComponent {
   floor = this.gameState.currentFloor;
   currentRoom = this.gameState.currentRoom;
 
-  CELL_W = 90;
-  CELL_H = 110;
+  // SVG layout constants (mesmos do debug map)
+  readonly R     = 28;   // raio do círculo
+  readonly COL_W = 96;
+  readonly ROW_H = 100;
+  readonly PAD_X = 50;
+  readonly PAD_Y = 50;
 
   isSimple = computed(() =>
     this.floor()?.theme?.specialRule?.includes('Masmorra mais simples') ?? false
@@ -205,18 +270,18 @@ export class DungeonMapComponent {
     this.floor()?.rooms.filter(r => r.cleared).length ?? 0
   );
 
-  maxRow = computed(() =>
+  private maxRowVal = computed(() =>
     Math.max(...(this.floor()?.rooms.map(r => r.row) ?? [0]))
   );
 
-  maxCol = computed(() =>
+  private maxColVal = computed(() =>
     Math.max(...(this.floor()?.rooms.map(r => r.col) ?? [4]))
   );
 
-  mapWidth = computed(() => (this.maxCol() + 1) * this.CELL_W + 20);
-  mapHeight = computed(() => (this.maxRow() + 1) * this.CELL_H + 20);
+  svgW = computed(() => this.PAD_X * 2 + this.maxColVal() * this.COL_W);
+  svgH = computed(() => this.PAD_Y * 2 + this.maxRowVal() * this.ROW_H);
 
-  svgViewBox = computed(() => `0 0 ${this.mapWidth()} ${this.mapHeight()}`);
+  svgViewBox = computed(() => `0 0 ${this.svgW()} ${this.svgH()}`);
 
   connections = computed(() => {
     const rooms = this.floor()?.rooms ?? [];
@@ -245,12 +310,12 @@ export class DungeonMapComponent {
     return this.floor()?.rooms.find(r => r.id === id);
   }
 
-  getRoomClass(room: DungeonRoom): string {
-    const classes = ['room-node', `room-${room.type}`];
-    if (room.isVisible) classes.push('visible');
-    if (room.isCurrent) classes.push('current');
-    if (room.cleared) classes.push('cleared');
-    if (this.isReachable(room)) classes.push('reachable');
+  getSvgRoomClass(room: DungeonRoom): string {
+    const classes = ['svg-room', `svg-room-${room.type}`];
+    if (!room.isVisible) classes.push('svg-room-hidden');
+    if (room.isCurrent) classes.push('svg-room-current');
+    if (room.cleared) classes.push('svg-room-cleared');
+    if (this.isReachable(room)) classes.push('svg-room-reachable');
     return classes.join(' ');
   }
 
@@ -282,8 +347,12 @@ export class DungeonMapComponent {
     return this.isReachable(room) && !room.cleared;
   }
 
-  getRoomX(room: DungeonRoom): number { return room.col * this.CELL_W + 10; }
-  getRoomY(room: DungeonRoom): number { return room.row * this.CELL_H + 10; }
+  getRoomX(room: DungeonRoom): number {
+    return this.PAD_X + room.col * this.COL_W;
+  }
+  getRoomY(room: DungeonRoom): number {
+    return this.PAD_Y + (this.maxRowVal() - room.row) * this.ROW_H;
+  }
 
   getRoomIcon(room: DungeonRoom): string { return ROOM_ICONS[room.type]; }
   getRoomLabel(room: DungeonRoom): string { return ROOM_LABELS[room.type]; }
@@ -311,6 +380,13 @@ export class DungeonMapComponent {
     this.gameState.moveToRoom(room.id);
   }
 
+  canRest = computed(() => {
+    const r = this.currentRoom();
+    if (!r) return false;
+    return r.cleared || r.type === 'entrance' || r.type === 'empty';
+  });
+
   enterRoom(): void { this.gameState.screen.set('encounter'); }
   nextFloor(): void { this.gameState.proceedToNextFloor(); }
+  rest(): void { this.gameState.restAtRoom(); }
 }

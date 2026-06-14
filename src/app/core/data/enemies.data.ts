@@ -1,6 +1,5 @@
 import { Enemy } from '../models/combat.model';
-
-function d6() { return Math.ceil(Math.random() * 6); }
+import { calcEnemyPP } from '../utils/pp-calculator';
 
 const MONSTER_POOLS: Record<number, Array<{ name: string; icon: string; sprite?: string; flavorText: string; isUndead?: boolean }>> = {
   1: [
@@ -53,14 +52,20 @@ export function generateEnemy(floor: number, isBoss: boolean): Enemy {
   if (isBoss) {
     const tpl = getBossTemplate(floor);
     const hp = 20 + floor * 5;
+    const forca = 2 + Math.floor(floor / 2);
+    const habilidade = 1 + Math.floor(floor / 3);
+    const resistencia = Math.max(1, Math.floor(hp / 5));
+    const armadura = 1 + Math.floor(floor / 3);
     return {
       id: `boss_${floor}_${Math.random().toString(36).slice(2, 7)}`,
       ...tpl,
       hp,
       maxHp: hp,
-      forca: 2 + Math.floor(floor / 2),
-      habilidade: 1 + Math.floor(floor / 3),
-      armadura: 1 + Math.floor(floor / 3),
+      forca,
+      habilidade,
+      resistencia,
+      armadura,
+      pp: calcEnemyPP(forca, habilidade, armadura, resistencia),
       xpReward: 50 + floor * 20,
       goldReward: 20 + floor * 10,
       isBoss: true,
@@ -69,14 +74,20 @@ export function generateEnemy(floor: number, isBoss: boolean): Enemy {
 
   const tpl = getMonsterTemplate(floor);
   const hp = 8 + floor * 2;
+  const forca = 1 + Math.floor(floor / 3);
+  const habilidade = Math.max(1, Math.floor(floor / 4));
+  const resistencia = Math.max(1, Math.floor(hp / 5));
+  const armadura = Math.floor(floor / 4);
   return {
     id: `enemy_${floor}_${Math.random().toString(36).slice(2, 7)}`,
     ...tpl,
     hp,
     maxHp: hp,
-    forca: 1 + Math.floor(floor / 3),
-    habilidade: Math.max(1, Math.floor(floor / 4)),
-    armadura: Math.floor(floor / 4),
+    forca,
+    habilidade,
+    resistencia,
+    armadura,
+    pp: calcEnemyPP(forca, habilidade, armadura, resistencia),
     xpReward: 10 + floor * 5,
     goldReward: 5 + floor * 3,
     isBoss: false,

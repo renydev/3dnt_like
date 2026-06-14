@@ -130,14 +130,14 @@ import { Character } from '../../../core/models/character.model';
                   </div>
                   <span class="bar-val">{{ member.pontosVida.current }}/{{ member.pontosVida.max }}</span>
                 </div>
-                @if (member.poderFogo.max > 0) {
+                @if (member.pontosMana.max > 0) {
                   <div class="bar-row">
-                    <span class="bar-lbl">PF</span>
+                    <span class="bar-lbl">PM</span>
                     <div class="bar-track">
-                      <div class="bar-fill pf-fill"
-                        [style.width.%]="pfPct(member)"></div>
+                      <div class="bar-fill pm-fill"
+                        [style.width.%]="pmPct(member)"></div>
                     </div>
-                    <span class="bar-val">{{ member.poderFogo.current }}/{{ member.poderFogo.max }}</span>
+                    <span class="bar-val">{{ member.pontosMana.current }}/{{ member.pontosMana.max }}</span>
                   </div>
                 }
               </div>
@@ -149,9 +149,9 @@ import { Character } from '../../../core/models/character.model';
 
     <!-- ── Barra de ações ─────────────────────────────────────────── -->
     <div class="action-bar" [class.disabled-bar]="phase() !== 'player_turn'">
-      @if (!showMagicMenu()) {
+      @if (!showMagicMenu() && !showAttackMenu()) {
         <div class="action-btns">
-          <button class="act-btn atk" [disabled]="phase() !== 'player_turn'" (click)="onAttack()">
+          <button class="act-btn atk" [disabled]="phase() !== 'player_turn'" (click)="showAttackMenu.set(true)">
             <span class="act-icon">⚔️</span><span class="act-lbl">Atacar</span>
           </button>
           @if (hasAbilities()) {
@@ -168,6 +168,23 @@ import { Character } from '../../../core/models/character.model';
             </button>
           }
         </div>
+      } @else if (showAttackMenu()) {
+        <!-- Sub-menu de tipo de ataque -->
+        <div class="magic-menu">
+          <button class="back-btn" (click)="showAttackMenu.set(false)">← Voltar</button>
+          <div class="ability-list">
+            <button class="ab-btn" (click)="onAttackMelee()">
+              <span class="ab-icon">⚔️</span>
+              <span class="ab-name">Corpo a Corpo</span>
+              <span class="ab-cost">F+H+1d6</span>
+            </button>
+            <button class="ab-btn" (click)="onAttackRanged()">
+              <span class="ab-icon">🏹</span>
+              <span class="ab-name">À Distância</span>
+              <span class="ab-cost">PF+H+1d6</span>
+            </button>
+          </div>
+        </div>
       } @else {
         <!-- Sub-menu de habilidades -->
         <div class="magic-menu">
@@ -178,7 +195,7 @@ import { Character } from '../../../core/models/character.model';
                 <span class="ab-icon">{{ ab.icon }}</span>
                 <span class="ab-name">{{ ab.name }}</span>
                 <span class="ab-cost">
-                  @if (ab.pfCost > 0) { {{ ab.pfCost }}PF }
+                  @if (ab.pmCost > 0) { {{ ab.pmCost }}PM }
                   @else if (ab.usesPerCombat) { 1×comb }
                 </span>
                 <span class="ab-desc">{{ ab.description }}</span>
@@ -233,6 +250,27 @@ import { Character } from '../../../core/models/character.model';
   }
 
 </div>
+
+<!-- ── Overlay de Derrota ──────────────────────────────────────────────── -->
+@if (combat.pendingDefeat()) {
+  <div class="defeat-overlay">
+    <div class="defeat-panel">
+      <div class="defeat-icon">💀</div>
+      <h2 class="defeat-title">Você Caiu</h2>
+      <p class="defeat-sub">As sombras de Valkaria reclamaram mais uma alma...</p>
+
+      <div class="defeat-log">
+        @for (entry of combat.log(); track $index) {
+          <div class="dl-entry" [class]="'dl-' + entry.type" [innerHTML]="entry.text"></div>
+        }
+      </div>
+
+      <button class="btn-defeat-proceed" (click)="combat.confirmDefeat()">
+        Prosseguir →
+      </button>
+    </div>
+  </div>
+}
   `,
   styles: [`
     :host { display: block; height: 100%; overflow: hidden; }
@@ -450,7 +488,8 @@ import { Character } from '../../../core/models/character.model';
       height: 100%; border-radius: 3px; transition: width 0.4s;
       &.hp-fill-green { background: linear-gradient(90deg, #1a5c1a, #27ae60); }
       &.hp-low        { background: linear-gradient(90deg, #7a1a1a, #e74c3c) !important; animation: pulse-red 0.8s infinite alternate; }
-      &.pf-fill       { background: linear-gradient(90deg, #2a1a6b, #8e44ad); }
+      &.pf-fill,
+      &.pm-fill       { background: linear-gradient(90deg, #2a1a6b, #8e44ad); }
     }
     .bar-val { font-size: 0.6rem; color: #888; white-space: nowrap; min-width: 3.2rem; text-align: right; }
 
@@ -561,6 +600,46 @@ import { Character } from '../../../core/models/character.model';
     }
     .btn-primary { background: linear-gradient(135deg, #1a3a5c, #2980b9); color: #fff; border: 1px solid #3498db; }
     .btn-victory { background: linear-gradient(135deg, #1a4a1a, #27ae60); color: #fff; border: 1px solid #2ecc71; }
+
+    /* ── Overlay de derrota ─────────────────────────────────────────── */
+    .defeat-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.82);
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.4s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .defeat-panel {
+      background: #0d0d1a; border: 1px solid #3a0000;
+      border-radius: 10px; padding: 1.5rem 1.75rem;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.75rem; max-width: 420px; width: 90%;
+      box-shadow: 0 0 40px rgba(180,0,0,0.3);
+    }
+    .defeat-icon { font-size: 2.8rem; }
+    .defeat-title { margin: 0; font-family: var(--font-display, serif); color: #c0392b; font-size: 1.4rem; }
+    .defeat-sub { margin: 0; color: #888; font-size: 0.8rem; text-align: center; }
+    .defeat-log {
+      width: 100%; max-height: 200px; overflow-y: auto;
+      background: #07070f; border: 1px solid #1a1a2a;
+      border-radius: 6px; padding: 0.5rem 0.6rem;
+      display: flex; flex-direction: column; gap: 0.2rem;
+    }
+    .dl-entry { font-size: 0.68rem; line-height: 1.4; color: #a0a0b0; }
+    .dl-player { color: #7ec8e3; }
+    .dl-enemy  { color: #e38989; }
+    .dl-heal   { color: #7ee3a0; }
+    .dl-miss   { color: #666; font-style: italic; }
+    .dl-system { color: #d4aa20; }
+    .btn-defeat-proceed {
+      margin-top: 0.25rem; padding: 0.55rem 1.8rem;
+      background: linear-gradient(135deg, #3a0000, #c0392b);
+      color: #fff; border: 1px solid #e74c3c;
+      border-radius: 5px; cursor: pointer;
+      font-family: var(--font-display, serif); font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      &:hover { filter: brightness(1.2); }
+    }
   `]
 })
 export class EncounterScreenComponent implements OnInit {
@@ -579,6 +658,7 @@ export class EncounterScreenComponent implements OnInit {
   abilities = this.combat.abilities;
 
   showMagicMenu    = signal(false);
+  showAttackMenu   = signal(false);
   isRandomEncounter = signal(false);
   hitAnimId        = signal<string | null>(null);
   hitMemberId      = signal<string | null>(null);
@@ -670,6 +750,30 @@ export class EncounterScreenComponent implements OnInit {
     this._advanceTarget();
   }
 
+  onAttackMelee(): void {
+    this.showAttackMenu.set(false);
+    const t = this.target();
+    if (!t) return;
+    const prevHp = t.hp;
+    const prevPv = this.char()?.pontosVida.current ?? 0;
+    this.combat.playerAttackTarget(t.id);
+    this._flashEnemy(t.id, prevHp);
+    this._flashParty(prevPv);
+    this._advanceTarget();
+  }
+
+  onAttackRanged(): void {
+    this.showAttackMenu.set(false);
+    const t = this.target();
+    if (!t) return;
+    const prevHp = t.hp;
+    const prevPv = this.char()?.pontosVida.current ?? 0;
+    this.combat.playerRangedAttackTarget(t.id);
+    this._flashEnemy(t.id, prevHp);
+    this._flashParty(prevPv);
+    this._advanceTarget();
+  }
+
   onAbility(ab: CombatAbility): void {
     const t = this.target();
     if (!t) return;
@@ -703,7 +807,7 @@ export class EncounterScreenComponent implements OnInit {
 
   hpPct(e: Enemy)           { return Math.max(0, (e.hp / e.maxHp) * 100); }
   pvPct(m: Character)       { return m.pontosVida.max > 0 ? Math.round(m.pontosVida.current / m.pontosVida.max * 100) : 0; }
-  pfPct(m: Character)       { return m.poderFogo.max > 0 ? Math.round(m.poderFogo.current / m.poderFogo.max * 100) : 0; }
+  pmPct(m: Character)       { return m.pontosMana.max > 0 ? Math.round(m.pontosMana.current / m.pontosMana.max * 100) : 0; }
 
   classColor(m: Character): string {
     const COLORS: Record<string, string> = {
@@ -790,9 +894,9 @@ export class EncounterScreenComponent implements OnInit {
     this.gs.character.update(c => c ? {
       ...c,
       pontosVida: { ...c.pontosVida, current: Math.min(c.pontosVida.max, c.pontosVida.current + amt) },
-      poderFogo: { ...c.poderFogo, current: c.poderFogo.max }
+      pontosMana: { ...c.pontosMana, current: c.pontosMana.max }
     } : c);
-    this.gs.addLog(`🔥 Descansou: +${amt} PV, PF restaurados.`);
+    this.gs.addLog(`🔥 Descansou: +${amt} PV, PM restaurados.`);
     this.gs.resolveEncounter('victory');
   }
 

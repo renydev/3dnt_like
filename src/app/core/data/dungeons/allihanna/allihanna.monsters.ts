@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { calcEnemyPP } from '../../../utils/pp-calculator';
 
 // ── Definições base de monstros de Allihanna ─────────────────────────────────
 // Estatísticas canônicas de "A Libertação de Valkaria" (Jambô, 2004)
@@ -82,7 +83,9 @@ export function spawnMonster(key: string, isBoss = false): Enemy {
     maxHp: hp,
     forca: tpl.forca,
     habilidade: tpl.habilidade,
+    resistencia: tpl.resistencia,
     armadura: tpl.armadura,
+    pp: calcEnemyPP(tpl.forca, tpl.habilidade, tpl.armadura, tpl.resistencia),
     xpReward: tpl.xpReward,
     goldReward: tpl.goldReward,
     isBoss,

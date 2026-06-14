@@ -121,6 +121,14 @@ body, html {
   &:hover:not(:disabled) { border-color: var(--color-amber); color: var(--color-amber); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 }
+.btn-journal {
+  width: 100%; padding: 0.6rem 2rem;
+  background: rgba(212,170,32,0.08); border: 1px solid #7a6010;
+  color: #d4aa20; font-family: var(--font-display); font-size: 0.82rem;
+  letter-spacing: 0.06em; border-radius: 4px; cursor: pointer;
+  transition: all 0.2s ease;
+  &:hover { background: rgba(212,170,32,0.18); border-color: #d4aa20; }
+}
 .menu-credit {
   font-size: 0.7rem; color: var(--color-text-muted);
   text-align: center; font-style: italic; opacity: 0.7;

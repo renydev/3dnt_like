@@ -42,8 +42,8 @@
 
 .map-container {
   flex: 1;
-  min-height: 400px;
-  overflow: auto;
+  min-height: 0;
+  overflow: hidden;
   background: rgba(0,0,0,0.3);
   border: 1px solid var(--color-border);
   border-radius: 6px;
@@ -53,118 +53,109 @@
   padding: 1rem;
 }
 
-.map-inner {
-  position: relative;
-  flex-shrink: 0;
+// ── SVG Map ────────────────────────────────────────────────────────────────
+.map-svg {
+  overflow: visible;
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.connections-layer {
-  position: absolute;
-  top: 0; left: 0;
-  pointer-events: none;
-
-  .conn-line {
-    stroke-width: 2;
-    stroke-linecap: round;
-    &.visible { stroke: var(--color-amber); opacity: 0.6; }
-    &.partial { stroke: var(--color-amber); opacity: 0.25; stroke-dasharray: 4,4; }
-    &.hidden { stroke: #333; opacity: 0.2; stroke-dasharray: 2,6; }
-  }
+.conn-line {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 4 3;
+  &.visible { stroke: var(--color-amber); opacity: 0.6; stroke-dasharray: none; }
+  &.partial { stroke: var(--color-amber); opacity: 0.25; }
+  &.hidden  { stroke: #333; opacity: 0.2; }
 }
 
-.rooms-layer {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-}
+.room-shadow { fill: #00000055; }
 
-.room-node {
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  transform: translate(-50%, -50%);
+.svg-room {
   cursor: default;
-  transition: transform 0.2s ease;
 
-  .room-label {
-    position: absolute;
-    bottom: -18px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 0.6rem;
-    color: var(--color-text-muted);
-    white-space: nowrap;
-    text-align: center;
+  .room-circle {
+    fill: #1a1a1a;
+    stroke: #333;
+    stroke-width: 1.5;
+    transition: filter 0.15s;
   }
 
-  .room-inner {
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    border: 2px solid #333;
-    background: #1a1a1a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.4rem;
-    position: relative;
-    transition: all 0.2s ease;
-
-    &.hidden-room {
-      background: #0d0d0d;
-      border-color: #222;
-      color: #333;
-      font-size: 1rem;
-    }
+  .room-halo {
+    fill: none;
+    stroke: var(--color-gold);
+    stroke-width: 2;
+    opacity: 0.8;
+    animation: pulse-halo 1.5s ease-in-out infinite;
   }
 
-  .cleared-mark {
-    position: absolute;
-    top: -4px; right: -4px;
-    font-size: 0.7rem;
-    background: #27ae60;
-    color: white;
-    border-radius: 50%;
-    width: 16px; height: 16px;
-    display: flex; align-items: center; justify-content: center;
-    font-style: normal;
+  .room-reach-halo {
+    fill: none;
+    stroke: var(--color-amber);
+    stroke-width: 1.5;
+    opacity: 0.5;
+    animation: halo-pulse 1.8s ease-in-out infinite;
   }
 
-  .current-pulse {
-    position: absolute;
-    inset: -6px;
-    border-radius: 50%;
-    border: 2px solid var(--color-gold);
-    animation: pulse 1.5s ease-in-out infinite;
+  .room-icon-text {
+    font-size: 16px;
+    dominant-baseline: middle;
+    pointer-events: none;
+    user-select: none;
   }
 
-  // Tipos de sala
-  &.room-entrance .room-inner { border-color: #27ae60; background: #0d2b0d; }
-  &.room-boss .room-inner { border-color: #c0392b; background: #2b0d0d; }
-  &.room-monster .room-inner { border-color: #e74c3c; background: #1a0a0a; }
-  &.room-treasure .room-inner { border-color: var(--color-gold); background: #2b2200; }
-  &.room-rest .room-inner { border-color: #e67e22; background: #2b1400; }
-  &.room-trap .room-inner { border-color: #9b59b6; background: #1a0d2b; }
+  .room-hidden-icon { fill: #3a3a3a; font-size: 18px; font-weight: bold; }
 
-  &.current .room-inner {
-    border-color: var(--color-gold);
-    box-shadow: 0 0 16px var(--color-gold-glow);
-    transform: scale(1.05);
+  .room-label-text {
+    font-size: 10px;
+    fill: #555;
+    font-family: var(--font-display, serif);
+    pointer-events: none;
+    user-select: none;
   }
 
-  &.reachable {
+  .room-cleared-mark {
+    font-size: 9px;
+    fill: #2ecc71;
+    font-family: monospace;
+    pointer-events: none;
+  }
+
+  // Tipos — cor do círculo
+  &.svg-room-entrance .room-circle { fill: #0d2b0d; stroke: #27ae60; }
+  &.svg-room-boss     .room-circle { fill: #2b0d0d; stroke: #c0392b; }
+  &.svg-room-monster  .room-circle { fill: #1a0a0a; stroke: #e74c3c; }
+  &.svg-room-treasure .room-circle { fill: #2b2200; stroke: var(--color-gold); }
+  &.svg-room-rest     .room-circle { fill: #2b1400; stroke: #e67e22; }
+  &.svg-room-trap     .room-circle { fill: #1a0d2b; stroke: #9b59b6; }
+
+  // Estados
+  &.svg-room-hidden .room-circle { fill: #0d0d0d; stroke: #222; }
+
+  &.svg-room-current .room-circle {
+    fill: #1e1600;
+    stroke: var(--color-gold);
+    stroke-width: 2;
+    filter: drop-shadow(0 0 6px var(--color-gold));
+  }
+
+  &.svg-room-cleared .room-circle { opacity: 0.65; }
+
+  &.svg-room-reachable {
     cursor: pointer;
-    .room-inner {
-      border-color: var(--color-amber);
-      box-shadow: 0 0 8px var(--color-amber-glow);
+    .room-circle {
+      fill: #1e1200;
+      stroke: var(--color-amber);
+      stroke-width: 2;
     }
-    &:hover {
-      transform: translate(-50%, -50%) scale(1.1);
-      .room-inner { box-shadow: 0 0 16px var(--color-amber); }
-    }
+    .room-label-text { fill: var(--color-amber); }
+    &:hover .room-circle { filter: drop-shadow(0 0 8px var(--color-amber)); }
   }
+}
 
-  &.cleared .room-inner { opacity: 0.6; }
+@keyframes pulse-halo {
+  0%, 100% { opacity: 0.8; }
+  50%       { opacity: 0.3; }
 }
 
 .current-room-info {
@@ -212,7 +203,7 @@
     line-height: 1.5;
   }
 
-  .btn-encounter, .btn-next-floor {
+  .btn-encounter, .btn-next-floor, .btn-rest {
     width: 100%;
     padding: 0.6rem;
     border-radius: 4px;
@@ -236,6 +227,14 @@
     color: #fff;
     border: 1px solid #2ecc71;
     &:hover { background: linear-gradient(135deg, #2a6a2a, #2ecc71); box-shadow: 0 0 12px rgba(46,204,113,0.4); }
+  }
+
+  .btn-rest {
+    background: linear-gradient(135deg, #3a2a00, #7a5a00);
+    color: #f0d080;
+    border: 1px solid #c8a040;
+    &:hover:not(:disabled) { background: linear-gradient(135deg, #5a4000, #a07a00); box-shadow: 0 0 12px rgba(200,160,64,0.4); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 }
 

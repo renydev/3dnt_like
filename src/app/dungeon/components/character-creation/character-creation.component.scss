@@ -995,3 +995,130 @@
 
   &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
+
+// ── Presets (Início Rápido) ───────────────────────────────────────────────────
+
+.btn-skip-preset {
+  background: none;
+  border: none;
+  color: #c9a84c;
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover { color: #e8d5b0; }
+}
+
+.presets-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.preset-card {
+  background: #0e0e1f;
+  border: 1px solid color-mix(in srgb, var(--preset-color) 40%, #1e1e30);
+  border-radius: 10px;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  &:hover {
+    border-color: var(--preset-color);
+    box-shadow: 0 0 20px color-mix(in srgb, var(--preset-color) 25%, transparent);
+    transform: translateY(-2px);
+  }
+}
+
+.preset-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.preset-icon {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.preset-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #e8d5b0;
+}
+
+.preset-tag {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preset-desc {
+  font-size: 0.82rem;
+  color: #a09070;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.preset-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+
+  li {
+    font-size: 0.78rem;
+    color: #c8b890;
+    padding-left: 1rem;
+    position: relative;
+
+    &::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--preset-color);
+    }
+  }
+}
+
+.preset-attrs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.pa-chip {
+  background: #1a1a2e;
+  border: 1px solid #2e2e50;
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  color: #e8d5b0;
+}
+
+.preset-btn {
+  border: none;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-top: auto;
+  padding: 0.55rem 1rem;
+  transition: filter 0.2s, transform 0.2s;
+
+  &:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+  }
+}

@@ -55,6 +55,10 @@ export class FloorTransitionComponent implements OnInit {
     return result;
   }
 
+  canProceed(): boolean {
+    return this.ready() && this.gs.companionChoices().length === 0;
+  }
+
   proceed(): void {
     this.gs.proceedToNextFloor();
   }

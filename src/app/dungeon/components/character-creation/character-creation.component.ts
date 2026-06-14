@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { GameDataService } from '../../../core/services/game-data.service';
 import { Character } from '../../../core/models/character.model';
-import { Race } from '../../../core/data/races.data';
-import { ClassDef } from '../../../core/data/classes.data';
+import { Race, ALL_RACES, RACE_MAP } from '../../../core/data/races.data';
+import { ClassDef, ALL_CLASSES, CLASS_MAP } from '../../../core/data/classes.data';
 import { VANTAGENS, DESVANTAGENS, VANTAGEM_CATEGORIES, VantagemDef, DesvantagemDef } from '../../../core/models/character-creation.model';
 import { PericiaService } from '../../../core/services/pericias.service';
 import { PericiaDef } from '../../../core/data/pericias.data';
@@ -26,59 +26,130 @@ export interface StartingTier {
 
 export const STARTING_TIERS: StartingTier[] = [
   {
-    id: 'pessoa-comum',
-    label: 'Pessoa Comum',
-    subtitle: 'Poder de combate quase nulo',
-    description: 'Civis, comerciantes, artesãos. Quase todas as Características são zero. Pode ter uma Especialização ou uma Perícia.',
-    basePoints: 2,
-    maxCharacteristic: 1,
-    icon: '🧑',
-    color: '#7f8c8d',
-    extras: ['Características máximas: 1', 'Até 1 Desvantagem suave (−1pt)', 'Para campanhas de simulação realista'],
-  },
-  {
-    id: 'novato',
-    label: 'Novato',
-    subtitle: 'Herói em início de carreira',
-    description: 'A pontuação típica para aventuras medievais. Você deu seus primeiros passos como aventureiro.',
-    basePoints: 5,
-    maxCharacteristic: 2,
-    icon: '🌱',
-    color: '#27ae60',
-    extras: ['Características e Focus máximos: 2', 'Até 2 Vantagens', 'Até 3 Desvantagens de −1pt, ou 1 de −2pts'],
-  },
-  {
-    id: 'lutador',
-    label: 'Lutador',
-    subtitle: 'Aventureiro experiente',
-    description: 'Você já tem certa experiência como aventureiro e sobreviveu a muitos desafios.',
-    basePoints: 7,
-    maxCharacteristic: 3,
-    icon: '⚔️',
-    color: '#e67e22',
-    extras: ['Características e Focus máximos: 3', 'Quaisquer Vantagens disponíveis', 'Até 3 Desvantagens de −1pt, ou 2 de −2pts'],
-  },
-  {
-    id: 'campeao',
-    label: 'Campeão',
-    subtitle: 'Muitas vitórias na carreira',
-    description: 'Você teve muitas vitórias e seu nome é conhecido entre os aventureiros.',
-    basePoints: 10,
-    maxCharacteristic: 4,
-    icon: '🏆',
-    color: '#2980b9',
-    extras: ['Características e Focus máximos: 4', 'Até 3 Desvantagens de −1 a −2pts, ou 2 de qualquer valor'],
-  },
-  {
     id: 'lenda',
     label: 'Lenda',
-    subtitle: 'Entre os melhores do mundo',
-    description: 'Você conquistou seu lugar entre os maiores heróis. Esta é a pontuação máxima para um personagem recém criado.',
+    subtitle: '★ Modo Fácil',
+    description: 'Você conquista seu lugar entre os maiores heróis. Pontuação máxima — recomendada para conhecer o jogo.',
     basePoints: 12,
     maxCharacteristic: 5,
     icon: '👑',
     color: '#d4aa14',
-    extras: ['Características e Focus máximos: 5', 'Até 3 Desvantagens de qualquer valor', 'Pontuação máxima inicial'],
+    extras: ['Características máximas: 5', 'Até 3 Desvantagens de qualquer valor', 'Pontuação máxima inicial'],
+  },
+  {
+    id: 'campeao',
+    label: 'Campeão',
+    subtitle: '⚔ Modo Médio',
+    description: 'Você tem muitas vitórias e seu nome é conhecido entre os aventureiros. Desafiador, mas equilibrado.',
+    basePoints: 10,
+    maxCharacteristic: 4,
+    icon: '🏆',
+    color: '#2980b9',
+    extras: ['Características máximas: 4', 'Até 3 Desvantagens de −1 a −2pts, ou 2 de qualquer valor'],
+  },
+  {
+    id: 'lutador',
+    label: 'Lutador',
+    subtitle: '🔥 Modo Difícil',
+    description: 'Você tem certa experiência como aventureiro, mas cada ponto conta. Para quem quer um desafio real.',
+    basePoints: 7,
+    maxCharacteristic: 3,
+    icon: '⚔️',
+    color: '#e67e22',
+    extras: ['Características máximas: 3', 'Quaisquer Vantagens disponíveis', 'Até 3 Desvantagens de −1pt, ou 2 de −2pts'],
+  },
+  {
+    id: 'novato',
+    label: 'Novato',
+    subtitle: '💀 Modo Muito Difícil',
+    description: 'Você deu seus primeiros passos como aventureiro. O dungeon será implacável com você.',
+    basePoints: 5,
+    maxCharacteristic: 2,
+    icon: '🌱',
+    color: '#27ae60',
+    extras: ['Características máximas: 2', 'Até 2 Vantagens', 'Até 3 Desvantagens de −1pt, ou 1 de −2pts'],
+  },
+  {
+    id: 'pessoa-comum',
+    label: 'Pessoa Comum',
+    subtitle: '☠ Impossível',
+    description: 'Civil sem treinamento de combate. Quase todas as Características são zero. Boa sorte.',
+    basePoints: 2,
+    maxCharacteristic: 1,
+    icon: '🧑',
+    color: '#7f8c8d',
+    extras: ['Características máximas: 1', 'Até 1 Desvantagem suave (−1pt)', 'Sobrevivência: improvável'],
+  },
+];
+
+// ── Personagens pré-criados ───────────────────────────────────────────────────
+
+export interface PresetCharacter {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  tag: string;
+  tierId: 'lutador';
+  raceId: string;
+  classId: string;
+  attrs: { forca: number; habilidade: number; resistencia: number; armadura: number; poderFogo: number };
+  vantagenIds: string[];
+  desvIds: string[];
+  highlights: string[];
+}
+
+export const PRESET_CHARACTERS: PresetCharacter[] = [
+  {
+    id: 'guerreiro-preset',
+    name: 'Thordak, o Guerreiro',
+    description: 'Humano resistente especializado em combate corpo a corpo. Usa sua força bruta para destruir inimigos à curta distância.',
+    icon: '⚔️',
+    color: '#e74c3c',
+    tag: 'Guerreiro',
+    tierId: 'lutador',
+    raceId: 'humano',
+    classId: 'guerreiro',
+    // Humano: 7 base + 2 bonus = 9pts. Custo: totalCost(3)+totalCost(1)+totalCost(1)+totalCost(1) = 6+1+1+1 = 9
+    attrs: { forca: 3, habilidade: 1, resistencia: 1, armadura: 1, poderFogo: 0 },
+    vantagenIds: [],
+    desvIds: [],
+    highlights: ['Força máxima de um Lutador', 'Combate corpo a corpo', 'Simples de jogar'],
+  },
+  {
+    id: 'mago-preset',
+    name: 'Aerindel, a Maga',
+    description: 'Elfa com imenso talento arcano. Destrói grupos de inimigos com magias poderosas, mas é frágil se cercada.',
+    icon: '🔮',
+    color: '#8e44ad',
+    tag: 'Mago',
+    tierId: 'lutador',
+    raceId: 'elfo',
+    classId: 'mago',
+    // Elfo: 7 base - 2 custo raça = 5pts. Custo: totalCost(1)+totalCost(1)+totalCost(1) = 1+1+1 = 3 (2 sobram para perícias)
+    // Final: forca:0 (1-1), habilidade:2 (1+1), resistencia:1, poderFogo:3 (1+2)
+    attrs: { forca: 1, habilidade: 1, resistencia: 1, armadura: 0, poderFogo: 1 },
+    vantagenIds: [],
+    desvIds: [],
+    highlights: ['Poder de Fogo 3 + bônus élfico', 'Dano mágico devastador', 'Requer posicionamento'],
+  },
+  {
+    id: 'arqueiro-preset',
+    name: 'Silas, o Arqueiro',
+    description: 'Meio-elfo ágil e preciso. Ataca à distância com alta habilidade antes que os inimigos cheguem perto.',
+    icon: '🏹',
+    color: '#27ae60',
+    tag: 'Ranger',
+    tierId: 'lutador',
+    raceId: 'meio-elfo',
+    classId: 'ranger',
+    // Meio-elfo: 7 base - 1 custo raça + 1 bonus = 7pts. Custo: totalCost(1)+totalCost(2)+totalCost(1) = 1+3+1 = 5 (2 sobram)
+    // Final: forca:1, habilidade:3 (2+1), resistencia:1, poderFogo:max(1,0+1)=1
+    attrs: { forca: 1, habilidade: 2, resistencia: 1, armadura: 0, poderFogo: 0 },
+    vantagenIds: [],
+    desvIds: [],
+    highlights: ['Habilidade 3 para ataques certeiros', 'Mobilidade e alcance', 'Estilo de jogo versátil'],
   },
 ];
 
@@ -108,18 +179,20 @@ export class CharacterCreationComponent {
     { key: 'poderFogo' as const, label: 'Poder de Fogo', icon: '✨',  color: '#8e44ad' },
   ];
 
-  tiers           = STARTING_TIERS;
-  vantagens       = VANTAGENS;
-  desvantagens    = DESVANTAGENS;
-  categories      = VANTAGEM_CATEGORIES;
+  tiers             = STARTING_TIERS;
+  presets           = PRESET_CHARACTERS;
+  vantagens         = VANTAGENS;
+  desvantagens      = DESVANTAGENS;
+  categories        = VANTAGEM_CATEGORIES;
   periciaCategories = this.periciasSvc.categories;
-  steps           = [
-    { n: 1, label: 'Origem'    },
-    { n: 2, label: 'Raça'      },
-    { n: 3, label: 'Classe'    },
-    { n: 4, label: 'Atributos' },
-    { n: 5, label: 'Vantagens' },
-    { n: 6, label: 'Perícias'  },
+  steps             = [
+    { n: 1, label: 'Origem'       },
+    { n: 2, label: 'Início Rápido'},
+    { n: 3, label: 'Raça'         },
+    { n: 4, label: 'Classe'       },
+    { n: 5, label: 'Atributos'    },
+    { n: 6, label: 'Vantagens'    },
+    { n: 7, label: 'Perícias'     },
   ];
 
   step                 = signal(1);
@@ -298,8 +371,8 @@ export class CharacterCreationComponent {
     this.nextStep();
   }
 
-  selectRace(r: Race)      { this.selectedRace.set(r); this.nextStep(); }
-  selectClass(c: ClassDef) { this.selectedClass.set(c); this.nextStep(); }
+  selectRace(r: Race)      { this.selectedRace.set(r);  this.step.set(4); }
+  selectClass(c: ClassDef) { this.selectedClass.set(c); this.step.set(5); }
   goToStep(n: number)      { this.step.set(n); }
 
   incrementAttr(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo') {
@@ -342,9 +415,10 @@ export class CharacterCreationComponent {
 
   canAdvance(): boolean {
     if (this.step() === 1) return !!this.selectedTier();
-    if (this.step() === 2) return !!this.selectedRace();
-    if (this.step() === 3) return !!this.selectedClass();
-    if (this.step() === 4) return this.pointsLeft() >= 0;
+    if (this.step() === 2) return true;
+    if (this.step() === 3) return !!this.selectedRace();
+    if (this.step() === 4) return !!this.selectedClass();
+    if (this.step() === 5) return this.pointsLeft() >= 0;
     return true;
   }
 
@@ -355,6 +429,24 @@ export class CharacterCreationComponent {
 
   nextStep() { if (this.canAdvance()) this.step.update(s => s + 1); }
   prevStep() { this.step.update(s => s - 1); }
+
+  applyPreset(preset: PresetCharacter) {
+    const tier = STARTING_TIERS.find(t => t.id === preset.tierId)!;
+    const race = ALL_RACES.find(r => r.id === preset.raceId)!;
+    const cls  = ALL_CLASSES.find(c => c.id === preset.classId)!;
+
+    this.selectedTier.set(tier);
+    this.selectedRace.set(race);
+    this.selectedClass.set(cls);
+    this.distributedAttrs.set({ ...preset.attrs });
+    this.selectedVantagens.set([...preset.vantagenIds]);
+    this.selectedDesvantagens.set([...preset.desvIds]);
+    this.selectedPericias.set([]);
+    this.charName = preset.name;
+    this.confirm();
+  }
+
+  skipPreset() { this.step.set(3); }
 
   // ── Confirmar ───────────────────────────────────────────────────────────────
 
@@ -372,8 +464,9 @@ export class CharacterCreationComponent {
       habilidade:  { base: stats.habilidade,  current: stats.habilidade,  max: stats.habilidade },
       resistencia: { base: stats.resistencia, current: stats.resistencia, max: stats.resistencia },
       armadura: stats.armadura,
-      poderFogo: { base: stats.poderFogo, current: stats.poderFogo, max: stats.poderFogo },
-      pontosVida:  { base: stats.pontosVida,  current: stats.pontosVida,  max: stats.pontosVida },
+      poderFogo:  { base: stats.poderFogo, current: stats.poderFogo, max: stats.poderFogo },
+      pontosVida: { base: stats.pontosVida, current: stats.pontosVida, max: stats.pontosVida },
+      pontosMana: { base: stats.resistencia * 3, current: stats.resistencia * 3, max: stats.resistencia * 3 },
       vantagens:    [...this.allFreeVantagens(), ...this.selectedVantagensNames()],
       desvantagens: this.selectedDesvantagens().map(id => this.getDesv(id)!.name),
       pericias:     [...this.selectedPericias()],

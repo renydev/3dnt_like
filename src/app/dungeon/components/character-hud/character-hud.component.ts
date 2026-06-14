@@ -25,13 +25,13 @@ import { CLASS_ICONS } from '../../../core/models/character.model';
               </div>
               <span class="bar-value">{{ char()!.pontosVida.current }}/{{ char()!.pontosVida.max }}</span>
             </div>
-            @if (char()!.poderFogo.max > 0) {
+            @if (char()!.pontosMana.max > 0) {
               <div class="bar-group">
-                <span class="bar-label">PF</span>
+                <span class="bar-label">PM</span>
                 <div class="bar-track">
                   <div class="bar-fill pm-bar" [style.width.%]="pmPercent()"></div>
                 </div>
-                <span class="bar-value">{{ char()!.poderFogo.current }}/{{ char()!.poderFogo.max }}</span>
+                <span class="bar-value">{{ char()!.pontosMana.current }}/{{ char()!.pontosMana.max }}</span>
               </div>
             }
           </div>
@@ -41,6 +41,7 @@ import { CLASS_ICONS } from '../../../core/models/character.model';
           <div class="stat"><span class="stat-label">H</span><span class="stat-val">{{ char()!.habilidade.current }}</span></div>
           <div class="stat"><span class="stat-label">R</span><span class="stat-val">{{ char()!.resistencia.current }}</span></div>
           <div class="stat"><span class="stat-label">A</span><span class="stat-val">{{ char()!.armadura }}</span></div>
+          <div class="stat"><span class="stat-label">PF</span><span class="stat-val">{{ char()!.poderFogo.current }}</span></div>
           <div class="stat gold"><span class="stat-label">💰</span><span class="stat-val">{{ char()!.gold }}</span></div>
         </div>
       </div>
@@ -113,6 +114,6 @@ export class CharacterHudComponent {
 
   pmPercent = computed(() => {
     const c = this.char();
-    return c ? (c.poderFogo.current / c.poderFogo.max) * 100 : 0;
+    return c ? (c.pontosMana.current / c.pontosMana.max) * 100 : 0;
   });
 }
