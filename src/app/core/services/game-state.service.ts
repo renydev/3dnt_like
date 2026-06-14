@@ -333,7 +333,8 @@ export class GameStateService {
     if (!char || !char.levelUpPoints) return;
 
     const currentBase = attr === 'armadura' ? char.armadura : char[attr].base;
-    const cost = this.attrUpgradeCost(currentBase);
+    const racialMod = char.racialMods?.[attr] ?? 0;
+    const cost = this.attrUpgradeCost(currentBase - racialMod);
     if ((char.levelUpPoints ?? 0) < cost) return;
 
     const updated = { ...char, levelUpPoints: (char.levelUpPoints ?? 0) - cost };
@@ -367,7 +368,8 @@ export class GameStateService {
       list.map(c => {
         if (c.id !== companionId || !c.levelUpPoints) return c;
         const currentBase = attr === 'armadura' ? c.armadura : c[attr].base;
-        const cost = this.attrUpgradeCost(currentBase);
+        const racialMod = c.racialMods?.[attr] ?? 0;
+        const cost = this.attrUpgradeCost(currentBase - racialMod);
         if ((c.levelUpPoints ?? 0) < cost) return c;
         const updated = { ...c, levelUpPoints: (c.levelUpPoints ?? 0) - cost };
         if (attr === 'armadura') {

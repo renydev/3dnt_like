@@ -128,12 +128,14 @@
 .combat-line {
   border-left-color: #1a1a30 !important;
   font-style: normal !important;
+  font-size: 0.68rem;
+  line-height: 1.45;
 
   &.ll-player { color: #7ec8e3; border-left-color: #2a5a6a !important; }
   &.ll-enemy  { color: #e38989; border-left-color: #6a2a2a !important; }
   &.ll-heal   { color: #7ee3a0; border-left-color: #2a6a40 !important; }
-  &.ll-system { color: #b8a06a; font-style: italic !important; }
-  &.ll-miss   { color: #444; }
+  &.ll-system { color: #b8a06a; font-style: italic !important; font-size: 0.72rem; }
+  &.ll-miss   { color: #484848; }
 }
 
 // ── Resumo de inimigos (rodapé do painel) ────────────────────────────────────

@@ -166,8 +166,8 @@ export class CharacterCreationComponent {
     const habilidade  = d.habilidade  + (mods.habilidade  ?? 0);
     const resistencia = d.resistencia + (mods.resistencia ?? 0);
     const armadura    = d.armadura    + (mods.armadura    ?? 0);
-    const poderFogo = d.poderFogo + (mods.poderFogo ?? 0);
-    const pontosVida  = Math.max(5, resistencia * 5);
+    const poderFogo  = Math.max(1, d.poderFogo + (mods.poderFogo ?? 0));
+    const pontosVida = resistencia === 0 ? 1 : resistencia * 5;
     return { forca, habilidade, resistencia, armadura, poderFogo, pontosVida };
   });
 
@@ -295,10 +295,11 @@ export class CharacterCreationComponent {
     this.selectedDesvantagens.set([]);
     this.selectedPericias.set([]);
     this.distributedAttrs.set({ forca: 0, habilidade: 0, resistencia: 0, armadura: 0, poderFogo: 0 });
+    this.nextStep();
   }
 
-  selectRace(r: Race)      { this.selectedRace.set(r); }
-  selectClass(c: ClassDef) { this.selectedClass.set(c); }
+  selectRace(r: Race)      { this.selectedRace.set(r); this.nextStep(); }
+  selectClass(c: ClassDef) { this.selectedClass.set(c); this.nextStep(); }
   goToStep(n: number)      { this.step.set(n); }
 
   incrementAttr(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo') {
@@ -378,6 +379,7 @@ export class CharacterCreationComponent {
       pericias:     [...this.selectedPericias()],
       gold: 20 + (this.selectedTier()?.basePoints ?? 5) * 2,
       items: ['Poção de Cura'],
+      racialMods: this.selectedRace()!.modifiers ?? {},
       statusEffects: [],
       levelUpPoints: 0,
       portraitIcon: this.selectedClass()!.icon,

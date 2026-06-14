@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { CombatService } from '../../../core/services/combat.service';
@@ -31,7 +31,18 @@ import { ChamberDialogComponent } from '../chamber-dialog/chamber-dialog.compone
 export class GameLayoutComponent {
   gs = inject(GameStateService);
   combat = inject(CombatService);
-  dialogChar = signal<Character | null>(null);
+
+  /** 'player' | companion id | null */
+  private dialogCharId = signal<string | null>(null);
+
+  /** Derivado reativamente — sempre reflete o estado atual do personagem. */
+  dialogChar = computed<Character | null>(() => {
+    const id = this.dialogCharId();
+    if (!id) return null;
+    if (id === 'player') return this.gs.character();
+    return this.gs.companions().find(c => c.id === id) ?? null;
+  });
+
   debugOpen = signal(false);
 
   inCombat = () => this.gs.screen() === 'encounter';
@@ -45,8 +56,10 @@ export class GameLayoutComponent {
     }
   }
 
-  openCharDialog(char: Character): void { this.dialogChar.set(char); }
-  closeCharDialog(): void { this.dialogChar.set(null); }
+  openCharDialog(char: Character): void {
+    this.dialogCharId.set(char.isCompanion ? char.id : 'player');
+  }
+  closeCharDialog(): void { this.dialogCharId.set(null); }
 
   phaseLabel(): string {
     const map: Record<string, string> = {

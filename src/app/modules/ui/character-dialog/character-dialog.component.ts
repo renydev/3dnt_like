@@ -79,6 +79,7 @@ export class CharacterDialogComponent {
 
   showVantagensMenu = signal(false);
   showDesvantagensMenu = signal(false);
+  pendingAttr = signal<SpendableAttr | null>(null);
 
   classColor(): string { return CLASS_COLORS[this.char()!.class] ?? '#888'; }
   classIcon(): string  { return CLASS_ICONS[this.char()!.class] ?? '⚔️'; }
@@ -99,30 +100,61 @@ export class CharacterDialogComponent {
 
   // ── Atributos em círculos ────────────────────────────────────────
 
-  /** Gera array de booleanos: true=preenchido, false=vazio */
-  dots(value: number): boolean[] {
-    const total = Math.max(5, value + 1);
-    return Array.from({ length: total }, (_, i) => i < value);
+  racialMod(attr: SpendableAttr): number {
+    return this.char()!.racialMods?.[attr] ?? 0;
+  }
+
+  /** Dots enriquecidos com tipo racial para CSS. */
+  dotsDetailed(attr: SpendableAttr, value: number): { filled: boolean; type: 'base' | 'racial-bonus' | 'racial-penalty' | 'empty' }[] {
+    const racial = this.racialMod(attr);
+    const penaltyCount = racial < 0 ? Math.abs(racial) : 0;
+    // Layout: [finalValue filled] + [penaltyCount red empty] + [empty until min 5]
+    const total = Math.max(5, value + penaltyCount + 1);
+    return Array.from({ length: total }, (_, i) => {
+      if (racial >= 0) {
+        // bônus racial: primeiros dots são base, os últimos (racial) são verdes
+        if (i < value - racial) return { filled: true,  type: 'base' };
+        if (i < value)          return { filled: true,  type: 'racial-bonus' };
+      } else {
+        // penalidade racial: dots preenchidos são base, depois vêm dots vermelhos
+        if (i < value)                            return { filled: true,  type: 'base' };
+        if (i < value + penaltyCount) return { filled: false, type: 'racial-penalty' };
+      }
+      return { filled: false, type: 'empty' };
+    });
   }
 
   upgradeCost(attr: SpendableAttr): number {
     const c = this.char()!;
     const base = attr === 'armadura' ? c.armadura : c[attr].base;
-    return base + 1;
+    return (base - this.racialMod(attr)) + 1;
   }
 
   canSpend(attr: SpendableAttr): boolean {
     return this.pe() >= this.upgradeCost(attr);
   }
 
-  spend(attr: SpendableAttr): void {
+  requestSpend(attr: SpendableAttr): void {
     if (!this.canSpend(attr)) return;
+    this.pendingAttr.set(attr);
+  }
+
+  confirmSpend(): void {
+    const attr = this.pendingAttr();
+    this.pendingAttr.set(null);
+    if (!attr) return;
     const c = this.char()!;
     if (c.isCompanion) {
       this.gs.spendCompanionLevelUpPoint(c.id, attr);
     } else {
       this.gs.spendLevelUpPoint(attr);
     }
+  }
+
+  cancelSpend(): void { this.pendingAttr.set(null); }
+
+  pendingAttrLabel(): string {
+    return ATTR_ROWS.find(r => r.key === this.pendingAttr())?.label ?? '';
   }
 
   // ── HP / PF bars ────────────────────────────────────────────────

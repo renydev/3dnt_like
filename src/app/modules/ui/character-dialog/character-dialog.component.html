@@ -63,8 +63,12 @@
             <span class="attr-abbr">{{ row.abbr }}</span>
             <span class="attr-label">{{ row.label }}</span>
             <div class="dots-row">
-              @for (filled of dots(row.value(char()!)); track $index) {
-                <span class="dot" [class.dot--filled]="filled"></span>
+              @for (d of dotsDetailed(row.key, row.value(char()!)); track $index) {
+                <span class="dot"
+                  [class.dot--filled]="d.filled"
+                  [class.dot--racial-bonus]="d.type === 'racial-bonus'"
+                  [class.dot--racial-penalty]="d.type === 'racial-penalty'">
+                </span>
               }
             </div>
             <span class="attr-num">{{ row.value(char()!) }}</span>
@@ -72,7 +76,7 @@
               class="btn-inc"
               [class.btn-inc--active]="canSpend(row.key)"
               [disabled]="!canSpend(row.key)"
-              (click)="spend(row.key)"
+              (click)="requestSpend(row.key)"
               [title]="'Custo: ' + upgradeCost(row.key) + ' PE'">
               +
             </button>
@@ -183,4 +187,20 @@
 
     </div>
   </div>
+
+  <!-- ── Confirmação de incremento ─────────────────────────────────── -->
+  @if (pendingAttr()) {
+    <div class="confirm-backdrop" (click)="cancelSpend()">
+      <div class="confirm-box" (click)="$event.stopPropagation()">
+        <p class="confirm-msg">
+          Gastar <strong>{{ upgradeCost(pendingAttr()!) }} PE</strong>
+          para aumentar <strong>{{ pendingAttrLabel() }}</strong>?
+        </p>
+        <div class="confirm-actions">
+          <button class="btn-confirm-yes" (click)="confirmSpend()">Confirmar</button>
+          <button class="btn-confirm-no"  (click)="cancelSpend()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  }
 }

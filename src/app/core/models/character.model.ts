@@ -71,6 +71,9 @@ export interface Character {
   items: string[];
   statusEffects: StatusEffect[];
 
+  // Modificadores raciais (separados da base para cálculo correto de custo)
+  racialMods?: Partial<Record<'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo', number>>;
+
   // Evolução — pontos disponíveis para gastar em atributos
   levelUpPoints?: number;
 
@@ -80,9 +83,8 @@ export interface Character {
 }
 
 /**
- * 10 personagens lendários (tier Lenda = 12 pts distribuídos + bônus racial).
- * Cada um representa uma classe com a raça mais sinérgica, stats otimizados.
- * PV = resistencia * 5.
+ * 10 personagens lendários (tier Lenda).
+ * Regras: nenhum atributo ultrapassa 5; PF mínimo 1; PV = R*5 (mín 1).
  */
 export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── TANKS ────────────────────────────────────────────────────────────────
@@ -91,12 +93,12 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'barbaro',
     race: 'minotauro',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 7, current: 7, max: 7 },
+    forca:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 1, current: 1, max: 1 },
-    resistencia:{ base: 6, current: 6, max: 6 },
+    resistencia:{ base: 5, current: 5, max: 5 },
     armadura: 3,
-    poderFogo:  { base: 0, current: 0, max: 0 },
-    pontosVida: { base: 30, current: 30, max: 30 },
+    poderFogo:  { base: 1, current: 1, max: 1 },
+    pontosVida: { base: 25, current: 25, max: 25 },
     vantagens: ['Fúria Bárbara', 'Alma Primitiva', 'Chifrada'],
     desvantagens: ['Instinto Bestial'],
     gold: 15, items: ['Machado de Guerra', 'Poção de Cura x2'],
@@ -107,11 +109,11 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'guerreiro',
     race: 'meio-orc',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 6, current: 6, max: 6 },
+    forca:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 2, current: 2, max: 2 },
     resistencia:{ base: 4, current: 4, max: 4 },
     armadura: 4,
-    poderFogo:  { base: 0, current: 0, max: 0 },
+    poderFogo:  { base: 1, current: 1, max: 1 },
     pontosVida: { base: 20, current: 20, max: 20 },
     vantagens: ['Ataque Duplo', 'Especialização em Arma', 'Implacável'],
     desvantagens: ['Má Fama'],
@@ -127,7 +129,7 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     habilidade: { base: 2, current: 2, max: 2 },
     resistencia:{ base: 4, current: 4, max: 4 },
     armadura: 5,
-    poderFogo:  { base: 4, current: 4, max: 4 },
+    poderFogo:  { base: 3, current: 3, max: 3 },
     pontosVida: { base: 20, current: 20, max: 20 },
     vantagens: ['Golpe Divino', 'Imposição de Mãos', 'Aura de Proteção', 'Resistência Anã'],
     desvantagens: ['Código de Honra'],
@@ -141,10 +143,10 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     race: 'goblin',
     level: 1, xp: 0, xpToNextLevel: 100,
     forca:      { base: 2, current: 2, max: 2 },
-    habilidade: { base: 8, current: 8, max: 8 },
+    habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 2, current: 2, max: 2 },
     armadura: 3,
-    poderFogo:  { base: 0, current: 0, max: 0 },
+    poderFogo:  { base: 1, current: 1, max: 1 },
     pontosVida: { base: 10, current: 10, max: 10 },
     vantagens: ['Ataque Furtivo', 'Furtividade Profissional', 'Oportunista'],
     desvantagens: ['Desconfiado', 'Frágil'],
@@ -160,7 +162,7 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 3, current: 3, max: 3 },
     armadura: 3,
-    poderFogo:  { base: 5, current: 5, max: 5 },
+    poderFogo:  { base: 4, current: 4, max: 4 },
     pontosVida: { base: 15, current: 15, max: 15 },
     vantagens: ['Tiro Certeiro', 'Rastreamento', 'Herança Dual'],
     desvantagens: ['Solitário'],
@@ -173,10 +175,10 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     race: 'halfling',
     level: 1, xp: 0, xpToNextLevel: 100,
     forca:      { base: 2, current: 2, max: 2 },
-    habilidade: { base: 7, current: 7, max: 7 },
+    habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 2, current: 2, max: 2 },
     armadura: 2,
-    poderFogo:  { base: 5, current: 5, max: 5 },
+    poderFogo:  { base: 4, current: 4, max: 4 },
     pontosVida: { base: 10, current: 10, max: 10 },
     vantagens: ['Ataque Desarmado', 'Armadura de Ki', 'Sorte de Halfling'],
     desvantagens: ['Código de Honra'],
@@ -193,7 +195,7 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     habilidade: { base: 3, current: 3, max: 3 },
     resistencia:{ base: 4, current: 4, max: 4 },
     armadura: 3,
-    poderFogo:  { base: 9, current: 9, max: 9 },
+    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 20, current: 20, max: 20 },
     vantagens: ['Cura Divina', 'Expulsar Mortos-Vivos', 'Versatilidade Humana'],
     desvantagens: ['Obrigação (Igreja de Khalmyr)'],
@@ -209,7 +211,7 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     habilidade: { base: 4, current: 4, max: 4 },
     resistencia:{ base: 4, current: 4, max: 4 },
     armadura: 2,
-    poderFogo:  { base: 10, current: 10, max: 10 },
+    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 20, current: 20, max: 20 },
     vantagens: ['Forma Animal', 'Magia Natural', 'Sentidos Élficos'],
     desvantagens: ['Juramento da Natureza'],
@@ -226,7 +228,7 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     habilidade: { base: 4, current: 4, max: 4 },
     resistencia:{ base: 3, current: 3, max: 3 },
     armadura: 1,
-    poderFogo:  { base: 14, current: 14, max: 14 },
+    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 15, current: 15, max: 15 },
     vantagens: ['Arcano Avançado', 'Conjuração Aprimorada', 'Visão nas Trevas'],
     desvantagens: ['Marca do Mal'],
@@ -242,7 +244,7 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 3, current: 3, max: 3 },
     armadura: 2,
-    poderFogo:  { base: 9, current: 9, max: 9 },
+    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 15, current: 15, max: 15 },
     vantagens: ['Inspiração Bardística', 'Jack of All Trades', 'Ilusionista Nato'],
     desvantagens: ['Curioso Demais'],

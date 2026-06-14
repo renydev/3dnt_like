@@ -248,6 +248,18 @@
     border-color: var(--color-gold, #f0c040);
     box-shadow: 0 0 5px rgba(212, 170, 20, 0.45);
   }
+
+  &.dot--racial-bonus {
+    background: #34d399;
+    border-color: #6ee7b7;
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.7);
+  }
+
+  &.dot--racial-penalty {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px dashed #ef4444;
+    box-shadow: none;
+  }
 }
 
 .attr-num {
@@ -498,6 +510,72 @@
   font-size: 0.72rem;
   color: var(--color-gold);
   margin-top: 0.2rem;
+}
+
+// ── Modal de confirmação de incremento ───────────────────────────────────────
+
+.confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  animation: fadeIn 0.12s ease;
+}
+
+.confirm-box {
+  background: #2a221a;
+  border: 1px solid var(--color-gold, #d4aa14);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  min-width: 240px;
+  animation: slideUp 0.15s ease;
+}
+
+.confirm-msg {
+  font-size: 0.85rem;
+  color: #e8dcc8;
+  text-align: center;
+  line-height: 1.5;
+  margin: 0;
+
+  strong { color: var(--color-gold, #d4aa14); }
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-confirm-yes {
+  padding: 5px 18px;
+  border-radius: 5px;
+  border: 1px solid var(--color-gold, #d4aa14);
+  background: rgba(212, 170, 20, 0.15);
+  color: var(--color-gold, #d4aa14);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: rgba(212, 170, 20, 0.3); }
+}
+
+.btn-confirm-no {
+  padding: 5px 18px;
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: transparent;
+  color: #a09070;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: rgba(255,255,255,0.06); }
 }
 
 // ── Animações ─────────────────────────────────────────────────────────────────
