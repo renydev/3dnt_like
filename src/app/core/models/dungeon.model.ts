@@ -22,10 +22,12 @@ export interface DungeonRoom {
   cleared: boolean;
   locked: boolean;
   connections: number[];
+  secretConnections?: number[]; // requer detecção (perícia Investigação/Crime ou vantagem sensorial)
   col: number;
   row: number;
   isCurrent?: boolean;
   isVisible?: boolean;
+  isSecretRevealed?: boolean; // porta secreta detectada mas ainda não totalmente explorada
   entered?: boolean;
   rested?: boolean;
   scenario?: RoomScenario;

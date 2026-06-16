@@ -206,7 +206,7 @@ export const AllihannaConfig: DungeonConfig = {
       { id:  5, row: 3, col: 5, type: 'empty', name: 'Salão Balão Lateral', connections: [0, 3, 14, 1] },
       { id:  6, row: 4, col: 0, type: 'monster', name: 'Câmara 2 — As Feras (Esquerda)', connections: [1, 7, 2, 3] },
       { id:  7, row: 2, col: 1, type: 'monster', name: 'Câmara 3 — Caverna dos Ursos', connections: [6, 10, 9, 3, 8] },
-      { id:  8, row: 1, col: 0, type: 'monster', name: 'Câmara 3a — Urso-Coruja Imenso', connections: [7] },
+      { id:  8, row: 1, col: 0, type: 'boss',    name: 'Câmara 3a — Urso-Coruja Imenso', connections: [7, 13] },
       { id:  9, row: 0, col: 2, type: 'monster', name: 'Câmara Dupla do Norte (Ninho)', connections: [10, 7] },
       { id: 10, row: 1, col: 2, type: 'empty', name: 'Bifurcação Superior', connections: [3, 7, 9, 11, 12] },
       { id: 11, row: 1, col: 4, type: 'trap', name: 'Antecâmara do Druida (Pré-Boss)', connections: [10, 12, 13] },

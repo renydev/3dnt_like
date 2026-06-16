@@ -93,12 +93,12 @@ export type RoomEnemyGroup = () => Enemy[];
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
 export const RAGNAR_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
-  // Câmara I — Portão de Sangue: patrulha de goblins (2d6, limitado a 6)
-  2: () => {
+  // id 3 — Câmara I — Portão de Sangue: horda de goblins (2d6, máx 6)
+  3: () => {
     const count = Math.min(6, d(6) + d(6));
     return Array.from({ length: count }, () => spawnMonster('goblin_guerreiro'));
   },
-  // Câmara 2 — Salão das Batalhas: 1d+2 orcs guerreiros + 1 berserker
+  // id 4 — Câmara 2 — Salão das Batalhas: orcs + 1 berserker
   4: () => {
     const count = Math.min(4, d(6) + 2);
     return [
@@ -106,41 +106,41 @@ export const RAGNAR_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
       spawnMonster('orc_berserker'),
     ];
   },
-  // Câmara 3 — Posto de Guarda (norte): hobgoblin + 1d orcs
-  6: () => {
+  // id 5 — Câmara 3 — Posto de Guarda Norte: hobgoblin capitão + orcs
+  5: () => {
     const count = Math.max(1, d(4));
     return [
       spawnMonster('hobgoblin_capitao'),
       ...Array.from({ length: count }, () => spawnMonster('orc_guerreiro')),
     ];
   },
-  // Câmara 4 — Torre de Observação: ogre + goblins de escolta
-  7: () => [
+  // id 6 — Câmara 4 — Torre de Observação: ogre + goblins de escolta
+  6: () => [
     spawnMonster('ogre_batalha'),
     spawnMonster('goblin_guerreiro'),
     spawnMonster('goblin_guerreiro'),
   ],
-  // Câmara 3 — Cruzamento Central: patrulha mista
-  9: () => {
+  // id 8 — Câmara 3 — Cruzamento Central: patrulha mista
+  8: () => {
     const count = Math.max(1, d(4));
     return [
       ...Array.from({ length: count }, () => spawnMonster('orc_guerreiro')),
       spawnMonster('orc_berserker'),
     ];
   },
-  // Câmara 1 — Arena de Duelos: troll da guerra + orcs berserkers
-  11: () => [
+  // id 10 — Câmara 1 — Arena de Duelos: troll + berserkers
+  10: () => [
     spawnMonster('troll_guerra'),
     spawnMonster('orc_berserker'),
     spawnMonster('orc_berserker'),
   ],
-  // Câmara 3 — Corredor Inferior: patrulha de hobgoblins
-  12: () => {
+  // id 11 — Câmara 3 — Corredor Inferior: patrulha de hobgoblins
+  11: () => {
     const count = Math.max(1, d(4));
     return Array.from({ length: count }, () => spawnMonster('hobgoblin_capitao'));
   },
-  // Boss — Warchief Gromthar: o chefe de guerra e sua guarda
-  14: () => [
+  // id 13 — Boss — Warchief Gromthar
+  13: () => [
     spawnMonster('gromthar', true),
     spawnMonster('ogre_batalha'),
     spawnMonster('hobgoblin_capitao'),

@@ -76,6 +76,14 @@ import { Item, EquipSlot, getEffectiveStats, statBonusLabel, rarityLabel, rarity
                       class="hotspot-label"
                       text-anchor="middle"
                     >{{ hs.label }}</text>
+                    @if (isSecretDoor(room)) {
+                      <text
+                        [attr.x]="hs.cx + (hs.r ?? (hs.w??0)/2) - 2"
+                        [attr.y]="hs.cy - (hs.r ?? (hs.h??0)/2) + 2"
+                        class="hotspot-secret-badge"
+                        text-anchor="middle" dominant-baseline="middle"
+                      >🔓</text>
+                    }
                   </g>
                 }
               }
@@ -475,10 +483,14 @@ export class DungeonMapComponent {
   isReachable(room: DungeonRoom): boolean {
     const current = this.currentRoom();
     if (!current || room.isCurrent || !room.isVisible) return false;
-    // Salas já limpas: livre trânsito (não precisa ser adjacente)
     if (room.cleared) return true;
-    // Salas não limpas: apenas adjacentes
-    return current.connections.includes(room.id);
+    if (current.connections.includes(room.id)) return true;
+    // Conexão via porta secreta revelada
+    return (current.secretConnections?.includes(room.id) ?? false) && !!room.isSecretRevealed;
+  }
+
+  isSecretDoor(room: DungeonRoom): boolean {
+    return !!room.isSecretRevealed && !this.currentRoom()?.connections.includes(room.id);
   }
 
   onRoomClick(room: DungeonRoom): void {

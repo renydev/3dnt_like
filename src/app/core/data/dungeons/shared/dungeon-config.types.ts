@@ -8,6 +8,7 @@ export type RoomLayout = {
   type: RoomType;
   name: string;
   connections: number[];
+  secretConnections?: number[]; // conexões via porta secreta
 };
 
 export interface FloorLayout {

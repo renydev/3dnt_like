@@ -7,7 +7,7 @@ import { Item, ItemSlot, EquipSlot, Equipment, allEquipItems, mergeBonus, equipS
 import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
-import { ALLIHANNA_ROOM_ENEMIES, rollAllihannaEncounter } from '../data/dungeons/allihanna';
+import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
 import { calcCharacterPP, calcCombatPE } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
@@ -71,6 +71,17 @@ export class GameStateService {
     const floor = this.currentFloor();
     const id = this.currentRoomId();
     return floor?.rooms.find(r => r.id === id) ?? null;
+  });
+
+  /** True se qualquer membro do grupo possui perícia ou vantagem de detecção de portas secretas */
+  partyCanDetectSecrets = computed(() => {
+    const DETECTION_PERICIAS = ['investigacao', 'crime'];
+    const DETECTION_VANTAGENS = ['sentidos_especiais', 'radar', 'audicao_agucada'];
+    const party = [this.character(), ...this.companions()].filter(Boolean) as Character[];
+    return party.some(c =>
+      c.pericias?.some(p => DETECTION_PERICIAS.includes(p)) ||
+      c.vantagens?.some(v => DETECTION_VANTAGENS.includes(v))
+    );
   });
 
   currentTheme = computed(() => {
@@ -197,9 +208,12 @@ export class GameStateService {
     this._doMoveToRoom(roomId, target, floor);
 
     if (action === 'safe_enter') {
-      // Atravessou sem conflito (ex.: acalmar animais)
       this.addLog(`✅ Atravessou a câmara sem conflito.`);
       this._markRoomCleared(roomId);
+      if (target.type === 'boss') {
+        this.addLog(`🏆 Guardião contornado — o caminho está livre!`);
+        this._onBossDefeated();
+      }
       return;
     }
 
@@ -216,15 +230,14 @@ export class GameStateService {
       return;
     }
 
-    const roomGroup = this.floorNumber() === 1 && ALLIHANNA_ROOM_ENEMIES[roomId]
-      ? ALLIHANNA_ROOM_ENEMIES[roomId]()
-      : null;
+    const config = DUNGEON_REGISTRY[this.floorNumber()];
+    const roomGroup = config?.roomEnemies?.[roomId]?.() ?? null;
     this.pendingEnemies.set(roomGroup);
     this.screen.set('encounter');
   }
 
   private _doMoveToRoom(roomId: number, target: DungeonRoom, floor: DungeonFloor): void {
-    const updatedRooms = this.generator.revealConnected(floor.rooms, roomId);
+    const updatedRooms = this.generator.revealConnected(floor.rooms, roomId, this.partyCanDetectSecrets());
     const movedRooms = this.generator.moveToRoom(updatedRooms, roomId);
     this.currentFloor.set({ ...floor, rooms: movedRooms });
     this.currentRoomId.set(roomId);
@@ -232,11 +245,11 @@ export class GameStateService {
 
     if (target.type !== 'entrance' && target.type !== 'empty') {
       if (target.cleared) {
-        if (this.floorNumber() === 1 && this._rollAllihannaRandom()) return;
+        if (this._rollRandomEncounter()) return;
         return;
       }
-    } else if (target.entered && this.floorNumber() === 1) {
-      this._rollAllihannaRandom();
+    } else if (target.entered) {
+      this._rollRandomEncounter();
     }
   }
 
@@ -249,11 +262,13 @@ export class GameStateService {
     this.currentFloor.set({ ...floor, rooms });
   }
 
-  /** Rola 1d6; se 1, inicia encontro aleatório de Allihanna. Retorna true se iniciou. */
-  private _rollAllihannaRandom(): boolean {
+  /** Rola 1d6; se 1, inicia encontro aleatório do andar atual. Retorna true se iniciou. */
+  private _rollRandomEncounter(): boolean {
     const roll = d6();
     if (roll !== 1) return false;
-    const enemies = rollAllihannaEncounter();
+    const config = DUNGEON_REGISTRY[this.floorNumber()];
+    const enemies = config?.rollEncounter?.() ?? null;
+    if (!enemies) return false;
     this.addLog(`⚠️ Encontro aleatório! ${enemies.map(e => e.name).join(', ')} aparecem!`);
     this.pendingEnemies.set(enemies);
     this.screen.set('encounter');

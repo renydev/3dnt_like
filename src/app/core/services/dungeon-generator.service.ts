@@ -43,6 +43,7 @@ export class DungeonGeneratorService {
       cleared: r.type === 'entrance',
       locked: false,
       connections: [...r.connections],
+      secretConnections: r.secretConnections ? [...r.secretConnections] : undefined,
       col: r.col,
       row: r.row,
       isVisible: allVisible || r.type === 'entrance',
@@ -215,12 +216,16 @@ export class DungeonGeneratorService {
     return `${typeDesc[type] ?? ''} ${flavor}`;
   }
 
-  revealConnected(rooms: DungeonRoom[], currentId: number): DungeonRoom[] {
+  revealConnected(rooms: DungeonRoom[], currentId: number, canDetectSecrets = false): DungeonRoom[] {
     const current = rooms.find(r => r.id === currentId)!;
-    return rooms.map(r => ({
-      ...r,
-      isVisible: r.isVisible || current.connections.includes(r.id),
-    }));
+    return rooms.map(r => {
+      const visibleViaSecret = canDetectSecrets && (current.secretConnections?.includes(r.id) ?? false);
+      return {
+        ...r,
+        isVisible: r.isVisible || current.connections.includes(r.id) || visibleViaSecret,
+        isSecretRevealed: r.isSecretRevealed || visibleViaSecret,
+      };
+    });
   }
 
   moveToRoom(rooms: DungeonRoom[], targetId: number): DungeonRoom[] {

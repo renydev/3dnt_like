@@ -363,6 +363,11 @@
   }
 }
 
+.hotspot-secret-badge {
+  font-size: 11px;
+  filter: drop-shadow(0 0 3px rgba(255,200,0,0.8));
+}
+
 @keyframes halo-pulse {
   0%, 100% { opacity: 0.5; r: 0; }
   50% { opacity: 0.15; }
