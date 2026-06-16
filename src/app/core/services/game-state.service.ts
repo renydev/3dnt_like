@@ -3,6 +3,7 @@ import {
   Character, PRESET_CHARACTERS,
   CharacterClass, CLASS_ROLES,
 } from '../models/character.model';
+import { Item, ItemSlot, EquipSlot, Equipment, allEquipItems, mergeBonus, equipSlotLabel } from '../models/item.model';
 import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
@@ -18,6 +19,7 @@ export type GameScreen =
   | 'companion_select'
   | 'dungeon'
   | 'encounter'
+  | 'merchant'
   | 'floor_transition'
   | 'game_over'
   | 'victory'
@@ -207,7 +209,13 @@ export class GameStateService {
       return;
     }
 
-    // action === 'enter': triggar encontro normal
+    // action === 'enter': triggar encontro normal ou mercador
+    if (target.type === 'merchant') {
+      this._markRoomCleared(roomId);
+      this.screen.set('merchant');
+      return;
+    }
+
     const roomGroup = this.floorNumber() === 1 && ALLIHANNA_ROOM_ENEMIES[roomId]
       ? ALLIHANNA_ROOM_ENEMIES[roomId]()
       : null;
@@ -253,11 +261,11 @@ export class GameStateService {
   }
 
   /**
-   * O grupo descansa na câmara atual.
-   * Recupera R×2 PV e R PM por membro. Depois, 1/3 de chance de encontro aleatório.
-   * Só pode descansar uma vez por câmara.
+   * Descanso rápido disponível após limpar qualquer sala.
+   * Recupera 50% de PV e PM máximos. Sem risco de encontro.
+   * Só pode ser feito uma vez por câmara.
    */
-  restAtRoom(): void {
+  restQuick(): void {
     const floor = this.currentFloor();
     const roomId = this.currentRoomId();
     if (!floor) return;
@@ -265,40 +273,52 @@ export class GameStateService {
     const room = floor.rooms.find(r => r.id === roomId);
     if (!room || room.rested) return;
 
-    // Cura
-    const heal = (c: import('../models/character.model').Character) => {
-      const hpGain = c.resistencia.current * 2;
-      const pmGain = c.resistencia.current;
-      return {
-        ...c,
-        pontosVida: { ...c.pontosVida, current: Math.min(c.pontosVida.current + hpGain, c.pontosVida.max) },
-        pontosMana:  { ...c.pontosMana,  current: Math.min(c.pontosMana.current  + pmGain,  c.pontosMana.max)  },
-      };
-    };
+    const heal = (c: import('../models/character.model').Character) => ({
+      ...c,
+      pontosVida: { ...c.pontosVida, current: Math.min(c.pontosVida.current + Math.ceil(c.pontosVida.max / 2), c.pontosVida.max) },
+      pontosMana:  { ...c.pontosMana,  current: Math.min(c.pontosMana.current  + Math.ceil(c.pontosMana.max  / 2), c.pontosMana.max)  },
+    });
 
     this.character.update(c => c ? heal(c) : c);
     this.companions.update(list => list.map(heal));
 
-    // Marca câmara como descansada
     const rooms = floor.rooms.map(r => r.id === roomId ? { ...r, rested: true } : r);
     this.currentFloor.set({ ...floor, rooms });
 
-    this.addLog(`🏕️ O grupo descansou em "${room.name}". PV e PM parcialmente recuperados.`);
+    this.addLog(`💤 Descanso rápido em "${room.name}". Recuperou metade dos PV e PM.`);
+  }
 
-    // Rola encontro aleatório (1-2 em 1d6 ≈ 33%)
-    const roll = d6();
-    if (roll <= 2) {
-      const isAllihanna = this.floorNumber() === 1;
-      if (isAllihanna) {
-        const enemies = rollAllihannaEncounter();
-        this.addLog(`⚠️ Encontro aleatório durante o descanso! ${enemies.map(e => e.name).join(', ')} aparecem!`);
-        this.pendingEnemies.set(enemies);
-      } else {
-        this.addLog(`⚠️ Encontro aleatório durante o descanso! Monstros errantes se aproximam!`);
-        this.pendingEnemies.set(null);
-      }
-      this.screen.set('encounter');
-    }
+  /**
+   * Descanso profundo em sala de descanso (tipo 'rest').
+   * Recupera PV e PM totalmente. Sem risco de encontro.
+   * Só pode ser feito uma vez por câmara.
+   */
+  restDeep(): void {
+    const floor = this.currentFloor();
+    const roomId = this.currentRoomId();
+    if (!floor) return;
+
+    const room = floor.rooms.find(r => r.id === roomId);
+    if (!room || room.rested) return;
+
+    const heal = (c: import('../models/character.model').Character) => ({
+      ...c,
+      pontosVida: { ...c.pontosVida, current: c.pontosVida.max },
+      pontosMana:  { ...c.pontosMana,  current: c.pontosMana.max  },
+    });
+
+    this.character.update(c => c ? heal(c) : c);
+    this.companions.update(list => list.map(heal));
+
+    const rooms = floor.rooms.map(r => r.id === roomId ? { ...r, rested: true } : r);
+    this.currentFloor.set({ ...floor, rooms });
+
+    this.addLog(`🏕️ Descanso profundo em "${room.name}". PV e PM totalmente restaurados!`);
+  }
+
+  /** @deprecated use restQuick or restDeep */
+  restAtRoom(): void {
+    this.restQuick();
   }
 
   resolveEncounter(result: 'victory' | 'flee' | 'defeat'): void {
@@ -398,7 +418,14 @@ export class GameStateService {
     const pe = result.pePerCharacter;
 
     if (goldAmount > 0) {
-      this.character.update(c => c ? { ...c, gold: c.gold + goldAmount } : c);
+      const partySize = 1 + this.companions().length;
+      const share = Math.floor(goldAmount / partySize);
+      const remainder = goldAmount - share * partySize;
+      this.character.update(c => c ? { ...c, gold: c.gold + share + remainder } : c);
+      if (share > 0) {
+        this.companions.update(list => list.map(c => ({ ...c, gold: c.gold + share })));
+      }
+      this.addLog(`💰 +${goldAmount} ouro dividido entre ${partySize} personagem${partySize > 1 ? 's' : ''} (+${share + remainder} para ${this.character()?.name}${partySize > 1 ? `, +${share} para cada companheiro` : ''})`);
     }
 
     if (pe <= 0) {
@@ -524,6 +551,160 @@ export class GameStateService {
         return updated;
       })
     );
+  }
+
+  // ── Inventário & Equipamento ───────────────────────────────────────────────
+
+  backpackOpen = signal(false);
+
+  addToInventory(item: Item): void {
+    this.character.update(c => c ? { ...c, inventory: [...c.inventory, item] } : c);
+    this.addLog(`🎒 ${item.icon} ${item.name} na mochila! Abra a mochila para usá-lo.`);
+  }
+
+  /** Resolve o EquipSlot real para um item (ring → ring_left ou ring_right). */
+  private _resolveEquipSlot(item: Item): EquipSlot {
+    if (item.slot === 'ring') {
+      const eq = this.character()?.equipment ?? {};
+      if (!eq.ring_left)  return 'ring_left';
+      if (!eq.ring_right) return 'ring_right';
+      return 'ring_left';
+    }
+    return item.slot as EquipSlot;
+  }
+
+  private _equipDirect(item: Item, targetSlot: EquipSlot): void {
+    this.character.update(c => {
+      if (!c) return c;
+      const eq: Equipment = { ...c.equipment };
+      let inv = c.inventory.filter(i => i !== item);
+
+      // Arma de 2 mãos → limpa offhand
+      if (targetSlot === 'weapon' && item.twoHanded && eq.offhand) {
+        inv = [...inv, eq.offhand]; eq.offhand = undefined;
+      }
+      // Offhand enquanto há arma de 2 mãos → remove a arma
+      if (targetSlot === 'offhand' && eq.weapon?.twoHanded) {
+        inv = [...inv, eq.weapon]; eq.weapon = undefined;
+      }
+      // Luvas → remove anéis
+      if (targetSlot === 'gloves') {
+        if (eq.ring_left)  { inv = [...inv, eq.ring_left];  eq.ring_left  = undefined; }
+        if (eq.ring_right) { inv = [...inv, eq.ring_right]; eq.ring_right = undefined; }
+      }
+      // Anel → remove luvas
+      if (targetSlot === 'ring_left' || targetSlot === 'ring_right') {
+        if (eq.gloves) { inv = [...inv, eq.gloves]; eq.gloves = undefined; }
+      }
+
+      const prev = (eq as any)[targetSlot] as Item | undefined;
+      if (prev) inv = [...inv, prev];
+      (eq as any)[targetSlot] = item;
+
+      const bonus = mergeBonus(...allEquipItems(eq));
+      const pvMax = c.resistencia.base * 5 + (bonus.pontosVida ?? 0);
+      const pmMax = c.pontosMana.base     + (bonus.pontosMana ?? 0);
+      return {
+        ...c,
+        equipment: eq,
+        inventory: inv,
+        pontosVida: { ...c.pontosVida, max: pvMax, current: Math.min(c.pontosVida.current, pvMax) },
+        pontosMana: { ...c.pontosMana, max: pmMax, current: Math.min(c.pontosMana.current, pmMax) },
+      };
+    });
+  }
+
+  equipItem(item: Item): void {
+    if (!item.slot) return;
+    const targetSlot = this._resolveEquipSlot(item);
+    this._equipDirect(item, targetSlot);
+    this.addLog(`🔧 ${item.icon} ${item.name} equipado (${equipSlotLabel(targetSlot)}).`);
+  }
+
+  unequipItem(slot: EquipSlot): void {
+    this.character.update(c => {
+      if (!c) return c;
+      const item = (c.equipment as any)[slot] as Item | undefined;
+      if (!item) return c;
+      const eq: Equipment = { ...c.equipment, [slot]: undefined };
+      const bonus = mergeBonus(...allEquipItems(eq));
+      const pvMax = c.resistencia.base * 5 + (bonus.pontosVida ?? 0);
+      const pmMax = c.pontosMana.base     + (bonus.pontosMana ?? 0);
+      return {
+        ...c,
+        equipment: eq,
+        inventory: [...c.inventory, item],
+        pontosVida: { ...c.pontosVida, max: pvMax, current: Math.min(c.pontosVida.current, pvMax) },
+        pontosMana: { ...c.pontosMana, max: pmMax, current: Math.min(c.pontosMana.current, pmMax) },
+      };
+    });
+  }
+
+  useConsumable(item: Item): boolean {
+    const c = this.character();
+    if (!c) return false;
+    const idx = c.inventory.findIndex(i => i.id === item.id);
+    if (idx === -1) return false;
+
+    let pvGain = 0;
+    let pmGain = 0;
+
+    if ((item.healPvDice ?? 0) > 0 || (item.healPvFlat ?? 0) > 0) {
+      let roll = 0;
+      for (let i = 0; i < (item.healPvDice ?? 0); i++) roll += d6();
+      pvGain = Math.min(roll + (item.healPvFlat ?? 0), c.pontosVida.max - c.pontosVida.current);
+      pvGain = Math.max(0, pvGain);
+    }
+    if ((item.healPmDice ?? 0) > 0 || (item.healPmFlat ?? 0) > 0) {
+      let roll = 0;
+      for (let i = 0; i < (item.healPmDice ?? 0); i++) roll += d6();
+      pmGain = Math.min(roll + (item.healPmFlat ?? 0), c.pontosMana.max - c.pontosMana.current);
+      pmGain = Math.max(0, pmGain);
+    }
+
+    const newInv = [...c.inventory];
+    newInv.splice(idx, 1);
+
+    this.character.update(ch => ch ? {
+      ...ch,
+      inventory: newInv,
+      pontosVida: { ...ch.pontosVida, current: ch.pontosVida.current + pvGain },
+      pontosMana: { ...ch.pontosMana, current: ch.pontosMana.current + pmGain },
+    } : ch);
+
+    const parts: string[] = [];
+    if (pvGain > 0) parts.push(`+${pvGain} PV`);
+    if (pmGain > 0) parts.push(`+${pmGain} PM`);
+    this.addLog(`${item.icon} Usou ${item.name}${parts.length ? ` — ${parts.join(', ')}` : ''}`);
+    return true;
+  }
+
+  /** Compra um item do mercador. Deduz ouro e adiciona ao inventário. */
+  buyItem(item: Item): boolean {
+    const c = this.character();
+    if (!c) return false;
+    const price = item.price ?? 0;
+    if (c.gold < price) return false;
+    this.character.update(ch => ch ? { ...ch, gold: ch.gold - price, inventory: [...ch.inventory, { ...item }] } : ch);
+    this.addLog(`🛒 Comprou ${item.icon} ${item.name} por ${price} PO`);
+    return true;
+  }
+
+  /** Vende um item do inventário por metade do preço. */
+  sellItem(item: Item, sellPrice: number): void {
+    this.character.update(c => {
+      if (!c) return c;
+      const idx = c.inventory.findIndex(i => i.id === item.id);
+      if (idx === -1) return c;
+      const newInv = [...c.inventory];
+      newInv.splice(idx, 1);
+      return { ...c, inventory: newInv, gold: c.gold + sellPrice };
+    });
+    this.addLog(`💸 Vendeu ${item.icon} ${item.name} por ${sellPrice} PO`);
+  }
+
+  closeMerchant(): void {
+    this.screen.set('dungeon');
   }
 
   // ── Utilitários ────────────────────────────────────────────────────────────

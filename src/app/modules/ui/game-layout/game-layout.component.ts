@@ -11,6 +11,8 @@ import { DungeonMapComponent } from '../../../dungeon/components/dungeon-map/dun
 import { EncounterScreenComponent } from '../../../dungeon/components/encounter-screen/encounter-screen.component';
 import { DebugDialogComponent } from '../debug-dialog/debug-dialog.component';
 import { ChamberDialogComponent } from '../chamber-dialog/chamber-dialog.component';
+import { MerchantScreenComponent } from '../../../dungeon/components/merchant-screen/merchant-screen.component';
+import { BackpackComponent } from '../backpack/backpack.component';
 
 @Component({
   selector: 'app-game-layout',
@@ -24,6 +26,8 @@ import { ChamberDialogComponent } from '../chamber-dialog/chamber-dialog.compone
     EncounterScreenComponent,
     DebugDialogComponent,
     ChamberDialogComponent,
+    MerchantScreenComponent,
+    BackpackComponent,
   ],
   templateUrl: './game-layout.component.html',
   styleUrl: './game-layout.component.scss',

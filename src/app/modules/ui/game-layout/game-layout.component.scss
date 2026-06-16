@@ -9,6 +9,7 @@
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  background: var(--color-bg);
 }
 
 // ── Corpo (centro + log) ──────────────────────────────────────────────────────
@@ -28,6 +29,7 @@
   flex-direction: column;
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+  background: var(--color-bg);
 }
 
 // ── Painel de log ─────────────────────────────────────────────────────────────
@@ -36,7 +38,7 @@
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--color-border);
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--color-bg-mid);
 }
 
 .log-title {
@@ -75,6 +77,45 @@
   }
 }
 
+.btn-backpack {
+  margin: 0.5rem 0.5rem 0;
+  padding: 0.45rem 0.75rem;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  color: #fbbf24;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  transition: all 0.18s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+
+  &:hover {
+    background: rgba(251, 191, 36, 0.16);
+    border-color: rgba(251, 191, 36, 0.5);
+  }
+
+  &.has-items {
+    border-color: rgba(251, 191, 36, 0.5);
+  }
+}
+
+.backpack-badge {
+  background: #fbbf24;
+  color: #1a0e00;
+  border-radius: 10px;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  min-width: 1.1rem;
+  text-align: center;
+  line-height: 1.4;
+}
+
 .btn-menu-back {
   margin: 0.5rem;
   padding: 0.5rem;
@@ -97,7 +138,7 @@
 // ── Painel de combate ─────────────────────────────────────────────────────────
 
 .log-panel.combat-panel {
-  background: rgba(4, 4, 12, 0.92);
+  background: #04040c;
   border-left-color: #1a1a30;
 }
 

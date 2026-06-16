@@ -2,6 +2,7 @@ import { Component, inject, input, output, signal, computed } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { Character, CLASS_COLORS, CLASS_ICONS } from '../../../core/models/character.model';
+import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
 
 export type SpendableAttr = 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo';
 
@@ -223,6 +224,41 @@ export class CharacterDialogComponent {
     } : c);
     this.gs.addLog(`⚠️ ${this.char()!.name} tomou desvantagem: ${d.name} (+${d.reward} PE)`);
     this.showDesvantagensMenu.set(false);
+  }
+
+  // ── Equipamentos & Stats Efetivos ─────────────────────────────────
+
+  equipBonus(attr: SpendableAttr): number {
+    const c = this.char()!;
+    const b = mergeBonus(...allEquipItems(c.equipment ?? {}));
+    switch (attr) {
+      case 'forca':       return b.forca       ?? 0;
+      case 'habilidade':  return b.habilidade  ?? 0;
+      case 'resistencia': return b.resistencia ?? 0;
+      case 'armadura':    return b.armadura    ?? 0;
+      case 'poderFogo':   return b.poderFogo   ?? 0;
+    }
+  }
+
+  effectiveValue(attr: SpendableAttr): number {
+    const c = this.char()!;
+    const base = attr === 'armadura' ? c.armadura : c[attr].current;
+    return base + this.equipBonus(attr);
+  }
+
+  readonly equipSlots: { key: EquipSlot; label: string }[] = [
+    { key: 'weapon',     label: 'Arma' },
+    { key: 'offhand',    label: 'Mão Sec.' },
+    { key: 'armor',      label: 'Armadura' },
+    { key: 'head',       label: 'Cabeça' },
+    { key: 'gloves',     label: 'Luvas' },
+    { key: 'boots',      label: 'Botas' },
+    { key: 'ring_left',  label: 'Anel Esq.' },
+    { key: 'ring_right', label: 'Anel Dir.' },
+  ];
+
+  equippedItem(slot: EquipSlot) {
+    return (this.char()!.equipment as any)?.[slot] ?? null;
   }
 
   onBackdrop(event: MouseEvent): void {

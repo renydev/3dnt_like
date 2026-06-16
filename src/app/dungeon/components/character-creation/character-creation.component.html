@@ -540,6 +540,50 @@
         </div>
       }
 
+      <!-- ── Step 8: Devoção ──────────────────────────────────────────────────── -->
+      @if (step() === 8) {
+        <div class="step-content">
+          <h2 class="step-title">Devoção (Opcional)</h2>
+          <p class="step-desc">
+            Escolha um deus padroeiro — ou prossiga sem devoção. Esta escolha não altera seus atributos agora,
+            mas pode influenciar eventos dentro das masmorras.
+          </p>
+
+          <div class="gods-grid">
+            <!-- Opção: Sem devoção -->
+            <div class="god-card no-god"
+              [class.selected]="selectedGod() === null"
+              (click)="selectedGod.set(null)">
+              <div class="god-icon">🚫</div>
+              <div class="god-name">Sem Devoção</div>
+              <div class="god-domain">Seguir sem um patrono</div>
+              @if (selectedGod() === null) {
+                <span class="selected-check">✓</span>
+              }
+            </div>
+
+            @for (god of gods; track god.id) {
+              <div class="god-card"
+                [class.selected]="selectedGod()?.id === god.id"
+                [class.alignment-bem]="god.godAlignment === 'bem'"
+                [class.alignment-mal]="god.godAlignment === 'mal'"
+                [class.alignment-neutro]="god.godAlignment === 'neutro'"
+                [class.alignment-caos]="god.godAlignment === 'caos'"
+                (click)="selectedGod.set(god)">
+                <div class="god-floor-badge">{{ god.floorNumber }}º</div>
+                <div class="god-icon">{{ god.icon }}</div>
+                <div class="god-name">{{ god.godName }}</div>
+                <div class="god-domain">{{ god.godDomain }}</div>
+                <div class="god-alignment align-{{ god.godAlignment }}">{{ god.godAlignment }}</div>
+                @if (selectedGod()?.id === god.id) {
+                  <span class="selected-check">✓</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      }
+
     </div>
   </div>
 
@@ -551,11 +595,11 @@
       <div></div>
     }
 
-    @if (step() > 4 && step() < 7) {
+    @if (step() > 4 && step() < 8) {
       <button class="btn-next" [disabled]="!canAdvance()" (click)="nextStep()">
         Próximo →
       </button>
-    } @else if (step() === 7) {
+    } @else if (step() === 8) {
       <button class="btn-confirm" [disabled]="!canConfirm()" (click)="confirm()">
         ⚔️ Entrar no Labirinto
       </button>

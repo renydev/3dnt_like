@@ -1122,3 +1122,87 @@
     transform: translateY(-1px);
   }
 }
+
+// ── Step 8: Devoção ──────────────────────────────────────────────────────────
+
+.gods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.7rem;
+  padding-bottom: 1rem;
+}
+
+.god-card {
+  position: relative;
+  background: #0f0f1a;
+  border: 2px solid #2a2a40;
+  border-radius: 10px;
+  padding: 0.75rem 0.5rem 0.6rem;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.18s, transform 0.18s, background 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+
+  &:hover {
+    border-color: #6c6caa;
+    transform: translateY(-2px);
+  }
+
+  &.selected {
+    border-color: #f0c040;
+    background: #1a1810;
+  }
+
+  &.no-god {
+    border-style: dashed;
+    opacity: 0.7;
+    &.selected { opacity: 1; }
+  }
+
+  &.alignment-bem    { --align-color: #5adfaa; }
+  &.alignment-mal    { --align-color: #df5a5a; }
+  &.alignment-neutro { --align-color: #aaaacc; }
+  &.alignment-caos   { --align-color: #df9a3a; }
+}
+
+.god-floor-badge {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.6rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.god-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.god-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e8d5b0;
+  line-height: 1.2;
+}
+
+.god-domain {
+  font-size: 0.65rem;
+  color: #888;
+  line-height: 1.3;
+}
+
+.god-alignment {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--align-color, #aaa);
+  border: 1px solid var(--align-color, #aaa);
+  border-radius: 3px;
+  padding: 0.05rem 0.35rem;
+  margin-top: 0.1rem;
+}

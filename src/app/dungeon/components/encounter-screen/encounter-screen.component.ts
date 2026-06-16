@@ -4,6 +4,7 @@ import { GameStateService } from '../../../core/services/game-state.service';
 import { CombatService } from '../../../core/services/combat.service';
 import { CombatAbility, Enemy } from '../../../core/models/combat.model';
 import { Character } from '../../../core/models/character.model';
+import { Item, rollTreasureItem } from '../../../core/models/item.model';
 
 @Component({
   selector: 'app-encounter-screen',
@@ -159,8 +160,8 @@ import { Character } from '../../../core/models/character.model';
               <span class="act-icon">✨</span><span class="act-lbl">Habilidade</span>
             </button>
           }
-          <button class="act-btn itm" [disabled]="phase() !== 'player_turn' || !hasPotion()" (click)="usePotion()">
-            <span class="act-icon">🧪</span><span class="act-lbl">Poção</span>
+          <button class="act-btn itm" [disabled]="phase() !== 'player_turn' || !hasPotion()" (click)="showInventory.set(true)">
+            <span class="act-icon">🎒</span><span class="act-lbl">Itens{{ consumables().length ? ' (' + consumables().length + ')' : '' }}</span>
           </button>
           @if (!hasBoss()) {
             <button class="act-btn fle" [disabled]="phase() !== 'player_turn'" (click)="onFlee()">
@@ -183,6 +184,24 @@ import { Character } from '../../../core/models/character.model';
               <span class="ab-name">À Distância</span>
               <span class="ab-cost">PF+H+1d6</span>
             </button>
+          </div>
+        </div>
+      } @else if (showInventory()) {
+        <!-- Sub-menu de itens -->
+        <div class="magic-menu">
+          <button class="back-btn" (click)="showInventory.set(false)">← Voltar</button>
+          <div class="ability-list">
+            @for (item of consumables(); track item.id) {
+              <button class="ab-btn" (click)="useItem(item)">
+                <span class="ab-icon">{{ item.icon }}</span>
+                <span class="ab-name">{{ item.name }}</span>
+                <span class="ab-cost ab-rarity-{{ item.rarity }}">{{ item.rarity === 'rare' ? 'Raro' : item.rarity === 'uncommon' ? 'Incomum' : 'Comum' }}</span>
+                <span class="ab-desc">{{ item.description }}</span>
+              </button>
+            }
+            @if (consumables().length === 0) {
+              <p style="color:#555;font-size:12px;text-align:center;padding:12px">Nenhum consumível disponível.</p>
+            }
           </div>
         </div>
       } @else {
@@ -234,8 +253,28 @@ import { Character } from '../../../core/models/character.model';
       <div class="enc-icon">💰</div>
       <h2>Tesouro!</h2>
       <p class="enc-desc">{{ room()?.description }}</p>
-      <p class="reward-text">Você encontrou: <strong>{{ treasureReward() }}</strong></p>
-      <button class="btn-victory" (click)="victory()">✅ Pegar Tesouro</button>
+      @if (treasureItem(); as ti) {
+        <div class="treasure-item-card">
+          <span class="treasure-item-icon">{{ ti.icon }}</span>
+          <div class="treasure-item-info">
+            <span class="treasure-item-name">{{ ti.name }}</span>
+            <span class="treasure-item-rarity ab-rarity-{{ ti.rarity }}">{{ ti.rarity === 'rare' ? '✨ Raro' : ti.rarity === 'uncommon' ? '◆ Incomum' : '● Comum' }}</span>
+            <span class="treasure-item-desc">{{ ti.description }}</span>
+            @if (ti.statBonus) {
+              <span class="treasure-item-bonus">
+                @if (ti.statBonus.forca)       { +{{ ti.statBonus.forca }}F }
+                @if (ti.statBonus.habilidade)  { +{{ ti.statBonus.habilidade }}H }
+                @if (ti.statBonus.resistencia) { +{{ ti.statBonus.resistencia }}R }
+                @if (ti.statBonus.armadura)    { +{{ ti.statBonus.armadura }}A }
+                @if (ti.statBonus.poderFogo)   { +{{ ti.statBonus.poderFogo }}PF }
+                @if (ti.statBonus.pontosVida)  { +{{ ti.statBonus.pontosVida }}PV }
+                @if (ti.statBonus.pontosMana)  { +{{ ti.statBonus.pontosMana }}PM }
+              </span>
+            }
+          </div>
+        </div>
+      }
+      <button class="btn-victory" (click)="victory()">✅ Pegar {{ treasureReward() }}</button>
     </div>
   }
 
@@ -601,6 +640,22 @@ import { Character } from '../../../core/models/character.model';
     .btn-primary { background: linear-gradient(135deg, #1a3a5c, #2980b9); color: #fff; border: 1px solid #3498db; }
     .btn-victory { background: linear-gradient(135deg, #1a4a1a, #27ae60); color: #fff; border: 1px solid #2ecc71; }
 
+    /* ── Item card no tesouro ──────────────────────────────────────────── */
+    .treasure-item-card {
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      background: rgba(255,215,0,0.08); border: 1px solid #ca8a04;
+      border-radius: 8px; padding: 0.7rem 0.9rem; margin: 0.6rem 0; text-align: left;
+    }
+    .treasure-item-icon { font-size: 2rem; line-height: 1; }
+    .treasure-item-info { display: flex; flex-direction: column; gap: 0.2rem; }
+    .treasure-item-name { font-weight: bold; font-size: 0.95rem; color: #fde68a; }
+    .treasure-item-rarity { font-size: 0.72rem; font-weight: bold; }
+    .treasure-item-desc { font-size: 0.78rem; color: #9ca3af; }
+    .treasure-item-bonus { font-size: 0.8rem; color: #86efac; font-weight: bold; }
+    .ab-rarity-common   { color: #9ca3af; }
+    .ab-rarity-uncommon { color: #60a5fa; }
+    .ab-rarity-rare     { color: #c084fc; }
+
     /* ── Overlay de derrota ─────────────────────────────────────────── */
     .defeat-overlay {
       position: fixed; inset: 0; z-index: 100;
@@ -686,8 +741,10 @@ export class EncounterScreenComponent implements OnInit {
   trapTotal  = signal<number | null>(null);
   trapResult = signal<number | null>(null);
   trapDmg    = signal(0);
+  treasureItem   = signal<Item | null>(null);
   treasureReward = signal('');
   restAmount = signal(0);
+  showInventory  = signal(false);
 
   isCombat = computed(() => {
     const t = this.room()?.type;
@@ -697,7 +754,8 @@ export class EncounterScreenComponent implements OnInit {
   isBossRoom = computed(() => this.room()?.type === 'boss' || this.enemies().some(e => e.isBoss));
   hasBoss    = computed(() => this.enemies().some(e => e.isBoss));
   hasAbilities = computed(() => this.abilities().length > 0);
-  hasPotion    = computed(() => (this.char()?.items ?? []).includes('Poção de Cura'));
+  consumables  = computed(() => (this.char()?.inventory ?? []).filter(i => i.category === 'consumable' && i.usableInCombat));
+  hasPotion    = computed(() => this.consumables().length > 0);
   trapDiff     = computed(() => 3 + this.floorNum());
 
   ngOnInit(): void {
@@ -717,7 +775,9 @@ export class EncounterScreenComponent implements OnInit {
     const firstAlive = this.enemies().find(e => e.hp > 0);
     if (firstAlive) this.targetId.set(firstAlive.id);
 
-    this.treasureReward.set(this.pickTreasure());
+    const ti = this.pickTreasureItem();
+    this.treasureItem.set(ti);
+    this.treasureReward.set(ti.name);
     this.restAmount.set(Math.floor(Math.random() * 5) + 3);
   }
 
@@ -791,16 +851,31 @@ export class EncounterScreenComponent implements OnInit {
   canUse(ab: CombatAbility): boolean { return this.combat.canUseAbility(ab); }
 
   usePotion(): void {
-    const c = this.char();
-    if (!c) return;
-    const heal = Math.floor(Math.random() * 6) + 4;
-    const newPv = Math.min(c.pontosVida.max, c.pontosVida.current + heal);
-    this.gs.character.update(ch => ch ? {
-      ...ch,
-      pontosVida: { ...ch.pontosVida, current: newPv },
-      items: (() => { const idx = ch.items.indexOf('Poção de Cura'); const a = [...ch.items]; a.splice(idx, 1); return a; })()
-    } : ch);
-    this.gs.addLog(`🧪 Usou Poção de Cura (+${newPv - c.pontosVida.current} PV)`);
+    // Legacy: show inventory menu instead
+    this.showInventory.set(true);
+  }
+
+  useItem(item: Item): void {
+    if (this.phase() !== 'player_turn') return;
+    const used = this.gs.useConsumable(item);
+    if (used) {
+      this.showInventory.set(false);
+      // Scroll damage (pergaminhos)
+      if (item.damageDice && (item.damageDice ?? 0) > 0) {
+        const target = this.combat.enemies()[0];
+        if (target) {
+          let dmg = 0;
+          for (let i = 0; i < item.damageDice; i++) dmg += Math.ceil(Math.random() * 6);
+          this.combat['applyDamageToEnemy'](target.id, dmg);
+          this.gs.addLog(`${item.icon} ${item.name} causa ${dmg} de dano mágico em ${target.name}!`);
+          if (!this.combat['checkVictory']()) {
+            this.combat['afterPlayerAction']();
+          }
+          return;
+        }
+      }
+      this.combat['afterPlayerAction']();
+    }
   }
 
   // ── Helpers visuais ───────────────────────────────────────────────
@@ -887,7 +962,11 @@ export class EncounterScreenComponent implements OnInit {
     }
   }
 
-  victory(): void { this.gs.resolveEncounter('victory'); }
+  victory(): void {
+    const ti = this.treasureItem();
+    if (ti) this.gs.addToInventory(ti);
+    this.gs.resolveEncounter('victory');
+  }
 
   rest(): void {
     const amt = this.restAmount();
@@ -900,9 +979,12 @@ export class EncounterScreenComponent implements OnInit {
     this.gs.resolveEncounter('victory');
   }
 
+  private pickTreasureItem(): Item {
+    return rollTreasureItem(this.floorNum());
+  }
+
+  /** @deprecated kept for reference */
   private pickTreasure(): string {
-    const items = ['Poção de Cura', 'Saco de Moedas (3d6 PO)', 'Pergaminho Mágico',
-      'Amuleto Protetor', 'Arma +1', 'Armadura Reforçada', 'Gema Preciosa'];
-    return items[Math.floor(Math.random() * items.length)];
+    return this.pickTreasureItem().name;
   }
 }

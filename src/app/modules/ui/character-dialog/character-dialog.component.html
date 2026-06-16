@@ -71,7 +71,14 @@
                 </span>
               }
             </div>
-            <span class="attr-num">{{ row.value(char()!) }}</span>
+            <span class="attr-num">
+              {{ effectiveValue(row.key) }}
+              @if (equipBonus(row.key) !== 0) {
+                <span class="attr-bonus" [class.attr-bonus--neg]="equipBonus(row.key) < 0">
+                  {{ equipBonus(row.key) > 0 ? '+' : '' }}{{ equipBonus(row.key) }}
+                </span>
+              }
+            </span>
             <button
               class="btn-inc"
               [class.btn-inc--active]="canSpend(row.key)"
@@ -171,14 +178,34 @@
         }
       </div>
 
+      <!-- ── Equipamentos ─────────────────────────────────────────── -->
+      <div class="items-section">
+        <span class="tags-title">⚔️ Equipamentos</span>
+        <div class="equip-slots">
+          @for (s of equipSlots; track s.key) {
+            <div class="equip-slot" [class.equip-slot--empty]="!equippedItem(s.key)">
+              <span class="equip-slot-label">{{ s.label }}</span>
+              @if (equippedItem(s.key); as item) {
+                <span class="equip-item">{{ item.icon }} {{ item.name }}</span>
+                @if (item.twoHanded) {
+                  <span class="equip-2h">2M</span>
+                }
+              } @else {
+                <span class="equip-empty">—</span>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
       <!-- ── Itens ─────────────────────────────────────────────────── -->
       <div class="items-section">
-        <span class="tags-title">🎒 Itens</span>
+        <span class="tags-title">🎒 Inventário</span>
         <div class="items-list">
-          @for (item of char()!.items; track item) {
-            <span class="item-tag">{{ item }}</span>
+          @for (item of char()!.inventory; track item.id) {
+            <span class="item-tag">{{ item.icon }} {{ item.name }}</span>
           }
-          @if (!char()!.items.length) {
+          @if (!char()!.inventory.length) {
             <span class="tag-none">Sem itens</span>
           }
         </div>

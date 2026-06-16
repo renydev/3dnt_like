@@ -230,10 +230,18 @@
   }
 
   .btn-rest {
-    background: linear-gradient(135deg, #3a2a00, #7a5a00);
-    color: #f0d080;
-    border: 1px solid #c8a040;
-    &:hover:not(:disabled) { background: linear-gradient(135deg, #5a4000, #a07a00); box-shadow: 0 0 12px rgba(200,160,64,0.4); }
+    background: linear-gradient(135deg, #1a2a1a, #2a4a2a);
+    color: #a0d0a0;
+    border: 1px solid #4a8a4a;
+    &:hover:not(:disabled) { background: linear-gradient(135deg, #2a3a2a, #3a6a3a); box-shadow: 0 0 12px rgba(74,138,74,0.4); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  .btn-deep-rest {
+    background: linear-gradient(135deg, #0a1a2a, #1a3a5a);
+    color: #80c0f0;
+    border: 1px solid #3a7ab0;
+    &:hover:not(:disabled) { background: linear-gradient(135deg, #1a2a3a, #2a5a8a); box-shadow: 0 0 12px rgba(58,122,176,0.5); }
     &:disabled { opacity: 0.5; cursor: not-allowed; }
   }
 }
@@ -395,4 +403,67 @@
   line-height: 1.4;
 
   .sr-icon { flex-shrink: 0; }
+}
+
+/* ── Painel de Inventário & Equipamento ─────────────────────────────────── */
+.inventory-panel {
+  border-top: 1px solid #2a2a3e;
+  padding-top: 0.5rem;
+}
+
+.inv-toggle {
+  width: 100%; background: #1a1a2e; border: 1px solid #3a3a52; color: #a78bfa;
+  padding: 0.4rem 0.75rem; border-radius: 5px; cursor: pointer; font-size: 0.8rem;
+  text-align: left;
+  &:hover { background: #22223e; }
+}
+
+.inv-body { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.equip-slots { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.equip-slot {
+  display: flex; align-items: center; gap: 0.4rem;
+  font-size: 0.78rem;
+}
+
+.slot-label { color: #6b7280; min-width: 70px; }
+
+.equipped-item {
+  display: flex; align-items: center; gap: 0.35rem; flex: 1;
+  background: #1e1e30; border: 1px solid #3a3a52; border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+}
+
+.eq-icon { font-size: 1rem; }
+.eq-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.eq-name { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-bonus { font-size: 0.68rem; color: #86efac; }
+.eq-unequip {
+  background: none; border: none; color: #6b7280; cursor: pointer; font-size: 0.75rem; padding: 0 2px;
+  &:hover { color: #f87171; }
+}
+.slot-empty { font-size: 0.72rem; color: #374151; font-style: italic; }
+
+.eff-stats {
+  display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.3rem;
+  span { font-size: 0.72rem; background: #0f172a; border: 1px solid #334155; border-radius: 3px; padding: 1px 5px; color: #94a3b8; }
+}
+
+.inv-title { font-size: 0.78rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.3rem; }
+.inv-empty { font-size: 0.75rem; color: #374151; font-style: italic; }
+.inv-grid { display: flex; flex-direction: column; gap: 0.3rem; max-height: 200px; overflow-y: auto; }
+
+.inv-item {
+  display: flex; align-items: center; gap: 0.35rem;
+  background: #1e1e30; border: 1px solid #2a2a42; border-radius: 4px; padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+.inv-icon { font-size: 0.9rem; }
+.inv-name { flex: 1; font-weight: 500; }
+.inv-bonus { font-size: 0.68rem; color: #86efac; }
+.inv-equip {
+  background: #1d4ed8; color: #fff; border: none; border-radius: 3px;
+  padding: 1px 6px; font-size: 0.68rem; cursor: pointer;
+  &:hover { background: #2563eb; }
 }

@@ -6,6 +6,7 @@ import { GameDataService } from '../../../core/services/game-data.service';
 import { Character } from '../../../core/models/character.model';
 import { Race, ALL_RACES, RACE_MAP } from '../../../core/data/races.data';
 import { ClassDef, ALL_CLASSES, CLASS_MAP } from '../../../core/data/classes.data';
+import { VALKARIA_FLOORS, DungeonTheme } from '../../../core/models/dungeon.model';
 import { VANTAGENS, DESVANTAGENS, VANTAGEM_CATEGORIES, VantagemDef, DesvantagemDef } from '../../../core/models/character-creation.model';
 import { PericiaService } from '../../../core/services/pericias.service';
 import { PericiaDef } from '../../../core/data/pericias.data';
@@ -193,7 +194,10 @@ export class CharacterCreationComponent {
     { n: 5, label: 'Atributos'    },
     { n: 6, label: 'Vantagens'    },
     { n: 7, label: 'Perícias'     },
+    { n: 8, label: 'Devoção'      },
   ];
+
+  gods = VALKARIA_FLOORS;
 
   step                 = signal(1);
   charName             = 'Aventureiro';
@@ -203,6 +207,7 @@ export class CharacterCreationComponent {
   selectedVantagens    = signal<string[]>([]);
   selectedDesvantagens = signal<string[]>([]);
   selectedPericias     = signal<string[]>([]);
+  selectedGod          = signal<DungeonTheme | null>(null);
   raceDiffFilter       = signal('Todas');
   classDiffFilter      = signal('Todas');
 
@@ -367,6 +372,7 @@ export class CharacterCreationComponent {
     this.selectedVantagens.set([]);
     this.selectedDesvantagens.set([]);
     this.selectedPericias.set([]);
+    this.selectedGod.set(null);
     this.distributedAttrs.set({ forca: 0, habilidade: 0, resistencia: 0, armadura: 0, poderFogo: 0 });
     this.nextStep();
   }
@@ -471,11 +477,13 @@ export class CharacterCreationComponent {
       desvantagens: this.selectedDesvantagens().map(id => this.getDesv(id)!.name),
       pericias:     [...this.selectedPericias()],
       gold: 20 + (this.selectedTier()?.basePoints ?? 5) * 2,
-      items: ['Poção de Cura'],
+      inventory: [],
+      equipment: {},
       racialMods: this.selectedRace()!.modifiers ?? {},
       statusEffects: [],
       levelUpPoints: 0,
       portraitIcon: this.selectedClass()!.icon,
+      patronGod: this.selectedGod()?.id ?? undefined,
     };
 
     this.gameState.startCustomGame(character);

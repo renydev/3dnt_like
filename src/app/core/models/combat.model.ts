@@ -16,6 +16,7 @@ export interface Enemy {
   pp: number;
   xpReward: number;
   goldReward: number;
+  itemsReward?: string[];  // IDs de itens que podem dropar (1 sorteado aleatoriamente)
   isBoss: boolean;
   isUndead?: boolean;
 }

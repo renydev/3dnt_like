@@ -1,7 +1,8 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/models/dungeon.model';
+import { Item, EquipSlot, getEffectiveStats, statBonusLabel, rarityLabel, rarityColor, equipSlotLabel } from '../../../core/models/item.model';
 
 @Component({
   selector: 'app-dungeon-map',
@@ -50,22 +51,28 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                     [attr.aria-label]="getHotspotAriaLabel(room)"
                   >
                     @if (isReachable(room) && !room.cleared) {
-                      <circle
-                        [attr.cx]="hs.cx" [attr.cy]="hs.cy" [attr.r]="(hs.r ?? 0) + 8"
-                        class="hotspot-halo"
-                      />
+                      @if (hs.r) {
+                        <circle [attr.cx]="hs.cx" [attr.cy]="hs.cy" [attr.r]="hs.r + 8" class="hotspot-halo" />
+                      } @else {
+                        <rect [attr.x]="hs.cx - (hs.w??0)/2 - 8" [attr.y]="hs.cy - (hs.h??0)/2 - 8"
+                              [attr.width]="(hs.w??0) + 16" [attr.height]="(hs.h??0) + 16" [attr.rx]="8"
+                              class="hotspot-halo" fill="none" />
+                      }
                     }
-                    <circle
-                      [attr.cx]="hs.cx" [attr.cy]="hs.cy" [attr.r]="hs.r"
-                      class="hotspot-circle"
-                    />
+                    @if (hs.r) {
+                      <circle [attr.cx]="hs.cx" [attr.cy]="hs.cy" [attr.r]="hs.r" class="hotspot-circle" />
+                    } @else {
+                      <rect [attr.x]="hs.cx - (hs.w??0)/2" [attr.y]="hs.cy - (hs.h??0)/2"
+                            [attr.width]="hs.w" [attr.height]="hs.h" [attr.rx]="6"
+                            class="hotspot-circle" />
+                    }
                     <text
                       [attr.x]="hs.cx" [attr.y]="hs.cy + 1"
                       class="hotspot-icon"
                       text-anchor="middle" dominant-baseline="middle"
                     >{{ getHotspotIcon(room) }}</text>
                     <text
-                      [attr.x]="hs.cx" [attr.y]="hs.cy + (hs.r ?? 0) + 12"
+                      [attr.x]="hs.cx" [attr.y]="hs.cy + (hs.r ?? (hs.h??0)/2) + 12"
                       class="hotspot-label"
                       text-anchor="middle"
                     >{{ hs.label }}</text>
@@ -89,17 +96,22 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                   </span>
                 </div>
               </div>
-              <p class="info-desc">
-                {{ currentRoom()!.cleared ? 'Esta câmara foi resolvida. O grupo pode descansar aqui com segurança.' : currentRoom()!.description }}
-              </p>
+              <p class="info-desc">{{ currentRoom()!.description }}</p>
               @if (!currentRoom()!.cleared && currentRoom()!.type !== 'entrance' && currentRoom()!.type !== 'empty') {
                 <button class="btn-encounter" (click)="enterRoom()">
                   ⚔️ Enfrentar o Encontro
                 </button>
               }
-              @if (canRest()) {
-                <button class="btn-rest" [disabled]="currentRoom()!.rested" (click)="rest()">
-                  {{ currentRoom()!.rested ? '💤 Já descansou aqui' : '🏕️ Descansar' }}
+              <!-- Descanso Rápido: qualquer sala limpa -->
+              @if (canQuickRest() && !canDeepRest()) {
+                <button class="btn-rest" [disabled]="currentRoom()!.rested" (click)="restQuick()">
+                  {{ currentRoom()!.rested ? '💤 Já descansou aqui' : '💤 Descanso Rápido (50% PV/PM)' }}
+                </button>
+              }
+              <!-- Descanso Profundo: apenas sala de descanso -->
+              @if (canDeepRest()) {
+                <button class="btn-rest btn-deep-rest" [disabled]="currentRoom()!.rested" (click)="restDeep()">
+                  {{ currentRoom()!.rested ? '🏕️ Já descansou aqui' : '🏕️ Descanso Profundo (PV/PM total)' }}
                 </button>
               }
               @if (currentRoom()!.cleared && currentRoom()!.type === 'boss') {
@@ -119,6 +131,75 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
               <button class="btn-encounter btn-enter-unknown" (click)="onHotspotClick(currentRoom()!)">
                 🚪 Adentrar a Câmara
               </button>
+            }
+          </div>
+        }
+
+        <!-- Painel de Equipamento & Inventário -->
+        @if (gameState.character()) {
+          <div class="inventory-panel">
+            <button class="inv-toggle" (click)="showInventory.set(!showInventory())">
+              🎒 Equipamento & Inventário {{ showInventory() ? '▲' : '▼' }}
+            </button>
+            @if (showInventory()) {
+              <div class="inv-body">
+                <!-- Equipamentos -->
+                <div class="equip-section">
+                  <div class="equip-slots">
+                    @for (slot of equipSlots; track slot.key) {
+                      <div class="equip-slot">
+                        <span class="slot-label">{{ slot.icon }} {{ slot.label }}</span>
+                        @if (gameState.character()!.equipment[slot.key]; as eq) {
+                          <div class="equipped-item">
+                            <span class="eq-icon">{{ eq.icon }}</span>
+                            <div class="eq-info">
+                              <span class="eq-name" [style.color]="rarityColor(eq.rarity)">{{ eq.name }}</span>
+                              @if (eq.statBonus) {
+                                <span class="eq-bonus">{{ statBonusLabel(eq.statBonus) }}</span>
+                              }
+                            </div>
+                            <button class="eq-unequip" (click)="unequip(slot.key)" title="Desequipar">✕</button>
+                          </div>
+                        } @else {
+                          <span class="slot-empty">— vazio —</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                  <!-- Stats efetivos -->
+                  @if (effectiveStats(); as s) {
+                    <div class="eff-stats">
+                      <span>F{{ s.forca }}</span>
+                      <span>H{{ s.habilidade }}</span>
+                      <span>R{{ s.resistencia }}</span>
+                      <span>A{{ s.armadura }}</span>
+                      <span>PF{{ s.poderFogo }}</span>
+                    </div>
+                  }
+                </div>
+
+                <!-- Inventário -->
+                <div class="inv-section">
+                  <h4 class="inv-title">Inventário ({{ gameState.character()!.inventory.length }})</h4>
+                  @if (gameState.character()!.inventory.length === 0) {
+                    <p class="inv-empty">Nenhum item no inventário.</p>
+                  }
+                  <div class="inv-grid">
+                    @for (item of gameState.character()!.inventory; track $index) {
+                      <div class="inv-item" [title]="item.description">
+                        <span class="inv-icon">{{ item.icon }}</span>
+                        <span class="inv-name" [style.color]="rarityColor(item.rarity)">{{ item.name }}</span>
+                        @if (item.statBonus) {
+                          <span class="inv-bonus">{{ statBonusLabel(item.statBonus) }}</span>
+                        }
+                        @if (item.slot) {
+                          <button class="inv-equip" (click)="equip(item)">Equipar</button>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
             }
           </div>
         }
@@ -186,14 +267,14 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                     [attr.y]="getRoomY(room) + 6"
                     text-anchor="middle"
                     class="room-icon-text"
-                  >{{ room.cleared ? '🏕️' : getRoomIcon(room) }}</text>
+                  >{{ room.cleared ? '🏕️' : (isTypeRevealed(room) ? getRoomIcon(room) : '?') }}</text>
                   <!-- Label -->
                   <text
                     [attr.x]="getRoomX(room)"
                     [attr.y]="getRoomY(room) + R + 14"
                     text-anchor="middle"
                     class="room-label-text"
-                  >{{ getRoomLabel(room) }}</text>
+                  >{{ isTypeRevealed(room) ? getRoomLabel(room) : '???' }}</text>
                   <!-- Check de liberada -->
                   @if (room.cleared) {
                     <text
@@ -232,9 +313,14 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
                 ⚔️ Entrar na Sala
               </button>
             }
-            @if (canRest()) {
-              <button class="btn-rest" [disabled]="currentRoom()!.rested" (click)="rest()">
-                {{ currentRoom()!.rested ? '💤 Já descansou aqui' : '🏕️ Descansar' }}
+            @if (canQuickRest() && !canDeepRest()) {
+              <button class="btn-rest" [disabled]="currentRoom()!.rested" (click)="restQuick()">
+                {{ currentRoom()!.rested ? '💤 Já descansou aqui' : '💤 Descanso Rápido (50% PV/PM)' }}
+              </button>
+            }
+            @if (canDeepRest()) {
+              <button class="btn-rest btn-deep-rest" [disabled]="currentRoom()!.rested" (click)="restDeep()">
+                {{ currentRoom()!.rested ? '🏕️ Já descansou aqui' : '🏕️ Descanso Profundo (PV/PM total)' }}
               </button>
             }
             @if (currentRoom()!.cleared && currentRoom()!.type === 'boss') {
@@ -250,10 +336,34 @@ import { DungeonRoom, MapHotspot, ROOM_ICONS, ROOM_LABELS } from '../../../core/
   styleUrls: ['./dungeon-map.component.scss']
 })
 export class DungeonMapComponent {
-  private gameState = inject(GameStateService);
+  gameState = inject(GameStateService);
 
   floor = this.gameState.currentFloor;
   currentRoom = this.gameState.currentRoom;
+
+  showInventory = signal(false);
+
+  readonly equipSlots: { key: EquipSlot; label: string; icon: string }[] = [
+    { key: 'weapon',     label: 'Arma',       icon: '⚔️' },
+    { key: 'offhand',    label: 'Mão Sec.',   icon: '🛡️' },
+    { key: 'armor',      label: 'Armadura',   icon: '🥋' },
+    { key: 'head',       label: 'Cabeça',     icon: '⛑️' },
+    { key: 'gloves',     label: 'Luvas',      icon: '🧤' },
+    { key: 'boots',      label: 'Botas',      icon: '👢' },
+    { key: 'ring_left',  label: 'Anel Esq.',  icon: '💍' },
+    { key: 'ring_right', label: 'Anel Dir.',  icon: '💍' },
+  ];
+
+  effectiveStats = computed(() => {
+    const c = this.gameState.character();
+    return c ? getEffectiveStats(c) : null;
+  });
+
+  readonly statBonusLabel = statBonusLabel;
+  readonly rarityColor    = rarityColor;
+
+  equip(item: Item)         { this.gameState.equipItem(item); }
+  unequip(slot: EquipSlot)  { this.gameState.unequipItem(slot); }
 
   // SVG layout constants (mesmos do debug map)
   readonly R     = 28;   // raio do círculo
@@ -332,19 +442,18 @@ export class DungeonMapComponent {
 
   getHotspotIcon(room: DungeonRoom): string {
     if (room.cleared) return '🏕️';
-    if (room.entered || room.isCurrent) return ROOM_ICONS[room.type];
-    if (room.type === 'entrance') return ROOM_ICONS.entrance;
+    if (this.isTypeRevealed(room)) return ROOM_ICONS[room.type];
     return '?';
   }
 
   getHotspotAriaLabel(room: DungeonRoom): string {
     if (room.cleared) return `${room.name} — Liberada`;
-    if (room.entered) return room.name;
+    if (this.isTypeRevealed(room)) return `${room.name} — ${this.getRoomLabel(room)}`;
     return 'Câmara desconhecida';
   }
 
   isHotspotClickable(room: DungeonRoom): boolean {
-    return this.isReachable(room) && !room.cleared;
+    return this.isReachable(room);
   }
 
   getRoomX(room: DungeonRoom): number {
@@ -357,9 +466,18 @@ export class DungeonMapComponent {
   getRoomIcon(room: DungeonRoom): string { return ROOM_ICONS[room.type]; }
   getRoomLabel(room: DungeonRoom): string { return ROOM_LABELS[room.type]; }
 
+  /** Revela o tipo de sala: só quando o personagem está em uma sala conectada ou já entrou nela. */
+  isTypeRevealed(room: DungeonRoom): boolean {
+    if (room.entered || room.cleared) return true;
+    return this.currentRoom()?.connections.includes(room.id) ?? false;
+  }
+
   isReachable(room: DungeonRoom): boolean {
     const current = this.currentRoom();
     if (!current || room.isCurrent || !room.isVisible) return false;
+    // Salas já limpas: livre trânsito (não precisa ser adjacente)
+    if (room.cleared) return true;
+    // Salas não limpas: apenas adjacentes
     return current.connections.includes(room.id);
   }
 
@@ -370,7 +488,11 @@ export class DungeonMapComponent {
 
   onHotspotClick(room: DungeonRoom): void {
     if (!this.isReachable(room) && !room.isCurrent) return;
-    if (room.cleared) return;
+    // Sala limpa: navega livremente sem encontro
+    if (room.cleared) {
+      this.gameState.moveToRoom(room.id);
+      return;
+    }
     if (room.isCurrent && room.entered) {
       if (room.type !== 'entrance' && room.type !== 'empty') {
         this.gameState.screen.set('encounter');
@@ -380,13 +502,22 @@ export class DungeonMapComponent {
     this.gameState.moveToRoom(room.id);
   }
 
-  canRest = computed(() => {
+  // Descanso rápido: disponível em qualquer sala limpa (exceto entrada e boss)
+  canQuickRest = computed(() => {
     const r = this.currentRoom();
     if (!r) return false;
-    return r.cleared || r.type === 'entrance' || r.type === 'empty';
+    return r.cleared && r.type !== 'boss' && r.type !== 'entrance';
+  });
+
+  // Descanso profundo: apenas salas do tipo 'rest'
+  canDeepRest = computed(() => {
+    const r = this.currentRoom();
+    if (!r) return false;
+    return r.type === 'rest' && r.cleared;
   });
 
   enterRoom(): void { this.gameState.screen.set('encounter'); }
   nextFloor(): void { this.gameState.proceedToNextFloor(); }
-  rest(): void { this.gameState.restAtRoom(); }
+  restQuick(): void { this.gameState.restQuick(); }
+  restDeep(): void { this.gameState.restDeep(); }
 }

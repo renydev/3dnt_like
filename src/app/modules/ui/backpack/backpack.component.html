@@ -1,0 +1,69 @@
+<div class="bp-overlay" (click)="close()">
+  <div class="bp-panel" (click)="$event.stopPropagation()">
+
+    <div class="bp-header">
+      <span class="bp-title">🎒 Mochila</span>
+      @if (inCombat()) {
+        <span class="bp-hint">Em combate — só consumíveis disponíveis</span>
+      }
+      <button class="bp-close" (click)="close()">✕</button>
+    </div>
+
+    <div class="bp-list">
+      @for (item of inventory(); track item.id) {
+        <div class="bp-item" [class.bp-item--equip]="item.category === 'equipment'"
+             [class.bp-item--consumable]="item.category === 'consumable'">
+
+          <span class="bp-icon">{{ item.icon }}</span>
+
+          <div class="bp-info">
+            <div class="bp-name">
+              {{ item.name }}
+              @if (item.twoHanded) { <span class="tag-2h">2M</span> }
+            </div>
+            <div class="bp-desc">{{ item.description }}</div>
+            <div class="bp-tags">
+              <span class="tag-rarity" [style.color]="rarityColor(item.rarity)">
+                {{ rarityLabel(item.rarity) }}
+              </span>
+              @if (item.category === 'equipment') {
+                <span class="tag-slot">{{ slotLabel(item) }}</span>
+              } @else {
+                <span class="tag-consumable">Consumível</span>
+              }
+              @if (bonusText(item)) {
+                <span class="tag-bonus">{{ bonusText(item) }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="bp-actions">
+            @if (item.category === 'equipment') {
+              <button class="btn-equip"
+                      [disabled]="!canEquip(item)"
+                      [title]="inCombat() ? 'Não pode equipar durante combate' : 'Equipar'"
+                      (click)="equip(item)">
+                ⚔️ Equipar
+              </button>
+            }
+            @if (item.category === 'consumable') {
+              <button class="btn-use"
+                      [disabled]="!canUse(item)"
+                      [title]="!canUse(item) ? (inCombat() ? 'Não usável em combate' : 'Não usável agora') : 'Usar'"
+                      (click)="use(item)">
+                🧪 Usar
+              </button>
+            }
+            <button class="btn-drop" title="Descartar" (click)="drop(item)">🗑️</button>
+          </div>
+
+        </div>
+      }
+
+      @empty {
+        <div class="bp-empty">A mochila está vazia.</div>
+      }
+    </div>
+
+  </div>
+</div>

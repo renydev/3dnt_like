@@ -28,7 +28,8 @@ describe('EncounterScreenComponent', () => {
     vantagens: [],
     desvantagens: [],
     gold: 0,
-    items: ['Pocao de Cura'],
+    inventory: [],
+    equipment: {},
     statusEffects: [],
     portraitIcon: 'H',
   };

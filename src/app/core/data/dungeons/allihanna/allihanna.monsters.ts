@@ -20,6 +20,8 @@ export interface MonsterTemplate {
 }
 
 export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
+  // ── Salas fixas ──────────────────────────────────────────────────────────────
+
   elefante: {
     name: 'Elefante', icon: '🐘',
     flavorText: 'Manada protetora às margens do lago — se assustam com invasores e lutam até a morte pelos filhotes.',
@@ -69,6 +71,79 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
     hp: 12,
     xpReward: 30, goldReward: 10,
   },
+
+  // ── Encontros aleatórios (tabela 4d6) ────────────────────────────────────────
+
+  druida_allihanna: {
+    name: 'Druida de Allihanna', icon: '🌱',
+    flavorText: 'Servo da Mãe Natureza. Prefere a paz, mas defende a floresta com magia e animais aliados.',
+    forca: 1, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 2,
+    hp: 10,
+    xpReward: 10, goldReward: 5,
+  },
+  ranger: {
+    name: 'Ranger', icon: '🏹',
+    flavorText: 'Explorador da floresta, habilidoso com arco e espada. Ataca múltiplas vezes com agilidade.',
+    forca: 2, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 3,
+    hp: 10,
+    xpReward: 10, goldReward: 3,
+  },
+  centauro_ranger: {
+    name: 'Centauro Ranger', icon: '🐴',
+    flavorText: 'Meio homem, meio cavalo — patrulha a floresta com arco na mão e casco certeiro.',
+    forca: 2, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 2,
+    hp: 10,
+    xpReward: 11, goldReward: 0,
+  },
+  lobo_cavernas: {
+    name: 'Lobo-das-Cavernas', icon: '🐺',
+    flavorText: 'Lobo maior e mais feroz que o comum. Caça em matilha, fareja presas a grande distância.',
+    forca: 1, habilidade: 2, resistencia: 2, armadura: 1, poderFogo: 0,
+    hp: 10,
+    xpReward: 6, goldReward: 0,
+  },
+  grifo: {
+    name: 'Grifo', icon: '🦅',
+    flavorText: 'Criatura alada com corpo de leão e cabeça de águia. Veloz e letal no ar ou no chão.',
+    forca: 2, habilidade: 5, resistencia: 4, armadura: 1, poderFogo: 0,
+    hp: 20,
+    xpReward: 16, goldReward: 0,
+  },
+  gorila: {
+    name: 'Gorila', icon: '🦍',
+    flavorText: 'Primata colossal, territorialmente agressivo. Conhecido por habitar esta masmorra.',
+    forca: 2, habilidade: 2, resistencia: 2, armadura: 1, poderFogo: 0,
+    hp: 10,
+    xpReward: 8, goldReward: 0,
+  },
+  driade: {
+    name: 'Dríade', icon: '🌳',
+    flavorText: 'Espírito feminino das árvores. Imortal enquanto sua árvore existir. Paralisa com um toque.',
+    forca: 1, habilidade: 2, resistencia: 1, armadura: 0, poderFogo: 0,
+    hp: 5,
+    xpReward: 14, goldReward: 0,
+  },
+  tigre: {
+    name: 'Tigre', icon: '🐯',
+    flavorText: 'Predador ágil da floresta, caça de surpresa e retira-se ao perder metade dos PVs.',
+    forca: 3, habilidade: 3, resistencia: 2, armadura: 0, poderFogo: 0,
+    hp: 10,
+    xpReward: 9, goldReward: 0,
+  },
+  crocodilo: {
+    name: 'Crocodilo', icon: '🐊',
+    flavorText: 'Réptil blindado que aguarda imóvel antes de atacar com mordida devastadora.',
+    forca: 3, habilidade: 0, resistencia: 3, armadura: 2, poderFogo: 0,
+    hp: 15,
+    xpReward: 9, goldReward: 0,
+  },
+  urso_cavernas: {
+    name: 'Urso das Cavernas', icon: '🐻',
+    flavorText: 'Urso de grande porte que habita as cavernas da floresta. Poderoso e territorial.',
+    forca: 4, habilidade: 3, resistencia: 3, armadura: 1, poderFogo: 0,
+    hp: 15,
+    xpReward: 12, goldReward: 0,
+  },
 };
 
 export function spawnMonster(key: string, isBoss = false): Enemy {
@@ -98,41 +173,87 @@ export type RoomEnemyGroup = () => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
+// IDs de sala conforme allihanna.config.ts layout:
+//  0 = O Lago            (monster)
+//  3 = Feras — Centro    (monster)
+//  6 = Feras — Esquerda  (monster)
+//  7 = Caverna dos Ursos (monster)
+//  8 = Urso-Coruja Imenso (monster) — câmara 3a
+// 13 = Druida Defensor   (boss)
+// Salas 2, 5, 9, 10, 14 são corredores vazios → apenas encontros aleatórios
 export const ALLIHANNA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
-  // Sala I — O Lago: manada de elefantes (3d+2, limitado a 4)
-  1: () => {
-    const count = Math.min(4, d(6) + d(6) + d(6) + 2);
+  // Câmara 1 — O Lago: manada de elefantes (3d6+2, cap 5)
+  0: () => {
+    const count = Math.min(5, d(6) + d(6) + d(6) + 2);
     return Array.from({ length: count }, () => spawnMonster('elefante'));
   },
-  // Sala 2 oeste — As Feras Assassinas: 1d–1 assassinos (mínimo 1)
-  2: () => {
-    const count = Math.max(1, d(6) - 1);
-    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('assassino_savana'));
-  },
-  // Sala 2 leste — As Feras Assassinas: igual à oeste
+  // Câmara 2 — As Feras (centro): 1d6–1 assassinos, mínimo 1
   3: () => {
     const count = Math.max(1, d(6) - 1);
     return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('assassino_savana'));
   },
-  // Sala 3 — Caverna dos Ursos: 1d+5 ursos-coruja (limitado a 4)
-  4: () => {
-    const count = Math.min(4, d(6) + 5);
+  // Câmara 2 — As Feras (esquerda): igual à câmara central
+  6: () => {
+    const count = Math.max(1, d(6) - 1);
+    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('assassino_savana'));
+  },
+  // Câmara 3 — Caverna dos Ursos: 1d6+5 ursos-coruja, cap 6
+  7: () => {
+    const count = Math.min(6, d(6) + 5);
     return Array.from({ length: count }, () => spawnMonster('urso_coruja'));
   },
-  // Sala 3a — Câmara do Urso-Coruja Imenso
-  5: () => [spawnMonster('urso_coruja_imenso', true)],
-  // Sala 4 — O Druida Defensor: Fallandi + leão + urso vegetal
-  6: () => [
+  // Câmara 3a — Urso-Coruja Imenso (boss da câmara)
+  8: () => [spawnMonster('urso_coruja_imenso', true)],
+  // Câmara 4 — O Druida Defensor: Fallandi + leão + urso vegetal
+  13: () => [
     spawnMonster('fallandi', true),
     spawnMonster('leao_fallandi'),
     spawnMonster('urso_vegetal'),
   ],
 };
 
-// ── Encontros aleatórios não usados no andar 1 (reserva) ─────────────────────
+// ── Encontros aleatórios — trilhas vazias (tabela 4d6 do livro) ──────────────
+// Roll 4-24: 4=druidas, 5=rangers, 6-7=centauros, 8-10=lobos, 11-13=grifos,
+//            14-16=gorilas, 17-18=dríade, 19-20=tigres, 21-22=crocodilos, 23-24=ursos
 export function rollAllihannaEncounter(): Enemy[] {
-  const roll = d(6);
-  if (roll <= 2) return [spawnMonster('elefante')];
-  if (roll <= 4) return [spawnMonster('assassino_savana')];
-  return [spawnMonster('urso_coruja')];
+  const roll = d(6) + d(6) + d(6) + d(6);
+
+  if (roll <= 4) {
+    const count = Math.max(1, d(6) + 2);
+    return Array.from({ length: Math.min(count, 4) }, () => spawnMonster('druida_allihanna'));
+  }
+  if (roll === 5) {
+    const count = Math.max(1, d(6) + 2);
+    return Array.from({ length: Math.min(count, 4) }, () => spawnMonster('ranger'));
+  }
+  if (roll <= 7) {
+    const count = d(6);
+    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('centauro_ranger'));
+  }
+  if (roll <= 10) {
+    const count = d(6) + d(6) + 2;
+    return Array.from({ length: Math.min(count, 5) }, () => spawnMonster('lobo_cavernas'));
+  }
+  if (roll <= 13) {
+    const count = d(6);
+    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('grifo'));
+  }
+  if (roll <= 16) {
+    const count = Math.max(0, d(6) - 2);
+    return count === 0 ? [spawnMonster('gorila')] : Array.from({ length: Math.min(count, 3) }, () => spawnMonster('gorila'));
+  }
+  if (roll <= 18) {
+    return [spawnMonster('driade')];
+  }
+  if (roll <= 20) {
+    const count = d(6) + 1;
+    return Array.from({ length: Math.min(count, 4) }, () => spawnMonster('tigre'));
+  }
+  if (roll <= 22) {
+    const count = d(6) + d(6);
+    return Array.from({ length: Math.min(count, 4) }, () => spawnMonster('crocodilo'));
+  }
+  // 23-24: ursos das cavernas
+  const count = d(6);
+  return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('urso_cavernas'));
 }

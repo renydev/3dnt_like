@@ -1,0 +1,229 @@
+.bp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(2px);
+}
+
+.bp-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  width: min(520px, 95vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+}
+
+// ── Header ──────────────────────────────────────────────────────────────────
+
+.bp-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.bp-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.bp-hint {
+  font-size: 0.68rem;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.25rem;
+}
+
+.bp-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--color-text);
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+// ── Lista de itens ──────────────────────────────────────────────────────────
+
+.bp-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.bp-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  padding: 2rem 0;
+}
+
+// ── Item ────────────────────────────────────────────────────────────────────
+
+.bp-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.03);
+  transition: background 0.15s;
+
+  &:hover { background: rgba(255, 255, 255, 0.06); }
+
+  &--equip  { border-left: 3px solid #60a5fa; }
+  &--consumable { border-left: 3px solid #34d399; }
+}
+
+.bp-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  width: 2rem;
+  text-align: center;
+}
+
+.bp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bp-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.bp-desc {
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bp-tags {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+// Tags
+.tag-rarity, .tag-slot, .tag-consumable, .tag-bonus, .tag-2h {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.tag-slot {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.tag-consumable {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.tag-bonus {
+  background: rgba(250, 204, 21, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(250, 204, 21, 0.25);
+}
+
+.tag-2h {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fb923c;
+  border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
+// ── Ações ───────────────────────────────────────────────────────────────────
+
+.bp-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.btn-equip, .btn-use, .btn-drop {
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  padding: 0.3rem 0.55rem;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.btn-equip {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.4);
+
+  &:not(:disabled):hover {
+    background: rgba(96, 165, 250, 0.28);
+  }
+}
+
+.btn-use {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+
+  &:not(:disabled):hover {
+    background: rgba(52, 211, 153, 0.28);
+  }
+}
+
+.btn-drop {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.25);
+  padding: 0.3rem 0.45rem;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.22);
+  }
+}

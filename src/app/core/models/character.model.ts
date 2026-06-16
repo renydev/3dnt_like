@@ -1,3 +1,6 @@
+import { Item, Equipment } from './item.model';
+export type { Item, Equipment };
+
 export type CharacterClass =
   | 'guerreiro' | 'mago' | 'ladino' | 'clerigo' | 'ranger'
   | 'bardo' | 'druida' | 'paladino' | 'barbaro' | 'monge';
@@ -71,7 +74,8 @@ export interface Character {
 
   // Estado
   gold: number;
-  items: string[];
+  inventory: Item[];      // itens no inventário (consumíveis + não equipados)
+  equipment: Equipment;   // itens equipados por slot (weapon, offhand, armor, head, gloves, boots, ring_left, ring_right)
   statusEffects: StatusEffect[];
 
   // Modificadores raciais (separados da base para cálculo correto de custo)
@@ -83,7 +87,11 @@ export interface Character {
   // Metadados visuais
   isCompanion?: boolean;
   portraitIcon?: string; // emoji ou caminho de asset
+  patronGod?: string;    // ID do deus de devoção (ex: 'allihanna', 'khalmyr')
 }
+
+import { ITEM_CATALOG } from './item.model';
+const I = ITEM_CATALOG;
 
 /**
  * 10 personagens lendários (tier Lenda).
@@ -105,7 +113,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 5, current: 5, max: 5 },
     vantagens: ['Fúria Bárbara', 'Alma Primitiva', 'Chifrada'],
     desvantagens: ['Instinto Bestial'],
-    gold: 15, items: ['Machado de Guerra', 'Poção de Cura x2'],
+    gold: 15,
+    inventory: [I['pocao-cura'], I['pocao-cura']],
+    equipment: { weapon: I['machado-guerra'], armor: I['gibao-couro'], head: I['capacete-ferro'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🪓',
   },
   {
@@ -122,7 +132,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 4, current: 4, max: 4 },
     vantagens: ['Ataque Duplo', 'Especialização em Arma', 'Implacável'],
     desvantagens: ['Má Fama'],
-    gold: 25, items: ['Espada Bastarda', 'Armadura de Cota', 'Poção de Cura'],
+    gold: 25,
+    inventory: [I['pocao-cura']],
+    equipment: { weapon: I['espada-longa'], offhand: I['escudo-aco'], armor: I['cota-malha'], head: I['elmo-aco'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '⚔️',
   },
   {
@@ -139,7 +151,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 12, current: 12, max: 12 },
     vantagens: ['Golpe Divino', 'Imposição de Mãos', 'Aura de Proteção', 'Resistência Anã'],
     desvantagens: ['Código de Honra'],
-    gold: 30, items: ['Martelo Sagrado', 'Escudo Bento', 'Poção de Cura x2'],
+    gold: 30,
+    inventory: [I['pocao-cura'], I['pocao-cura']],
+    equipment: { weapon: I['martelo-sagrado'], offhand: I['escudo-bento'], head: I['elmo-sagrado'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🛡️',
   },
   // ── DPS ──────────────────────────────────────────────────────────────────
@@ -157,7 +171,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 4, current: 4, max: 4 },
     vantagens: ['Ataque Furtivo', 'Furtividade Profissional', 'Oportunista'],
     desvantagens: ['Desconfiado', 'Frágil'],
-    gold: 60, items: ['Adaga Envenenada x3', 'Ferramentas de Ladrão', 'Poção de Cura'],
+    gold: 60,
+    inventory: [I['pocao-cura'], I['pocao-cura']],
+    equipment: { weapon: I['espada-curta'], gloves: I['luvas-couro'], ring_left: I['anel-habilidade'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🗡️',
   },
   {
@@ -174,7 +190,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 9, current: 9, max: 9 },
     vantagens: ['Tiro Certeiro', 'Rastreamento', 'Herança Dual'],
     desvantagens: ['Solitário'],
-    gold: 35, items: ['Arco Longo +1', 'Aljava (30 flechas)', 'Poção de Cura'],
+    gold: 35,
+    inventory: [I['pocao-cura']],
+    equipment: { weapon: I['arco-longo'], armor: I['gibao-couro'], boots: I['botas-velocidade'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🏹',
   },
   {
@@ -191,7 +209,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 6, current: 6, max: 6 },
     vantagens: ['Ataque Desarmado', 'Armadura de Ki', 'Sorte de Halfling'],
     desvantagens: ['Código de Honra'],
-    gold: 20, items: ['Faixa de Ki', 'Poção de Cura x2'],
+    gold: 20,
+    inventory: [I['pocao-cura'], I['pocao-cura']],
+    equipment: { ring_left: I['anel-forca'], boots: I['botas-velocidade'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '👊',
   },
   // ── HEALERS ──────────────────────────────────────────────────────────────
@@ -209,7 +229,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 16, current: 16, max: 16 },
     vantagens: ['Cura Divina', 'Expulsar Mortos-Vivos', 'Versatilidade Humana'],
     desvantagens: ['Obrigação (Igreja de Khalmyr)'],
-    gold: 20, items: ['Maça Sagrada', 'Símbolo Divino', 'Poção de Cura x3'],
+    gold: 20,
+    inventory: [I['pocao-cura'], I['pocao-cura'], I['pocao-mana']],
+    equipment: { weapon: I['martelo-sagrado'], armor: I['vestes-arcanas'], head: I['chapeu-mago'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🌟',
   },
   {
@@ -226,7 +248,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 16, current: 16, max: 16 },
     vantagens: ['Forma Animal', 'Magia Natural', 'Sentidos Élficos'],
     desvantagens: ['Juramento da Natureza'],
-    gold: 15, items: ['Cajado de Carvalho', 'Ervas Curativas x3', 'Poção de Cura x2'],
+    gold: 15,
+    inventory: [I['pocao-cura'], I['pocao-cura'], I['pocao-mana']],
+    equipment: { weapon: I['cajado-arcano'], armor: I['manto-druida'], ring_left: I['anel-protecao'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🌿',
   },
   // ── MAGES ────────────────────────────────────────────────────────────────
@@ -244,7 +268,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 15, current: 15, max: 15 },
     vantagens: ['Arcano Avançado', 'Conjuração Aprimorada', 'Visão nas Trevas'],
     desvantagens: ['Marca do Mal'],
-    gold: 25, items: ['Cajado Sombrio', 'Grimório Proibido', 'Poção de PF x2', 'Poção de Cura'],
+    gold: 25,
+    inventory: [I['pocao-cura'], I['pocao-mana'], I['pergaminho-fogo']],
+    equipment: { weapon: I['cajado-arcano'], armor: I['vestes-arcanas'], head: I['chapeu-mago'], gloves: I['luvas-mago'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🔮',
   },
   {
@@ -261,7 +287,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     pontosMana: { base: 12, current: 12, max: 12 },
     vantagens: ['Inspiração Bardística', 'Jack of All Trades', 'Ilusionista Nato'],
     desvantagens: ['Curioso Demais'],
-    gold: 45, items: ['Alaúde Mágico', 'Adaga da Fortuna', 'Poção de PF', 'Poção de Cura x2'],
+    gold: 45,
+    inventory: [I['pocao-cura'], I['pocao-cura'], I['pocao-mana']],
+    equipment: { weapon: I['espada-curta'], armor: I['vestes-arcanas'], ring_left: I['anel-poder'] },
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🎵',
   },
 ];

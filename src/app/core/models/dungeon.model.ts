@@ -1,4 +1,4 @@
-export type RoomType = 'entrance' | 'monster' | 'trap' | 'treasure' | 'rest' | 'boss' | 'empty' | 'puzzle' | 'social';
+export type RoomType = 'entrance' | 'monster' | 'trap' | 'treasure' | 'rest' | 'boss' | 'empty' | 'puzzle' | 'social' | 'merchant';
 
 export type RoomChoiceAction = 'enter' | 'flee' | 'safe_enter' | 'rest_wait';
 
@@ -546,11 +546,12 @@ export const ROOM_ICONS: Record<RoomType, string> = {
   monster: '👹',
   trap: '⚠️',
   treasure: '💰',
-  rest: '🔥',
+  rest: '🏕️',
   boss: '💀',
   empty: '▫️',
   puzzle: '🔍',
-  social: '💬'
+  social: '💬',
+  merchant: '🛒',
 };
 
 export const ROOM_LABELS: Record<RoomType, string> = {
@@ -558,11 +559,12 @@ export const ROOM_LABELS: Record<RoomType, string> = {
   monster: 'Monstro',
   trap: 'Armadilha',
   treasure: 'Tesouro',
-  rest: 'Descanso',
+  rest: 'Descanso Profundo',
   boss: 'Guardião',
   empty: 'Corredor',
   puzzle: 'Enigma',
-  social: 'Encontro'
+  social: 'Encontro Social',
+  merchant: 'Mercador',
 };
 
 // Alias para compatibilidade
