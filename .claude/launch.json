@@ -2,9 +2,16 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "3dnt-like",
+      "runtimeExecutable": "C:\\Windows\\System32\\cmd.exe",
+      "runtimeArgs": ["/c", "C:\\_PROJETOS\\PESSOAL\\3dnt_like\\serve-dev.cmd"],
+      "port": 4200,
+      "autoPort": false
+    },
+    {
       "name": "valkaria",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["ng", "serve", "--port", "4200", "--force-esbuild"],
+      "runtimeExecutable": "C:\\Windows\\System32\\cmd.exe",
+      "runtimeArgs": ["/c", "C:\\_PROJETOS\\PESSOAL\\3dnt_like\\serve-dev.cmd"],
       "port": 4200,
       "autoPort": false
     }

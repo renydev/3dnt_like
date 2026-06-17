@@ -5,6 +5,7 @@
   height: 100%;
 }
 
+// ── Header ─────────────────────────────────────────────────────────────────
 .floor-header {
   display: flex;
   align-items: center;
@@ -13,6 +14,7 @@
   background: rgba(0,0,0,0.4);
   border: 1px solid var(--color-border);
   border-radius: 6px;
+  flex-shrink: 0;
 
   .floor-theme-icon { font-size: 2rem; }
 
@@ -24,11 +26,12 @@
       margin: 0;
       font-size: 1.1rem;
     }
-    .floor-theme {
+    .floor-theme, .floor-domain {
       color: var(--color-text-muted);
       margin: 0;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
     }
+    .floor-domain { font-style: italic; }
   }
 
   .floor-progress {
@@ -40,38 +43,91 @@
   }
 }
 
-.map-container {
+// ── Special rule ───────────────────────────────────────────────────────────
+.special-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.4);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #e74c3c;
+  font-style: italic;
+  line-height: 1.4;
+  flex-shrink: 0;
+  .sr-icon { flex-shrink: 0; }
+}
+
+// ── Mapa horizontal scrollável ─────────────────────────────────────────────
+.map-scroll-container {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  background: rgba(0,0,0,0.3);
+  overflow-x: auto;
+  overflow-y: hidden;
+  background: rgba(0,0,0,0.35);
   border: 1px solid var(--color-border);
   border-radius: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+}
+
+.map-track {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  min-height: 100%;
 }
 
-// ── SVG Map ────────────────────────────────────────────────────────────────
 .map-svg {
+  display: block;
   overflow: visible;
-  max-width: 100%;
-  max-height: 100%;
 }
 
+// ── Conexões ───────────────────────────────────────────────────────────────
 .conn-line {
-  stroke-width: 1.5;
+  stroke-width: 2;
   stroke-linecap: round;
-  stroke-dasharray: 4 3;
-  &.visible { stroke: var(--color-amber); opacity: 0.6; stroke-dasharray: none; }
-  &.partial { stroke: var(--color-amber); opacity: 0.25; }
-  &.hidden  { stroke: #333; opacity: 0.2; }
+  stroke-dasharray: 5 4;
+  &.visible { stroke: var(--color-amber); opacity: 0.55; stroke-dasharray: none; }
+  &.partial  { stroke: var(--color-amber); opacity: 0.2; }
+  &.hidden   { stroke: #2a2a2a; opacity: 0.15; }
 }
 
-.room-shadow { fill: #00000055; }
+// ── Limiar do chefe ────────────────────────────────────────────────────────
+.boss-threshold-line {
+  stroke: #c0392b;
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+  opacity: 0.5;
+}
 
-.svg-room {
+.boss-threshold-label {
+  fill: #c0392b;
+  font-size: 9px;
+  font-family: var(--font-display, serif);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.dungeon-zone-label {
+  fill: #555;
+  font-size: 9px;
+  font-family: var(--font-display, serif);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-anchor: end;
+}
+
+// ── Nós das salas ──────────────────────────────────────────────────────────
+.room-shadow { fill: #00000060; }
+
+.map-room {
   cursor: default;
 
   .room-circle {
@@ -84,31 +140,35 @@
   .room-halo {
     fill: none;
     stroke: var(--color-gold);
-    stroke-width: 2;
-    opacity: 0.8;
-    animation: pulse-halo 1.5s ease-in-out infinite;
+    stroke-width: 2.5;
+    opacity: 0.75;
+    animation: halo-pulse 1.5s ease-in-out infinite;
   }
 
   .room-reach-halo {
     fill: none;
     stroke: var(--color-amber);
-    stroke-width: 1.5;
-    opacity: 0.5;
+    stroke-width: 2;
+    opacity: 0.45;
     animation: halo-pulse 1.8s ease-in-out infinite;
   }
 
   .room-icon-text {
-    font-size: 16px;
+    font-size: 15px;
     dominant-baseline: middle;
     pointer-events: none;
     user-select: none;
   }
 
-  .room-hidden-icon { fill: #3a3a3a; font-size: 18px; font-weight: bold; }
+  .room-hidden-icon {
+    fill: #333;
+    font-size: 17px;
+    font-weight: bold;
+  }
 
   .room-label-text {
-    font-size: 10px;
-    fill: #555;
+    font-size: 9px;
+    fill: #484848;
     font-family: var(--font-display, serif);
     pointer-events: none;
     user-select: none;
@@ -121,27 +181,30 @@
     pointer-events: none;
   }
 
-  // Tipos — cor do círculo
-  &.svg-room-entrance .room-circle { fill: #0d2b0d; stroke: #27ae60; }
-  &.svg-room-boss     .room-circle { fill: #2b0d0d; stroke: #c0392b; }
-  &.svg-room-monster  .room-circle { fill: #1a0a0a; stroke: #e74c3c; }
-  &.svg-room-treasure .room-circle { fill: #2b2200; stroke: var(--color-gold); }
-  &.svg-room-rest     .room-circle { fill: #2b1400; stroke: #e67e22; }
-  &.svg-room-trap     .room-circle { fill: #1a0d2b; stroke: #9b59b6; }
+  // Tipos
+  &.map-room-entrance .room-circle { fill: #0d2b0d; stroke: #27ae60; }
+  &.map-room-boss     .room-circle { fill: #2b0d0d; stroke: #c0392b; stroke-width: 2; }
+  &.map-room-monster  .room-circle { fill: #1a0a0a; stroke: #e74c3c; }
+  &.map-room-treasure .room-circle { fill: #2b2200; stroke: var(--color-gold); }
+  &.map-room-rest     .room-circle { fill: #2b1400; stroke: #e67e22; }
+  &.map-room-trap     .room-circle { fill: #1a0d2b; stroke: #9b59b6; }
 
   // Estados
-  &.svg-room-hidden .room-circle { fill: #0d0d0d; stroke: #222; }
+  &.map-room-hidden .room-circle { fill: #0d0d0d; stroke: #1e1e1e; }
 
-  &.svg-room-current .room-circle {
+  &.map-room-current .room-circle {
     fill: #1e1600;
     stroke: var(--color-gold);
-    stroke-width: 2;
-    filter: drop-shadow(0 0 6px var(--color-gold));
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 7px var(--color-gold));
   }
 
-  &.svg-room-cleared .room-circle { opacity: 0.65; }
+  &.map-room-cleared {
+    .room-circle { opacity: 0.6; }
+    .room-label-text { fill: #2ecc71; opacity: 0.7; }
+  }
 
-  &.svg-room-reachable {
+  &.map-room-reachable {
     cursor: pointer;
     .room-circle {
       fill: #1e1200;
@@ -149,20 +212,22 @@
       stroke-width: 2;
     }
     .room-label-text { fill: var(--color-amber); }
-    &:hover .room-circle { filter: drop-shadow(0 0 8px var(--color-amber)); }
+    &:hover .room-circle { filter: drop-shadow(0 0 9px var(--color-amber)); }
   }
 }
 
-@keyframes pulse-halo {
-  0%, 100% { opacity: 0.8; }
-  50%       { opacity: 0.3; }
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.7; }
+  50%       { opacity: 0.2; }
 }
 
+// ── Painel da câmara atual ─────────────────────────────────────────────────
 .current-room-info {
   padding: 0.75rem 1rem;
   background: rgba(0,0,0,0.4);
   border: 1px solid var(--color-border);
   border-radius: 6px;
+  flex-shrink: 0;
 
   .info-header {
     display: flex;
@@ -186,13 +251,13 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
 
-    &.room-badge-monster { color: #e74c3c; border-color: #e74c3c; background: rgba(231,76,60,0.1); }
+    &.room-badge-monster  { color: #e74c3c; border-color: #e74c3c; background: rgba(231,76,60,0.1); }
     &.room-badge-treasure { color: var(--color-gold); border-color: var(--color-gold); background: rgba(212,170,20,0.1); }
-    &.room-badge-trap { color: #9b59b6; border-color: #9b59b6; background: rgba(155,89,182,0.1); }
-    &.room-badge-rest { color: #e67e22; border-color: #e67e22; background: rgba(230,126,34,0.1); }
-    &.room-badge-boss { color: #c0392b; border-color: #c0392b; background: rgba(192,57,43,0.15); }
+    &.room-badge-trap     { color: #9b59b6; border-color: #9b59b6; background: rgba(155,89,182,0.1); }
+    &.room-badge-rest     { color: #e67e22; border-color: #e67e22; background: rgba(230,126,34,0.1); }
+    &.room-badge-boss     { color: #c0392b; border-color: #c0392b; background: rgba(192,57,43,0.15); }
     &.room-badge-entrance { color: #27ae60; border-color: #27ae60; background: rgba(39,174,96,0.1); }
-    &.room-badge-empty { color: #666; border-color: #444; background: rgba(0,0,0,0.2); }
+    &.room-badge-empty    { color: #666; border-color: #444; background: rgba(0,0,0,0.2); }
   }
 
   .info-desc {
@@ -213,6 +278,7 @@
     font-size: 0.9rem;
     letter-spacing: 0.05em;
     transition: all 0.2s ease;
+    margin-top: 0.3rem;
   }
 
   .btn-encounter {
@@ -220,6 +286,13 @@
     color: #fff;
     border: 1px solid #e74c3c;
     &:hover { background: linear-gradient(135deg, #9a0000, #e74c3c); box-shadow: 0 0 12px rgba(192,57,43,0.4); }
+  }
+
+  .btn-enter-unknown {
+    background: linear-gradient(135deg, #1a1000, #3a2800) !important;
+    border-color: var(--color-amber) !important;
+    color: var(--color-amber) !important;
+    &:hover { background: linear-gradient(135deg, #2a1800, #5a3c00) !important; }
   }
 
   .btn-next-floor {
@@ -246,174 +319,13 @@
   }
 }
 
-// ── Mapa Imagem ────────────────────────────────────────────────────────────
-
-.image-map-container {
-  min-height: 0;
-  padding: 0;
-  align-items: stretch;
-}
-
-.image-map-wrapper {
-  position: relative;
-  width: 100%;
-  line-height: 0;
-  aspect-ratio: 712 / 615;
-  background: #111;
-  border-radius: 6px;
-  overflow: hidden;
-
-  .dungeon-image {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 6px;
-    filter: sepia(0.15) brightness(0.85);
-  }
-
-  .hotspot-layer {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-}
-
-.hotspot {
-  cursor: default;
-  transition: transform 0.2s ease;
-
-  .hotspot-halo {
-    fill: none;
-    stroke: var(--color-amber);
-    stroke-width: 2;
-    opacity: 0.5;
-    animation: halo-pulse 1.8s ease-in-out infinite;
-  }
-
-  .hotspot-circle {
-    fill: rgba(10,10,10,0.72);
-    stroke: #444;
-    stroke-width: 1.5;
-    transition: fill 0.2s, stroke 0.2s;
-  }
-
-  .hotspot-icon {
-    font-size: 14px;
-    fill: #666;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .hotspot-label {
-    font-size: 10px;
-    fill: #555;
-    font-family: var(--font-display, serif);
-    pointer-events: none;
-    user-select: none;
-  }
-
-  // Estados
-  &.hs-entrance {
-    .hotspot-circle { fill: rgba(10,40,10,0.8); stroke: #27ae60; }
-    .hotspot-icon { fill: #27ae60; }
-    .hotspot-label { fill: #27ae60; }
-  }
-
-  &.hs-cleared {
-    .hotspot-circle { fill: rgba(10,35,10,0.75); stroke: #2ecc71; }
-    .hotspot-icon { fill: #2ecc71; font-size: 13px; }
-    .hotspot-label { fill: #2ecc71; }
-  }
-
-  &.hs-current {
-    .hotspot-circle {
-      fill: rgba(30,22,0,0.85);
-      stroke: var(--color-gold);
-      stroke-width: 2;
-      filter: drop-shadow(0 0 6px var(--color-gold));
-    }
-    .hotspot-icon { fill: var(--color-gold); }
-    .hotspot-label { fill: var(--color-gold); }
-  }
-
-  &.hs-reachable {
-    cursor: pointer;
-
-    .hotspot-circle {
-      fill: rgba(30,18,0,0.8);
-      stroke: var(--color-amber);
-      stroke-width: 2;
-    }
-    .hotspot-icon { fill: var(--color-amber); font-size: 16px; }
-    .hotspot-label { fill: var(--color-amber); }
-
-    &:hover .hotspot-circle {
-      fill: rgba(50,30,0,0.9);
-      filter: drop-shadow(0 0 8px var(--color-amber));
-    }
-  }
-
-  &.hs-unknown {
-    .hotspot-circle { fill: rgba(8,8,8,0.8); stroke: #2a2a2a; }
-    .hotspot-icon { fill: #3a3a3a; font-size: 16px; font-weight: bold; }
-    .hotspot-label { fill: #333; }
-  }
-}
-
-.hotspot-secret-badge {
-  font-size: 11px;
-  filter: drop-shadow(0 0 3px rgba(255,200,0,0.8));
-}
-
-@keyframes halo-pulse {
-  0%, 100% { opacity: 0.5; r: 0; }
-  50% { opacity: 0.15; }
-}
-
 .unknown-room { opacity: 0.85; }
 
-.btn-enter-unknown {
-  background: linear-gradient(135deg, #1a1000, #3a2800) !important;
-  border-color: var(--color-amber) !important;
-  color: var(--color-amber) !important;
-  &:hover { background: linear-gradient(135deg, #2a1800, #5a3c00) !important; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.15); }
-}
-
-.floor-domain {
-  color: var(--color-text-muted);
-  font-size: 0.7rem;
-  font-style: italic;
-  margin: 0;
-}
-
-.special-rule {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: rgba(192,57,43,0.1);
-  border: 1px solid rgba(192,57,43,0.4);
-  border-radius: 4px;
-  font-size: 0.75rem;
-  color: #e74c3c;
-  font-style: italic;
-  line-height: 1.4;
-
-  .sr-icon { flex-shrink: 0; }
-}
-
-/* ── Painel de Inventário & Equipamento ─────────────────────────────────── */
+// ── Inventário & Equipamento ───────────────────────────────────────────────
 .inventory-panel {
   border-top: 1px solid #2a2a3e;
   padding-top: 0.5rem;
+  flex-shrink: 0;
 }
 
 .inv-toggle {
@@ -424,7 +336,6 @@
 }
 
 .inv-body { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
-
 .equip-slots { display: flex; flex-direction: column; gap: 0.3rem; }
 
 .equip-slot {
@@ -440,9 +351,9 @@
   padding: 0.2rem 0.4rem;
 }
 
-.eq-icon { font-size: 1rem; }
-.eq-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.eq-name { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eq-icon  { font-size: 1rem; }
+.eq-info  { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.eq-name  { font-size: 0.75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .eq-bonus { font-size: 0.68rem; color: #86efac; }
 .eq-unequip {
   background: none; border: none; color: #6b7280; cursor: pointer; font-size: 0.75rem; padding: 0 2px;
@@ -457,15 +368,15 @@
 
 .inv-title { font-size: 0.78rem; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.3rem; }
 .inv-empty { font-size: 0.75rem; color: #374151; font-style: italic; }
-.inv-grid { display: flex; flex-direction: column; gap: 0.3rem; max-height: 200px; overflow-y: auto; }
+.inv-grid  { display: flex; flex-direction: column; gap: 0.3rem; max-height: 200px; overflow-y: auto; }
 
 .inv-item {
   display: flex; align-items: center; gap: 0.35rem;
   background: #1e1e30; border: 1px solid #2a2a42; border-radius: 4px; padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
 }
-.inv-icon { font-size: 0.9rem; }
-.inv-name { flex: 1; font-weight: 500; }
+.inv-icon  { font-size: 0.9rem; }
+.inv-name  { flex: 1; font-weight: 500; }
 .inv-bonus { font-size: 0.68rem; color: #86efac; }
 .inv-equip {
   background: #1d4ed8; color: #fff; border: none; border-radius: 3px;
