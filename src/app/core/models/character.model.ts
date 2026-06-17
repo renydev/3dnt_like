@@ -11,6 +11,40 @@ export type CharacterRace =
 
 export type CharacterRole = 'tank' | 'dps' | 'healer' | 'mage';
 
+// ─── FOCOS DE MAGIA (6 Caminhos Elementais do 3D&T) ─────────────────────────
+export type FocusPath = 'fogo' | 'agua' | 'ar' | 'terra' | 'luz' | 'trevas';
+
+export interface FocusPaths {
+  fogo:   number;  // 0–5
+  agua:   number;
+  ar:     number;
+  terra:  number;
+  luz:    number;
+  trevas: number;
+}
+
+export const FOCUS_PATH_LABELS: Record<FocusPath, string> = {
+  fogo:   'Fogo',
+  agua:   'Água',
+  ar:     'Ar',
+  terra:  'Terra',
+  luz:    'Luz',
+  trevas: 'Trevas',
+};
+
+export const FOCUS_PATH_ICONS: Record<FocusPath, string> = {
+  fogo:   '🔥',
+  agua:   '💧',
+  ar:     '🌪️',
+  terra:  '🪨',
+  luz:    '✨',
+  trevas: '🌑',
+};
+
+export const FOCUS_PATHS: FocusPath[] = ['fogo', 'agua', 'ar', 'terra', 'luz', 'trevas'];
+
+export const EMPTY_FOCUS: FocusPaths = { fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 };
+
 export const CLASS_ROLES: Record<CharacterClass, CharacterRole> = {
   guerreiro: 'tank',
   paladino:  'tank',
@@ -77,6 +111,9 @@ export interface Character {
   inventory: Item[];      // itens no inventário (consumíveis + não equipados)
   equipment: Equipment;   // itens equipados por slot (weapon, offhand, armor, head, gloves, boots, ring_left, ring_right)
   statusEffects: StatusEffect[];
+
+  // Focos de Magia — 6 Caminhos Elementais (qualquer classe pode ter)
+  focus?: FocusPaths;
 
   // Modificadores raciais (separados da base para cálculo correto de custo)
   racialMods?: Partial<Record<'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo', number>>;

@@ -440,6 +440,50 @@
             ❤️ PV estimado: <strong>{{ finalStats().pontosVida }}</strong>
             <span class="pv-hint">(Resistência × 5)</span>
           </div>
+
+          <!-- Focos de Magia -->
+          <div class="focus-creation-section">
+            <div class="focus-creation-header">
+              <span class="focus-creation-title">🔮 Focos de Magia</span>
+              <span class="focus-creation-hint">Opcional · qualquer classe pode aprender · mesmo custo que atributos</span>
+            </div>
+            <div class="focus-creation-grid">
+              @for (m of FOCUS_META; track m.key) {
+                <div class="ard-focus-row">
+                  <span class="ard-icon">{{ m.icon }}</span>
+                  <span class="ard-label">{{ m.label }}</span>
+
+                  <div class="ard-controls">
+                    <button class="ard-btn minus"
+                      [disabled]="!canDecrementFocus(m.key)"
+                      (click)="decrementFocus(m.key)">−</button>
+
+                    <div class="ard-pips">
+                      @for (p of pip(distributedFocus()[m.key], 5); track $index) {
+                        <div class="ard-pip" [class.filled]="p" [style.background]="p ? '#9040d0' : null"></div>
+                      }
+                    </div>
+
+                    <span class="ard-val" style="color:#c080ff">{{ distributedFocus()[m.key] }}</span>
+
+                    <button class="ard-btn plus"
+                      [disabled]="!canIncrementFocus(m.key)"
+                      (click)="incrementFocus(m.key)"
+                      [title]="'Próximo nível custa ' + nextCost(distributedFocus()[m.key]) + 'pt'">+</button>
+                  </div>
+
+                  <span class="ard-cost-hint">
+                    @if (distributedFocus()[m.key] > 0) {
+                      <span class="ard-spent">{{ totalCost(distributedFocus()[m.key]) }}pt gastos</span>
+                    }
+                    @if (distributedFocus()[m.key] < 5) {
+                      <span class="ard-next">próx: {{ nextCost(distributedFocus()[m.key]) }}pt</span>
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
         </div>
       }
 

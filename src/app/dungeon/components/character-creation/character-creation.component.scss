@@ -771,6 +771,50 @@
 
 .pv-hint { color: #7f8c8d; font-size: 0.78rem; margin-left: 0.4rem; }
 
+// ── Focos de Magia (Step 5) ───────────────────────────────────────────────────
+
+.focus-creation-section {
+  margin-top: 1.4rem;
+  padding: 0.9rem 1rem;
+  background: rgba(100, 20, 160, 0.1);
+  border: 1px solid rgba(140, 80, 200, 0.3);
+  border-radius: 8px;
+  max-width: 640px;
+}
+
+.focus-creation-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.7rem;
+}
+
+.focus-creation-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #c080ff;
+}
+
+.focus-creation-hint {
+  font-size: 0.68rem;
+  color: #8060a0;
+  font-style: italic;
+}
+
+.focus-creation-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ard-focus-row {
+  display: grid;
+  grid-template-columns: 24px 70px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+
 // ── Vantagens / Desvantagens ──────────────────────────────────────────────────
 
 .vd-layout {
