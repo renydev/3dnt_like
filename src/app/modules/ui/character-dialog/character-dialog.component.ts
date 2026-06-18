@@ -28,38 +28,53 @@ export interface VantagemDef { name: string; cost: number; desc: string; }
 export interface DesvantagemDef { name: string; reward: number; desc: string; }
 
 export const VANTAGENS_CATALOG: VantagemDef[] = [
-  { name: 'Acrobacia',         cost: 1, desc: '+2 em testes de agilidade e equilíbrio.' },
+  // Combate
+  { name: 'Acrobacia',         cost: 1, desc: '+2 em testes de agilidade, equilíbrio e piruetas.' },
   { name: 'Ambidestria',       cost: 1, desc: 'Usa duas armas sem penalidade.' },
   { name: 'Ataques Múltiplos', cost: 3, desc: 'Pode realizar 2 ataques por rodada.' },
+  { name: 'Ataque Duplo',      cost: 2, desc: 'Desfere dois golpes por rodada com a mesma arma.' },
   { name: 'Detectar Inimigos', cost: 1, desc: 'Nunca é surpreendido em combate.' },
   { name: 'Esquiva',           cost: 1, desc: '+2 na defesa contra ataques à distância.' },
-  { name: 'Faro Apurado',      cost: 1, desc: 'Detecta inimigos e armadilhas ocultas.' },
-  { name: 'Fortitude',         cost: 1, desc: '+5 PV máximos.' },
+  { name: 'Faro Apurado',      cost: 1, desc: 'Detecta inimigos e armadilhas ocultas por cheiro e som.' },
+  { name: 'Força Colossal',    cost: 2, desc: '+2 em todos os testes de Força.' },
   { name: 'Mira Certeira',     cost: 1, desc: '+2 em ataques à distância.' },
   { name: 'Percepção',         cost: 1, desc: '+2 em testes de percepção e investigação.' },
   { name: 'Prontidão',         cost: 1, desc: 'Age primeiro em qualquer iniciativa.' },
+  { name: 'Reflexos Aguçados', cost: 1, desc: '+1 em iniciativa e testes de esquiva.' },
+  { name: 'Sede de Batalha',   cost: 2, desc: 'Recupera 2 PV por inimigo derrotado.' },
+  { name: 'Sentidos Aguçados', cost: 1, desc: 'Detecta armadilhas e emboscadas; +1 em Percepção.' },
+  { name: 'Tiro Certeiro',     cost: 1, desc: '+1 Habilidade em todos os ataques à distância.' },
+  // Defesa / Suporte
+  { name: 'Armadura Pesada',   cost: 2, desc: '+1 Armadura permanente.' },
+  { name: 'Fortitude',         cost: 1, desc: '+5 PV máximos.' },
+  { name: 'Imunidade Mágica',  cost: 2, desc: 'Resistência a magias e efeitos arcanos.' },
   { name: 'Regeneração',       cost: 2, desc: 'Recupera 1 PV por rodada fora de combate.' },
   { name: 'Toque Curador',     cost: 1, desc: 'Pode curar 1d6 PV em aliado (1×/dia).' },
-  { name: 'Visão no Escuro',   cost: 1, desc: 'Enxerga perfeitamente na escuridão.' },
-  { name: 'Arma Especial',     cost: 1, desc: 'Proficiência e +1d6 com uma arma específica.' },
-  { name: 'Imunidade Mágica',  cost: 2, desc: 'Resistência a magias e efeitos arcanos.' },
+  { name: 'Visão no Escuro',   cost: 1, desc: 'Enxerga perfeitamente na escuridão total.' },
+  { name: 'Arma Especial',     cost: 1, desc: 'Proficiência e +1d6 de dano com uma arma específica.' },
+  // Magia
+  { name: 'Arcano',            cost: 4, desc: 'Aptidão natural para a magia. Recebe Focus 1 em todos os seis Caminhos automaticamente.' },
+  { name: 'Clericato',         cost: 2, desc: 'Acesso à magia divina. Permite usar Focus nos Caminhos de Luz e Trevas.' },
+  { name: 'Magia Aprimorada',  cost: 2, desc: '+4 Poder de Fogo.' },
+  { name: 'Foco Arcano',       cost: 1, desc: 'Concentração perfeita. Magias custam −1 PF (mínimo 1).' },
 ];
 
 export const DESVANTAGENS_CATALOG: DesvantagemDef[] = [
-  { name: 'Ansioso',       reward: 1, desc: 'Perde 1 ponto em testes que exigem paciência.' },
-  { name: 'Azarado',       reward: 1, desc: 'Uma vez por sessão sofre uma reviravolta negativa.' },
-  { name: 'Cobiçoso',      reward: 1, desc: 'Deve tentar pegar itens valiosos à vista.' },
-  { name: 'Covarde',       reward: 1, desc: 'Testa Habilidade para não fugir de batalhas difíceis.' },
-  { name: 'Fobia',         reward: 1, desc: 'Paralisa diante do seu medo específico.' },
-  { name: 'Inimigo Oculto',reward: 1, desc: 'Há alguém poderoso que quer vê-lo morto.' },
-  { name: 'Lento',         reward: 1, desc: '-1 em Habilidade em testes de velocidade.' },
-  { name: 'Má Fama',       reward: 1, desc: 'NPCs desconfiam de você por padrão.' },
-  { name: 'Obrigação',     reward: 1, desc: 'Tem um dever que não pode ignorar.' },
-  { name: 'Pé Frio',       reward: 1, desc: 'Uma vez por sessão, rerrola um dado favorável.' },
-  { name: 'Sanguinário',   reward: 1, desc: 'Difícil de parar em combate: testa Habilidade para não atacar.' },
-  { name: 'Teimosia',      reward: 1, desc: 'Recusa ajuda; -1 em testes cooperativos.' },
-  { name: 'Maneta',        reward: 2, desc: 'Perdeu uma mão; -2 em ações que exigem ambas.' },
-  { name: 'Vulnerabilidade',reward: 2, desc: 'Recebe +2 de dano de um tipo específico.' },
+  { name: 'Ansioso',            reward: 1, desc: 'Perde 1 ponto em testes que exigem paciência.' },
+  { name: 'Azarado',            reward: 1, desc: 'Uma vez por sessão sofre uma reviravolta negativa.' },
+  { name: 'Cobiçoso',           reward: 1, desc: 'Deve tentar pegar itens valiosos à vista.' },
+  { name: 'Covarde',            reward: 1, desc: 'Testa Habilidade para não fugir de batalhas difíceis.' },
+  { name: 'Fobia',              reward: 1, desc: 'Paralisa diante do seu medo específico.' },
+  { name: 'Inimigo Oculto',     reward: 1, desc: 'Há alguém poderoso que quer vê-lo morto.' },
+  { name: 'Inimigo Poderoso',   reward: 2, desc: 'Alguém muito poderoso e conhecido quer você morto.' },
+  { name: 'Lento',              reward: 1, desc: '−1 em Habilidade em testes de velocidade.' },
+  { name: 'Má Fama',            reward: 1, desc: 'NPCs desconfiam de você por padrão.' },
+  { name: 'Maneta',             reward: 2, desc: 'Perdeu uma mão; −2 em ações que exigem ambas.' },
+  { name: 'Obrigação',          reward: 1, desc: 'Tem um dever que não pode ignorar.' },
+  { name: 'Pé Frio',            reward: 1, desc: 'Uma vez por sessão, rerrola um dado favorável.' },
+  { name: 'Sanguinário',        reward: 1, desc: 'Difícil de parar em combate: testa Habilidade para não atacar.' },
+  { name: 'Teimosia',           reward: 1, desc: 'Recusa ajuda; −1 em testes cooperativos.' },
+  { name: 'Vulnerabilidade',    reward: 2, desc: 'Recebe +2 de dano de um tipo específico.' },
 ];
 
 @Component({
@@ -173,7 +188,15 @@ export class CharacterDialogComponent {
     return this.focusValue(path) + 1;
   }
 
+  canUseFocus(): boolean {
+    const c = this.char()!;
+    if (c.class === 'mago' || c.class === 'clerigo') return true;
+    const vantagens = new Set(c.vantagens);
+    return vantagens.has('Arcano') || vantagens.has('Clericato');
+  }
+
   canSpendFocus(path: FocusPath): boolean {
+    if (!this.canUseFocus()) return false;
     return this.pe() >= this.focusUpgradeCost(path) && this.focusValue(path) < 5;
   }
 

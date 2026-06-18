@@ -204,10 +204,11 @@ export class CharacterCreationComponent {
   selectedTier         = signal<StartingTier | null>(null);
   selectedRace         = signal<Race | null>(null);
   selectedClass        = signal<ClassDef | null>(null);
-  selectedVantagens    = signal<string[]>([]);
-  selectedDesvantagens = signal<string[]>([]);
-  selectedPericias     = signal<string[]>([]);
-  selectedGod          = signal<DungeonTheme | null>(null);
+  selectedVantagens        = signal<string[]>([]);
+  selectedDesvantagens     = signal<string[]>([]);
+  selectedPericias         = signal<string[]>([]);
+  selectedEspecializacoes  = signal<string[]>([]);
+  selectedGod              = signal<DungeonTheme | null>(null);
   raceDiffFilter       = signal('Todas');
   classDiffFilter      = signal('Todas');
 
@@ -298,7 +299,9 @@ export class CharacterCreationComponent {
       .reduce((s, id) => s + (VANTAGENS.find(v => v.id === id)?.cost ?? 0), 0)
   );
 
-  periciasSpent = computed(() => this.periciasSvc.totalCost(this.selectedPericias()));
+  periciasSpent = computed(() =>
+    this.periciasSvc.totalCost(this.selectedPericias()) + this.selectedEspecializacoes().length
+  );
 
   pointsLeft = computed(() =>
     this.totalPoints() - this.attrSpent() - this.vantagensSpent() - this.periciasSpent()
@@ -351,6 +354,32 @@ export class CharacterCreationComponent {
     }
   }
 
+  // ── Especializações individuais (1 PP cada) ──────────────────────────────────
+
+  isEspecializacaoSelected(espId: string): boolean {
+    return this.selectedEspecializacoes().includes(espId);
+  }
+
+  /** Retorna true se a especializacao já está coberta pela perícia completa selecionada */
+  isEspecializacaoCoveredByPericia(periciaId: string): boolean {
+    return this.isPericiaSelected(periciaId);
+  }
+
+  canSelectEspecializacao(periciaId: string, espId: string): boolean {
+    if (this.isEspecializacaoCoveredByPericia(periciaId)) return true;
+    if (this.isEspecializacaoSelected(espId)) return true;
+    return this.pointsLeft() >= 1;
+  }
+
+  toggleEspecializacao(periciaId: string, espId: string) {
+    if (this.isEspecializacaoCoveredByPericia(periciaId)) return;
+    if (this.isEspecializacaoSelected(espId)) {
+      this.selectedEspecializacoes.update(l => l.filter(x => x !== espId));
+    } else if (this.pointsLeft() >= 1) {
+      this.selectedEspecializacoes.update(l => [...l, espId]);
+    }
+  }
+
   diffColor(d: string): string { return DIFFICULTY_COLORS[d] ?? '#888'; }
 
   isVantagemSelected(id: string) { return this.selectedVantagens().includes(id); }
@@ -369,7 +398,15 @@ export class CharacterCreationComponent {
          : (s as any)[key];
   }
 
+  canUseFocus(): boolean {
+    const cls = this.selectedClass()?.id;
+    if (cls === 'mago' || cls === 'clerigo') return true;
+    const sel = this.selectedVantagens();
+    return sel.includes('arcano') || sel.includes('clericato');
+  }
+
   canIncrementFocus(path: FocusPath): boolean {
+    if (!this.canUseFocus()) return false;
     const cur = this.distributedFocus()[path];
     if (cur >= 5) return false;
     return this.pointsLeft() >= this.nextCost(cur);
@@ -408,6 +445,7 @@ export class CharacterCreationComponent {
     this.selectedVantagens.set([]);
     this.selectedDesvantagens.set([]);
     this.selectedPericias.set([]);
+    this.selectedEspecializacoes.set([]);
     this.selectedGod.set(null);
     this.distributedAttrs.set({ forca: 0, habilidade: 0, resistencia: 0, armadura: 0, poderFogo: 0 });
     this.distributedFocus.set({ fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 });
@@ -486,6 +524,7 @@ export class CharacterCreationComponent {
     this.selectedVantagens.set([...preset.vantagenIds]);
     this.selectedDesvantagens.set([...preset.desvIds]);
     this.selectedPericias.set([]);
+    this.selectedEspecializacoes.set([]);
     this.charName = preset.name;
     this.confirm();
   }
@@ -513,7 +552,7 @@ export class CharacterCreationComponent {
       pontosMana: { base: stats.resistencia * 3, current: stats.resistencia * 3, max: stats.resistencia * 3 },
       vantagens:    [...this.allFreeVantagens(), ...this.selectedVantagensNames()],
       desvantagens: this.selectedDesvantagens().map(id => this.getDesv(id)!.name),
-      pericias:     [...this.selectedPericias()],
+      pericias:     [...this.selectedPericias(), ...this.selectedEspecializacoes()],
       gold: 20 + (this.selectedTier()?.basePoints ?? 5) * 2,
       inventory: [],
       equipment: {},

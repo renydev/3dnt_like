@@ -445,7 +445,11 @@
           <div class="focus-creation-section">
             <div class="focus-creation-header">
               <span class="focus-creation-title">🔮 Focos de Magia</span>
-              <span class="focus-creation-hint">Opcional · qualquer classe pode aprender · mesmo custo que atributos</span>
+              @if (canUseFocus()) {
+                <span class="focus-creation-hint">Disponível · mesmo custo que atributos</span>
+              } @else {
+                <span class="focus-creation-hint focus-locked">🔒 Requer classe Mago/Clérigo ou vantagem Arcano/Clericato</span>
+              }
             </div>
             <div class="focus-creation-grid">
               @for (m of FOCUS_META; track m.key) {
@@ -545,9 +549,11 @@
         <div class="step-content">
           <h2 class="step-title">Perícias</h2>
           <p class="step-desc">
-            Perícias representam conhecimentos além do combate. Cada uma custa <strong>3 pontos</strong>.
+            Perícias representam conhecimentos além do combate.
+            Compre a <strong>perícia completa por 3 pontos</strong> (todas as especializações)
+            ou <strong>especializações avulsas por 1 ponto</strong> cada.
             Você tem <strong class="pts-strong">{{ pointsLeft() }} pontos</strong> restantes
-            ({{ periciasSpent() }}pt em perícias). Perícias são opcionais — você pode prosseguir sem nenhuma.
+            ({{ periciasSpent() }}pt em perícias). Perícias são opcionais.
           </p>
 
           <div class="pericias-grid">
@@ -557,21 +563,33 @@
                   <div class="pericias-cat-label">{{ cat.icon }} {{ cat.label }}</div>
                   <div class="pericias-list">
                     @for (p of periciasByCategory(cat.id); track p.id) {
-                      <div class="pericia-card"
-                        [class.selected]="isPericiaSelected(p.id)"
-                        [class.disabled]="!canSelectPericia(p)"
-                        (click)="togglePericia(p)">
-                        <div class="pericia-header">
+                      <div class="pericia-card" [class.selected]="isPericiaSelected(p.id)">
+                        <div class="pericia-header"
+                          [class.disabled]="!canSelectPericia(p)"
+                          (click)="togglePericia(p)"
+                          style="cursor:pointer">
                           <span class="pericia-icon">{{ p.icon }}</span>
                           <span class="pericia-name">{{ p.name }}</span>
                           <span class="pericia-cost" [class.selected]="isPericiaSelected(p.id)">
-                            {{ isPericiaSelected(p.id) ? '−' : '+' }}{{ p.cost }}pt
+                            {{ isPericiaSelected(p.id) ? '✔ Completa −' : '+' }}{{ p.cost }}pt
                           </span>
                         </div>
                         <p class="pericia-desc">{{ p.description }}</p>
                         <div class="pericia-specs">
                           @for (e of p.especializacoes; track e.id) {
-                            <span class="spec-chip">{{ e.name }}</span>
+                            <span class="spec-chip"
+                              [class.spec-selected]="isPericiaSelected(p.id) || isEspecializacaoSelected(e.id)"
+                              [class.spec-covered]="isPericiaSelected(p.id)"
+                              [class.spec-disabled]="!canSelectEspecializacao(p.id, e.id)"
+                              [title]="e.description"
+                              (click)="$event.stopPropagation(); toggleEspecializacao(p.id, e.id)">
+                              {{ e.name }}
+                              @if (!isPericiaSelected(p.id)) {
+                                <span class="spec-price">
+                                  {{ isEspecializacaoSelected(e.id) ? '−' : '+' }}1pt
+                                </span>
+                              }
+                            </span>
                           }
                         </div>
                       </div>

@@ -177,8 +177,13 @@
 
         <div class="tags-list">
           @for (d of char()!.desvantagens; track d) {
-            <div class="desv-row">
-              <span class="tag disadvantage">{{ d }}</span>
+            <div class="desv-row desv-row--expanded">
+              <div class="desv-info">
+                <span class="tag disadvantage">{{ d }}</span>
+                @if (desvantagemDef(d)?.desc; as desc) {
+                  <span class="desv-inline-desc">{{ desc }}</span>
+                }
+              </div>
               <button
                 class="btn-remove-desv"
                 [disabled]="!canRemoveDesvantagem(d)"

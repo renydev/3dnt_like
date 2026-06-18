@@ -230,6 +230,11 @@ export class GameStateService {
       return;
     }
 
+    // Salas de tesouro são marcadas como limpas ao entrar — impede re-entrada duplicada
+    if (target.type === 'treasure') {
+      this._markRoomCleared(roomId);
+    }
+
     const config = DUNGEON_REGISTRY[this.floorNumber()];
     const roomGroup = config?.roomEnemies?.[roomId]?.() ?? null;
     this.pendingEnemies.set(roomGroup);

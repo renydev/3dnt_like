@@ -171,6 +171,70 @@ export const CLASSES: ClassDef[] = [
 export const VANTAGENS: VantagemDef[] = [
   // Combate
   {
+    id: 'acrobacia',
+    name: 'Acrobacia',
+    cost: 1,
+    category: 'combate',
+    icon: '🤸',
+    description: '+2 em testes de agilidade, equilíbrio e piruetas.',
+    effect: '+2 em testes de agilidade e equilíbrio'
+  },
+  {
+    id: 'ambidestria',
+    name: 'Ambidestria',
+    cost: 1,
+    category: 'combate',
+    icon: '🗡️',
+    description: 'Usa duas armas sem penalidade.',
+    effect: 'Sem penalidade para usar arma na mão não-dominante'
+  },
+  {
+    id: 'ataques_multiplos',
+    name: 'Ataques Múltiplos',
+    cost: 3,
+    category: 'combate',
+    icon: '⚡',
+    description: 'Pode realizar 2 ataques por rodada.',
+    effect: '2 ataques por rodada'
+  },
+  {
+    id: 'ataque_duplo',
+    name: 'Ataque Duplo',
+    cost: 2,
+    category: 'combate',
+    icon: '⚔️',
+    description: 'Desfere dois golpes por rodada com a mesma arma.',
+    effect: 'Dois golpes por rodada',
+    incompatibleWith: ['tiro_certeiro']
+  },
+  {
+    id: 'detectar_inimigos',
+    name: 'Detectar Inimigos',
+    cost: 1,
+    category: 'combate',
+    icon: '👁️',
+    description: 'Nunca é surpreendido em combate.',
+    effect: 'Imune a surpresa'
+  },
+  {
+    id: 'esquiva',
+    name: 'Esquiva',
+    cost: 1,
+    category: 'combate',
+    icon: '🌪️',
+    description: '+2 na defesa contra ataques à distância.',
+    effect: '+2 vs ataques à distância'
+  },
+  {
+    id: 'faro_apurado',
+    name: 'Faro Apurado',
+    cost: 1,
+    category: 'combate',
+    icon: '👃',
+    description: 'Detecta inimigos e armadilhas ocultas por cheiro e som.',
+    effect: 'Detecta ocultos por olfato e audição'
+  },
+  {
     id: 'forca_colossal',
     name: 'Força Colossal',
     cost: 2,
@@ -181,35 +245,152 @@ export const VANTAGENS: VantagemDef[] = [
     incompatibleWith: ['tiro_certeiro']
   },
   {
-    id: 'ataque_duplo',
-    name: 'Ataque Duplo',
-    cost: 2,
-    category: 'combate',
-    icon: '⚔️',
-    description: 'Desfere dois golpes onde outros fazem um.',
-    effect: 'Realiza dois ataques por rodada',
-    incompatibleWith: ['tiro_certeiro']
-  },
-  {
-    id: 'tiro_certeiro',
-    name: 'Tiro Certeiro',
+    id: 'mira_certeira',
+    name: 'Mira Certeira',
     cost: 1,
     category: 'combate',
     icon: '🎯',
-    description: 'Mira impecável — cada flecha encontra seu alvo.',
-    effect: '+1 Habilidade em todos os ataques à distância',
-    incompatibleWith: ['forca_colossal', 'ataque_duplo']
+    description: 'Mira impecável — cada projétil encontra seu alvo.',
+    effect: '+2 em ataques à distância'
+  },
+  {
+    id: 'percepcao',
+    name: 'Percepção',
+    cost: 1,
+    category: 'combate',
+    icon: '🔍',
+    description: '+2 em testes de percepção e investigação.',
+    effect: '+2 Percepção e Investigação'
+  },
+  {
+    id: 'prontidao',
+    name: 'Prontidão',
+    cost: 1,
+    category: 'combate',
+    icon: '⚡',
+    description: 'Age primeiro em qualquer iniciativa.',
+    effect: 'Sempre age primeiro'
   },
   {
     id: 'reflexos_aguçados',
     name: 'Reflexos Aguçados',
     cost: 1,
     category: 'combate',
-    icon: '⚡',
+    icon: '💨',
     description: 'Reage aos ataques antes mesmo de vê-los.',
     effect: '+1 em iniciativa e testes de esquiva'
   },
+  {
+    id: 'sede_de_batalha',
+    name: 'Sede de Batalha',
+    cost: 2,
+    category: 'especial',
+    icon: '🩸',
+    description: 'A adrenalina do combate é sua melhor cura.',
+    effect: 'Recupera 2 PV por inimigo derrotado'
+  },
+  {
+    id: 'sentidos_aguçados',
+    name: 'Sentidos Aguçados',
+    cost: 1,
+    category: 'especial',
+    icon: '🦅',
+    description: 'Percepção afiada que fareja o perigo antes de chegar.',
+    effect: 'Detecta armadilhas e emboscadas; +1 em Percepção'
+  },
+  {
+    id: 'tiro_certeiro',
+    name: 'Tiro Certeiro',
+    cost: 1,
+    category: 'combate',
+    icon: '🏹',
+    description: 'Mira impecável — cada flecha encontra seu alvo.',
+    effect: '+1 Habilidade em todos os ataques à distância',
+    incompatibleWith: ['forca_colossal', 'ataque_duplo']
+  },
+  // Defesa / Suporte
+  {
+    id: 'armadura_pesada',
+    name: 'Armadura Pesada',
+    cost: 2,
+    category: 'defesa',
+    icon: '🛡️',
+    description: 'Acostumado ao peso de metais reforçados.',
+    effect: '+1 Armadura permanente'
+  },
+  {
+    id: 'arma_especial',
+    name: 'Arma Especial',
+    cost: 1,
+    category: 'defesa',
+    icon: '🗡️',
+    description: 'Proficiência e +1d6 de dano com uma arma específica.',
+    effect: '+1d6 dano com arma escolhida'
+  },
+  {
+    id: 'fortitude',
+    name: 'Fortitude',
+    cost: 1,
+    category: 'defesa',
+    icon: '❤️',
+    description: '+5 PV máximos.',
+    effect: '+5 PV máximos'
+  },
+  {
+    id: 'imunidade_magica',
+    name: 'Imunidade Mágica',
+    cost: 2,
+    category: 'defesa',
+    icon: '🔮',
+    description: 'Resistência a magias e efeitos arcanos.',
+    effect: 'Resistência a magias'
+  },
+  {
+    id: 'regeneracao',
+    name: 'Regeneração',
+    cost: 2,
+    category: 'defesa',
+    icon: '💚',
+    description: 'Recupera 1 PV por rodada fora de combate.',
+    effect: '+1 PV/rodada fora de combate'
+  },
+  {
+    id: 'toque_curador',
+    name: 'Toque Curador',
+    cost: 1,
+    category: 'defesa',
+    icon: '🤲',
+    description: 'Pode curar 1d6 PV em aliado (1×/dia).',
+    effect: 'Cura 1d6 PV em aliado 1×/dia'
+  },
+  {
+    id: 'visao_escuro',
+    name: 'Visão no Escuro',
+    cost: 1,
+    category: 'defesa',
+    icon: '🦇',
+    description: 'Enxerga perfeitamente na escuridão total.',
+    effect: 'Visão completa no escuro'
+  },
   // Magia
+  {
+    id: 'arcano',
+    name: 'Arcano',
+    cost: 4,
+    category: 'magia',
+    icon: '🌟',
+    description: 'Aptidão natural para a magia. Recebe Focus 1 em todos os seis Caminhos automaticamente.',
+    effect: 'Focus 1 em todos os Caminhos; acesso à magia'
+  },
+  {
+    id: 'clericato',
+    name: 'Clericato',
+    cost: 2,
+    category: 'magia',
+    icon: '✝️',
+    description: 'Acesso à magia divina. Permite usar Focus nos Caminhos de Luz e Trevas.',
+    effect: 'Focus divino; acesso à magia sagrada'
+  },
   {
     id: 'magia_aprimorada',
     name: 'Magia Aprimorada',
@@ -226,59 +407,49 @@ export const VANTAGENS: VantagemDef[] = [
     category: 'magia',
     icon: '🌀',
     description: 'Concentração perfeita reduz o custo mágico.',
-    effect: 'Magias custam −1 PF (mínimo 1)'
+    effect: 'Magias custam −1 PF (mínimo 1)',
+    requiresClass: ['mago', 'clerigo']
   },
-  // Defesa
-  {
-    id: 'armadura_pesada',
-    name: 'Armadura Pesada',
-    cost: 2,
-    category: 'defesa',
-    icon: '🛡️',
-    description: 'Acostumado ao peso de metais reforçados.',
-    effect: '+1 Armadura permanente'
-  },
-  {
-    id: 'esquiva',
-    name: 'Esquiva',
-    cost: 1,
-    category: 'defesa',
-    icon: '🌪️',
-    description: 'Corpo e mente treinados para sair do caminho.',
-    effect: '+1 em testes de defesa e Resistência'
-  },
-  // Especial
-  {
-    id: 'sentidos_aguçados',
-    name: 'Sentidos Aguçados',
-    cost: 1,
-    category: 'especial',
-    icon: '👁️',
-    description: 'Percepção afiada que fareja o perigo antes de chegar.',
-    effect: 'Detecta armadilhas e emboscadas; +1 em testes de Percepção'
-  },
-  {
-    id: 'sede_de_batalha',
-    name: 'Sede de Batalha',
-    cost: 2,
-    category: 'especial',
-    icon: '🩸',
-    description: 'A adrenalina do combate é sua melhor cura.',
-    effect: 'Recupera 2 PV por inimigo derrotado'
-  }
 ];
 
 // ─── DESVANTAGENS ─────────────────────────────────────────────────────────────
 
 export const DESVANTAGENS: DesvantagemDef[] = [
   {
-    id: 'codigo_de_honra',
-    name: 'Código de Honra',
-    refund: 2,
+    id: 'ansioso',
+    name: 'Ansioso',
+    refund: 1,
     category: 'comportamental',
-    icon: '📜',
-    description: 'Segue um código de conduta rígido e inabalável.',
-    penalty: 'Não pode fugir de combate nem atacar inimigos indefesos'
+    icon: '😰',
+    description: 'Perde 1 ponto em testes que exigem paciência.',
+    penalty: '−1 em testes que exigem paciência ou espera'
+  },
+  {
+    id: 'azarado',
+    name: 'Azarado',
+    refund: 1,
+    category: 'comportamental',
+    icon: '🍀',
+    description: 'Uma vez por sessão sofre uma reviravolta negativa.',
+    penalty: 'Uma reviravolta negativa aleatória por sessão'
+  },
+  {
+    id: 'cobicoso',
+    name: 'Cobiçoso',
+    refund: 1,
+    category: 'comportamental',
+    icon: '💰',
+    description: 'Deve tentar pegar itens valiosos à vista.',
+    penalty: 'Compulsão por pegar objetos valiosos'
+  },
+  {
+    id: 'covarde',
+    name: 'Covarde',
+    refund: 1,
+    category: 'comportamental',
+    icon: '😨',
+    description: 'Testa Habilidade para não fugir de batalhas difíceis.',
+    penalty: 'Teste de Habilidade ou foge em combates difíceis'
   },
   {
     id: 'fobia',
@@ -290,13 +461,49 @@ export const DESVANTAGENS: DesvantagemDef[] = [
     penalty: '−1 em todos os testes quando confrontado com o objeto da fobia'
   },
   {
+    id: 'inimigo_oculto',
+    name: 'Inimigo Oculto',
+    refund: 1,
+    category: 'social',
+    icon: '⚔️',
+    description: 'Há alguém poderoso que quer vê-lo morto.',
+    penalty: 'Encontros adicionais com inimigos específicos'
+  },
+  {
     id: 'inimigo',
     name: 'Inimigo Poderoso',
     refund: 2,
     category: 'social',
-    icon: '⚔️',
-    description: 'Alguém muito poderoso quer você morto.',
-    penalty: 'Encontros adicionais de inimigos específicos nos andares'
+    icon: '💀',
+    description: 'Alguém muito poderoso e conhecido quer você morto.',
+    penalty: 'Encontros frequentes e mais intensos com inimigos específicos'
+  },
+  {
+    id: 'lento',
+    name: 'Lento',
+    refund: 1,
+    category: 'fisica',
+    icon: '🐢',
+    description: '−1 em Habilidade em testes de velocidade.',
+    penalty: '−1 Habilidade em testes de velocidade'
+  },
+  {
+    id: 'ma_fama',
+    name: 'Má Fama',
+    refund: 1,
+    category: 'social',
+    icon: '😤',
+    description: 'NPCs desconfiam de você por padrão.',
+    penalty: 'Desvantagem em situações sociais com estranhos'
+  },
+  {
+    id: 'maneta',
+    name: 'Maneta',
+    refund: 2,
+    category: 'fisica',
+    icon: '🦾',
+    description: 'Perdeu uma mão; −2 em ações que exigem ambas.',
+    penalty: '−2 em ações bimanuais'
   },
   {
     id: 'obrigacao',
@@ -304,27 +511,45 @@ export const DESVANTAGENS: DesvantagemDef[] = [
     refund: 1,
     category: 'social',
     icon: '🔗',
-    description: 'Deve satisfações a uma organização poderosa.',
-    penalty: '−1 ponto de tesouro em recompensas (dívida a pagar)'
+    description: 'Tem um dever que não pode ignorar.',
+    penalty: 'Deve cumprir obrigações com uma organização poderosa'
   },
   {
-    id: 'fraqueza_magia',
-    name: 'Fraqueza à Magia',
+    id: 'pe_frio',
+    name: 'Pé Frio',
     refund: 1,
-    category: 'fisica',
-    icon: '💜',
-    description: 'Sua resistência mágica é praticamente nula.',
-    penalty: 'Recebe +1 de dano de todas as fontes mágicas'
+    category: 'comportamental',
+    icon: '🎲',
+    description: 'Uma vez por sessão, rerrola um dado favorável.',
+    penalty: 'Rerrola um resultado favorável por sessão'
   },
   {
-    id: 'insano_raiva',
-    name: 'Insano: Ira',
-    refund: 2,
+    id: 'sanguinario',
+    name: 'Sanguinário',
+    refund: 1,
     category: 'comportamental',
-    icon: '😡',
-    description: 'Crises de raiva incontroláveis surgem nos momentos mais críticos.',
-    penalty: 'Em falha crítica (resultado 6), perde uma ação na próxima rodada'
-  }
+    icon: '🩸',
+    description: 'Difícil de parar em combate; testa Habilidade para não atacar.',
+    penalty: 'Teste de Habilidade para não continuar atacando inimigos vencidos'
+  },
+  {
+    id: 'teimosia',
+    name: 'Teimosia',
+    refund: 1,
+    category: 'comportamental',
+    icon: '🤬',
+    description: 'Recusa ajuda; −1 em testes cooperativos.',
+    penalty: '−1 em testes cooperativos'
+  },
+  {
+    id: 'vulnerabilidade',
+    name: 'Vulnerabilidade',
+    refund: 2,
+    category: 'fisica',
+    icon: '💔',
+    description: 'Recebe +2 de dano de um tipo específico.',
+    penalty: '+2 de dano de um tipo específico'
+  },
 ];
 
 export const VANTAGEM_CATEGORIES = [

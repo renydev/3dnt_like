@@ -801,6 +801,10 @@
   font-style: italic;
 }
 
+.focus-locked {
+  color: #6b3a3a;
+}
+
 .focus-creation-grid {
   display: flex;
   flex-direction: column;
@@ -978,6 +982,34 @@
   border-radius: 3px;
   color: #6a7a9a;
   white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  user-select: none;
+
+  &:hover { border-color: #4a5a7a; color: #9aafcc; }
+
+  &.spec-selected {
+    border-color: #4a7a4a;
+    color: #7acc7a;
+    background: #0a1a0a;
+  }
+
+  &.spec-covered {
+    border-color: #2a5a2a;
+    color: #4a9a4a;
+    cursor: default;
+  }
+
+  &.spec-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.spec-price {
+  margin-left: 3px;
+  font-size: 0.55rem;
+  opacity: 0.7;
 }
 
 // ── Footer ────────────────────────────────────────────────────────────────────
