@@ -1,20 +1,19 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from './core/services/game-state.service';
-import { GameLayoutComponent } from './modules/ui/game-layout/game-layout.component';
+import { GameLayoutComponent } from './dungeon/components/game-layout/game-layout.component';
 import { CharacterCreationComponent } from './dungeon/components/character-creation/character-creation.component';
-import { CompanionSelectComponent } from './modules/ui/companion-select/companion-select.component';
-import { DebugMapComponent } from './debug/debug-map.component';
-import { MapDebugComponent } from './debug/map-debug/map-debug.component';
+import { CompanionSelectComponent } from './dungeon/components/companion-select/companion-select.component';
+import { DebugComponent } from './debug/debug.component';
 import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, GameLayoutComponent, CharacterCreationComponent, CompanionSelectComponent, DebugMapComponent, MapDebugComponent],
+  imports: [CommonModule, GameLayoutComponent, CharacterCreationComponent, CompanionSelectComponent, DebugComponent],
   template: `
     @if (isDebugMap) {
-      <app-map-debug />
+      <app-debug />
     } @else {
     <div class="game-wrapper">
 
@@ -52,20 +51,9 @@ import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
             <p class="menu-credit">Fan-game baseado em Valkaria (Tormenta RPG / Jambô) · Sistema 3D&amp;T</p>
           </div>
 
-          <button class="btn-debug" (click)="gs.screen.set('debug_map')" title="Visualizar layouts dos andares">
+          <button class="btn-debug" onclick="window.location.href='/debug'" title="Editor/visualizador de layouts dos andares">
             🗺️ Debug
           </button>
-        </div>
-      }
-
-      <!-- ── DEBUG ────────────────────────────────────────── -->
-      @if (gs.screen() === 'debug_map') {
-        <div class="screen">
-          <div style="padding:8px;background:#1a1a2e;display:flex;gap:8px;align-items:center">
-            <button style="background:#166534;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px" onclick="window.location.href='/debug'">🗺️ Debug Mapa Interativo</button>
-            <button style="background:#374151;color:#fff;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px" (click)="gs.goToMenu()">← Voltar ao Menu</button>
-          </div>
-          <app-debug-map />
         </div>
       }
 

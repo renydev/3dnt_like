@@ -1,7 +1,7 @@
 import { Component, signal, computed, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { DUNGEON_REGISTRY } from '../../core/data/dungeons/dungeon-registry';
+import { DUNGEON_REGISTRY } from '../core/data/dungeons/dungeon-registry';
 
 interface RoomState {
   roomId: number;
@@ -146,7 +146,7 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
 }
 
 @Component({
-  selector: 'app-map-debug',
+  selector: 'app-debug',
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
@@ -382,6 +382,22 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
         <!-- Painel lateral -->
         <aside class="debug-panel">
           <div class="panel-section">
+            <div class="panel-title">DISTRIBUIÇÃO</div>
+            <div class="dist-stats">
+              @for (stat of roomStats(); track stat.type) {
+                <div class="stat-row">
+                  <span class="stat-icon">{{ typeIcon(stat.type) }}</span>
+                  <span class="stat-label">{{ stat.type }}</span>
+                  <span class="stat-bar-wrap">
+                    <span class="stat-bar" [style.width.%]="stat.pct" [style.background]="ROOM_COLORS[stat.type]"></span>
+                  </span>
+                  <span class="stat-count">{{ stat.count }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="panel-section">
             <div class="panel-title">SALAS ({{ hotspots().length }})</div>
             <div class="hs-list">
               @for (hs of hotspots(); track hs.roomId) {
@@ -536,6 +552,14 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
     }
     .panel-title { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
 
+    .dist-stats { display: flex; flex-direction: column; gap: 4px; }
+    .stat-row { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+    .stat-icon { width: 14px; text-align: center; }
+    .stat-label { width: 60px; color: #9ca3af; }
+    .stat-bar-wrap { flex: 1; height: 5px; background: #1f2937; border-radius: 3px; overflow: hidden; }
+    .stat-bar { display: block; height: 100%; border-radius: 3px; }
+    .stat-count { width: 16px; text-align: right; color: #6b7280; font-size: 9px; }
+
     .hs-list { display: flex; flex-direction: column; gap: 6px; }
     .hs-item {
       background: #14142a; border: 1px solid #2a2a3e; border-radius: 5px;
@@ -603,7 +627,9 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
     }
   `]
 })
-export class MapDebugComponent {
+export class DebugComponent {
+  readonly ROOM_COLORS = ROOM_COLORS;
+
   readonly floorEntries = Object.entries(DUNGEON_REGISTRY).map(([k, v]) => ({
     floor: +k,
     name: v.theme.godName,
@@ -686,6 +712,15 @@ export class MapDebugComponent {
     };
     return icons[type] ?? '?';
   }
+
+  roomStats = computed(() => {
+    const rooms = this.hotspots();
+    const counts: Partial<Record<string, number>> = {};
+    for (const r of rooms) counts[r.type] = (counts[r.type] ?? 0) + 1;
+    return Object.entries(counts).map(([type, count]) => ({
+      type, count: count!, pct: Math.round(count! / rooms.length * 100),
+    }));
+  });
 
   isBackConn(hs: RoomState, targetId: number): boolean {
     const target = this.hotspots().find(h => h.roomId === targetId);

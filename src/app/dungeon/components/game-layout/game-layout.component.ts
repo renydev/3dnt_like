@@ -7,11 +7,11 @@ import { Character } from '../../../core/models/character.model';
 import { PartyBarComponent } from '../party-bar/party-bar.component';
 import { CharacterDialogComponent } from '../character-dialog/character-dialog.component';
 import { FloorTransitionComponent } from '../floor-transition/floor-transition.component';
-import { DungeonMapComponent } from '../../../dungeon/components/dungeon-map/dungeon-map.component';
-import { EncounterScreenComponent } from '../../../dungeon/components/encounter-screen/encounter-screen.component';
+import { DungeonMapComponent } from '../dungeon-map/dungeon-map.component';
+import { EncounterScreenComponent } from '../encounter-screen/encounter-screen.component';
 import { DebugDialogComponent } from '../debug-dialog/debug-dialog.component';
 import { ChamberDialogComponent } from '../chamber-dialog/chamber-dialog.component';
-import { MerchantScreenComponent } from '../../../dungeon/components/merchant-screen/merchant-screen.component';
+import { MerchantScreenComponent } from '../merchant-screen/merchant-screen.component';
 import { BackpackComponent } from '../backpack/backpack.component';
 
 @Component({

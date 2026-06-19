@@ -51,6 +51,18 @@ export class CombatScene extends Phaser.Scene {
     });
   }
 
+  preload(): void {
+    this.combat.enemies().forEach(e => {
+      if (e.sprite && !this.textures.exists(this.spriteKey(e.sprite))) {
+        this.load.image(this.spriteKey(e.sprite), `assets/monsters_token/${e.sprite}`);
+      }
+    });
+  }
+
+  private spriteKey(sprite: string): string {
+    return `monster_${sprite}`;
+  }
+
   create(): void {
     this.cameras.main.setBackgroundColor('#0b0b18');
     this.actionLabel = this.add.text(16, 16, '', { fontSize: '14px', color: '#aef' });
@@ -67,7 +79,10 @@ export class CombatScene extends Phaser.Scene {
       const y = startY + i * 90;
       const container = this.add.container(x, y);
 
-      const icon = this.add.text(-60, 0, e.icon, { fontSize: '32px' }).setOrigin(0.5);
+      const hasSprite = !!e.sprite && this.textures.exists(this.spriteKey(e.sprite));
+      const icon = hasSprite
+        ? this.add.image(-60, 0, this.spriteKey(e.sprite!)).setDisplaySize(48, 48)
+        : this.add.text(-60, 0, e.icon, { fontSize: '32px' }).setOrigin(0.5);
       const name = this.add.text(-30, -22, e.name, { fontSize: '12px', color: '#faa' });
       const barBg = this.add.rectangle(-30, 0, BAR_W, BAR_H, 0x333333).setOrigin(0, 0.5);
       const barFill = this.add.rectangle(-30, 0, BAR_W, BAR_H, 0xcc2244).setOrigin(0, 0.5);

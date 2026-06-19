@@ -22,8 +22,7 @@ export type GameScreen =
   | 'merchant'
   | 'floor_transition'
   | 'game_over'
-  | 'victory'
-  | 'debug_map';
+  | 'victory';
 
 
 @Injectable({ providedIn: 'root' })
