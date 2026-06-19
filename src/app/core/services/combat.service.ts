@@ -62,6 +62,9 @@ export class CombatService {
   /** Aguardando confirmação do jogador antes de ir para game_over */
   pendingDefeat = signal(false);
 
+  /** Inimigo selecionado como alvo — escrito tanto pela CombatScene (clique no canvas) quanto por menus Angular */
+  selectedEnemyId = signal<string | null>(null);
+
   // ── Estado de rodada ──────────────────────────────────────────────────────
 
   /** Penalidade de H por desvio bem-sucedido de inimigos (reseta a cada turno do jogador) */
@@ -105,6 +108,7 @@ export class CombatService {
     }
     this.enemies.set(group);
     this.phase.set('player_turn');
+    this.selectedEnemyId.set(group.find(e => e.hp > 0)?.id ?? null);
 
     const names = group.map(e => e.name).join(', ');
     this.log.set([{ text: `${names} surgem das sombras!`, type: 'system' }]);
@@ -865,7 +869,7 @@ export class CombatService {
     this.applyDamageToEnemy(enemy.id, dmg);
   }
 
-  private applyDamageToEnemy(enemyId: string, dmg: number): void {
+  applyDamageToEnemy(enemyId: string, dmg: number): void {
     this.enemies.update(list =>
       list.map(e => e.id === enemyId ? { ...e, hp: Math.max(0, e.hp - dmg) } : e)
     );
@@ -905,7 +909,7 @@ export class CombatService {
     } : c);
   }
 
-  private checkVictory(): boolean {
+  checkVictory(): boolean {
     const alive = this.enemies().filter(e => e.hp > 0);
     if (alive.length > 0) return false;
     this.phase.set('victory');

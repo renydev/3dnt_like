@@ -3,11 +3,13 @@ import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { DungeonRoom, ROOM_ICONS, ROOM_LABELS } from '../../../core/models/dungeon.model';
 import { Item, EquipSlot, getEffectiveStats, statBonusLabel, rarityColor } from '../../../core/models/item.model';
+import { GameCanvasComponent } from '../game-canvas/game-canvas.component';
+import { MapScene } from '../../phaser/scenes/map.scene';
 
 @Component({
   selector: 'app-dungeon-map',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, GameCanvasComponent],
   template: `
     <div class="dungeon-map">
       <div class="floor-header">
@@ -32,133 +34,9 @@ import { Item, EquipSlot, getEffectiveStats, statBonusLabel, rarityColor } from 
         </div>
       }
 
-      <!-- ── MAPA HORIZONTAL (todos os andares) ───────────────────────────── -->
-      <div class="map-scroll-container">
-        <div class="map-track" [style.width.px]="svgW()" [style.height.px]="svgH()">
-          <svg
-            class="map-svg"
-            [attr.viewBox]="svgViewBox()"
-            [attr.width]="svgW()"
-            [attr.height]="svgH()"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <!-- Grade de fundo sutil -->
-            <defs>
-              <pattern id="grid-dots" x="0" y="0" [attr.width]="NODE_W" [attr.height]="NODE_H" patternUnits="userSpaceOnUse">
-                <circle cx="0" cy="0" r="1.5" fill="#ffffff08" />
-              </pattern>
-              <filter id="glow-gold">
-                <feGaussianBlur stdDeviation="3" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-              <filter id="glow-amber">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feComposite in="SourceGraphic" in2="blur" operator="over" />
-              </filter>
-            </defs>
-            <rect x="0" y="0" [attr.width]="svgW()" [attr.height]="svgH()" fill="url(#grid-dots)" />
-
-            <!-- Linha do limiar do chefe -->
-            <line
-              [attr.x1]="bossThresholdX()"
-              y1="8"
-              [attr.x2]="bossThresholdX()"
-              [attr.y2]="svgH() - 8"
-              class="boss-threshold-line"
-            />
-            <text
-              [attr.x]="bossThresholdX() + 6"
-              y="20"
-              class="boss-threshold-label"
-            >CHEFE</text>
-            <text
-              [attr.x]="bossThresholdX() - 6"
-              y="20"
-              class="dungeon-zone-label"
-            >MASMORRA</text>
-
-            <!-- Conexões -->
-            @for (conn of connections(); track conn.key) {
-              <line
-                [attr.x1]="conn.x1" [attr.y1]="conn.y1"
-                [attr.x2]="conn.x2" [attr.y2]="conn.y2"
-                [class]="'conn-line ' + conn.state"
-              />
-            }
-
-            <!-- Nós das salas -->
-            @for (room of floor()?.rooms; track room.id) {
-              <g
-                [class]="getRoomClass(room)"
-                (click)="onRoomClick(room)"
-              >
-                <!-- Sombra -->
-                <circle
-                  [attr.cx]="getRoomX(room) + 2"
-                  [attr.cy]="getRoomY(room) + 2"
-                  [attr.r]="R"
-                  class="room-shadow"
-                />
-                <!-- Halo reachable -->
-                @if (isReachable(room) && !room.cleared) {
-                  <circle
-                    [attr.cx]="getRoomX(room)"
-                    [attr.cy]="getRoomY(room)"
-                    [attr.r]="R + 7"
-                    class="room-reach-halo"
-                  />
-                }
-                <!-- Halo atual -->
-                @if (room.isCurrent) {
-                  <circle
-                    [attr.cx]="getRoomX(room)"
-                    [attr.cy]="getRoomY(room)"
-                    [attr.r]="R + 10"
-                    class="room-halo"
-                  />
-                }
-                <!-- Círculo principal -->
-                <circle
-                  [attr.cx]="getRoomX(room)"
-                  [attr.cy]="getRoomY(room)"
-                  [attr.r]="R"
-                  class="room-circle"
-                />
-                <!-- Ícone / tipo -->
-                @if (room.isVisible) {
-                  <text
-                    [attr.x]="getRoomX(room)"
-                    [attr.y]="getRoomY(room) + 6"
-                    text-anchor="middle"
-                    class="room-icon-text"
-                  >{{ room.cleared ? '🏕️' : (isTypeRevealed(room) ? getRoomIcon(room) : '?') }}</text>
-                  <!-- Label abaixo do nó -->
-                  <text
-                    [attr.x]="getRoomX(room)"
-                    [attr.y]="getRoomY(room) + R + 14"
-                    text-anchor="middle"
-                    class="room-label-text"
-                  >{{ isTypeRevealed(room) ? getRoomLabel(room) : '???' }}</text>
-                  <!-- Tick de liberada -->
-                  @if (room.cleared) {
-                    <text
-                      [attr.x]="getRoomX(room) + R - 4"
-                      [attr.y]="getRoomY(room) - R + 10"
-                      class="room-cleared-mark"
-                    >✓</text>
-                  }
-                } @else {
-                  <text
-                    [attr.x]="getRoomX(room)"
-                    [attr.y]="getRoomY(room) + 6"
-                    text-anchor="middle"
-                    class="room-icon-text room-hidden-icon"
-                  >?</text>
-                }
-              </g>
-            }
-          </svg>
-        </div>
+      <!-- ── MAPA (renderizado em Phaser) ───────────────────────────────── -->
+      <div class="map-canvas-area">
+        <app-game-canvas [sceneClass]="mapSceneClass" sceneKey="MapScene" backgroundColor="#07070f" />
       </div>
 
       <!-- ── Painel da câmara atual ────────────────────────────────────────── -->
@@ -308,12 +186,7 @@ export class DungeonMapComponent {
   equip(item: Item)        { this.gameState.equipItem(item); }
   unequip(slot: EquipSlot) { this.gameState.unequipItem(slot); }
 
-  // ── Layout horizontal ────────────────────────────────────────────────────
-  readonly R      = 24;   // raio do nó
-  readonly NODE_W = 120;  // espaçamento horizontal (profundidade)
-  readonly NODE_H = 80;   // espaçamento vertical (lanes)
-  readonly PAD_X  = 56;
-  readonly PAD_Y  = 44;
+  readonly mapSceneClass = MapScene;
 
   isSimple = computed(() =>
     this.floor()?.theme?.specialRule?.includes('Masmorra mais simples') ?? false
@@ -323,81 +196,8 @@ export class DungeonMapComponent {
     this.floor()?.rooms.filter(r => r.cleared).length ?? 0
   );
 
-  /** Linha de referência: row da entrada */
-  private entranceRow = computed(() =>
-    this.floor()?.rooms.find(r => r.type === 'entrance')?.row ?? 0
-  );
-
-  /** Profundidade do nó = distância da entrada (col no eixo X) */
-  private depth(room: DungeonRoom): number {
-    return Math.abs(room.row - this.entranceRow());
-  }
-
-  private maxDepth = computed(() =>
-    Math.max(...(this.floor()?.rooms.map(r => this.depth(r)) ?? [0]))
-  );
-
-  private maxLane = computed(() =>
-    Math.max(...(this.floor()?.rooms.map(r => r.col) ?? [0]))
-  );
-
-  svgW = computed(() => this.PAD_X * 2 + this.maxDepth() * this.NODE_W);
-  svgH = computed(() => this.PAD_Y * 2 + this.maxLane() * this.NODE_H);
-  svgViewBox = computed(() => `0 0 ${this.svgW()} ${this.svgH()}`);
-
-  /** X do limiar do chefe — meio-caminho entre o penúltimo grupo e o boss */
-  bossThresholdX = computed(() =>
-    this.PAD_X + this.maxDepth() * this.NODE_W - this.NODE_W * 0.55
-  );
-
-  getRoomX(room: DungeonRoom): number {
-    return this.PAD_X + this.depth(room) * this.NODE_W;
-  }
-
-  getRoomY(room: DungeonRoom): number {
-    return this.PAD_Y + room.col * this.NODE_H;
-  }
-
-  connections = computed(() => {
-    const rooms = this.floor()?.rooms ?? [];
-    const result: any[] = [];
-    const seen = new Set<string>();
-    rooms.forEach(room => {
-      room.connections.forEach(connId => {
-        const key = [Math.min(room.id, connId), Math.max(room.id, connId)].join('-');
-        if (seen.has(key)) return;
-        seen.add(key);
-        const dest = rooms.find(r => r.id === connId);
-        if (!dest) return;
-        const visible = room.isVisible && dest.isVisible;
-        const partial  = room.isVisible || dest.isVisible;
-        result.push({
-          key,
-          x1: this.getRoomX(room), y1: this.getRoomY(room),
-          x2: this.getRoomX(dest), y2: this.getRoomY(dest),
-          state: visible ? 'visible' : partial ? 'partial' : 'hidden',
-        });
-      });
-    });
-    return result;
-  });
-
-  getRoomClass(room: DungeonRoom): string {
-    const c = ['map-room', `map-room-${room.type}`];
-    if (!room.isVisible)       c.push('map-room-hidden');
-    if (room.isCurrent)        c.push('map-room-current');
-    if (room.cleared)          c.push('map-room-cleared');
-    if (this.isReachable(room)) c.push('map-room-reachable');
-    return c.join(' ');
-  }
-
   getRoomIcon(room: DungeonRoom): string  { return ROOM_ICONS[room.type]; }
   getRoomLabel(room: DungeonRoom): string { return ROOM_LABELS[room.type]; }
-
-  isTypeRevealed(room: DungeonRoom): boolean {
-    if (room.entered || room.cleared) return true;
-    return this.currentRoom()?.connections.includes(room.id) ?? false;
-  }
 
   isReachable(room: DungeonRoom): boolean {
     const current = this.currentRoom();
