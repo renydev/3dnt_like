@@ -37,7 +37,7 @@ export interface CombatAbility {
   pmCost: number;
   usesPerCombat?: number;
   description: string;
-  effect: 'attack' | 'magic_damage' | 'heal' | 'weaken' | 'pierce' | 'double_attack' | 'holy_strike';
+  effect: 'attack' | 'magic_damage' | 'heal' | 'weaken' | 'pierce' | 'double_attack' | 'holy_strike' | 'rage';
   isRanged?: boolean;
   ignoresArmor?: boolean;
   bonusDice?: number;
@@ -129,7 +129,7 @@ export const CLASS_ABILITIES: Record<CharacterClass, CombatAbility[]> = {
     {
       id: 'furia', name: 'Fúria Bárbara', icon: '😡', pmCost: 0, usesPerCombat: 1,
       description: 'Entra em fúria: +2 F e +2 R por 3 rodadas.',
-      effect: 'double_attack', bonusDice: 1
+      effect: 'rage'
     }
   ],
   monge: [

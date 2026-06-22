@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { GameDataService } from '../../../core/services/game-data.service';
 import { Character, FocusPath, FOCUS_PATHS, FOCUS_PATH_LABELS, FOCUS_PATH_ICONS, FocusPaths } from '../../../core/models/character.model';
+import { applyStartingRing } from '../../../core/models/item.model';
 import { Race, ALL_RACES, RACE_MAP } from '../../../core/data/races.data';
 import { ClassDef, ALL_CLASSES, CLASS_MAP } from '../../../core/data/classes.data';
 import { VALKARIA_FLOORS, DungeonTheme } from '../../../core/models/dungeon.model';
@@ -537,7 +538,7 @@ export class CharacterCreationComponent {
     if (!this.canConfirm()) return;
     const stats = this.finalStats();
 
-    const character: Character = {
+    const character: Character = applyStartingRing({
       id: crypto.randomUUID(),
       name: this.charName.trim() || 'Aventureiro',
       class: this.selectedClass()!.id,
@@ -562,7 +563,7 @@ export class CharacterCreationComponent {
       levelUpPoints: 0,
       portraitIcon: this.selectedClass()!.icon,
       patronGod: this.selectedGod()?.id ?? undefined,
-    };
+    });
 
     this.gameState.startCustomGame(character);
   }

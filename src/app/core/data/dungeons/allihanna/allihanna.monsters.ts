@@ -8,6 +8,7 @@ import { calcEnemyPP } from '../../../utils/pp-calculator';
 export interface MonsterTemplate {
   name: string;
   icon: string;
+  sprite?: string;
   flavorText: string;
   forca: number;
   habilidade: number;
@@ -37,14 +38,14 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
     xpReward: 18, goldReward: 0,
   },
   urso_coruja: {
-    name: 'Urso-Coruja', icon: '🦉',
+    name: 'Urso-Coruja', icon: '🦉', sprite: 'urso-coruja.png',
     flavorText: 'Predador territorial coberto de penas escuras e pelos amarronzados. Ataca com garras e bico sem hesitar.',
     forca: 5, habilidade: 2, resistencia: 4, armadura: 3, poderFogo: 0,
     hp: 20,
     xpReward: 14, goldReward: 0,
   },
   urso_coruja_imenso: {
-    name: 'Urso-Coruja Imenso', icon: '🦉',
+    name: 'Urso-Coruja Imenso', icon: '🦉', sprite: 'urso-coruja.png',
     flavorText: 'Talvez o maior urso-coruja de toda Arton. Confronta intrusos com fúria absoluta e luta até a morte.',
     forca: 7, habilidade: 1, resistencia: 5, armadura: 5, poderFogo: 0,
     hp: 25,
@@ -89,21 +90,21 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
     xpReward: 10, goldReward: 3,
   },
   centauro_ranger: {
-    name: 'Centauro Ranger', icon: '🐴',
+    name: 'Centauro Ranger', icon: '🐴', sprite: 'centauro-combatente.png',
     flavorText: 'Meio homem, meio cavalo — patrulha a floresta com arco na mão e casco certeiro.',
     forca: 2, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 2,
     hp: 10,
     xpReward: 11, goldReward: 0,
   },
   lobo_cavernas: {
-    name: 'Lobo-das-Cavernas', icon: '🐺',
+    name: 'Lobo-das-Cavernas', icon: '🐺', sprite: 'lobo-das-cavernas.png',
     flavorText: 'Lobo maior e mais feroz que o comum. Caça em matilha, fareja presas a grande distância.',
     forca: 1, habilidade: 2, resistencia: 2, armadura: 1, poderFogo: 0,
     hp: 10,
     xpReward: 6, goldReward: 0,
   },
   grifo: {
-    name: 'Grifo', icon: '🦅',
+    name: 'Grifo', icon: '🦅', sprite: 'grifo.png',
     flavorText: 'Criatura alada com corpo de leão e cabeça de águia. Veloz e letal no ar ou no chão.',
     forca: 2, habilidade: 5, resistencia: 4, armadura: 1, poderFogo: 0,
     hp: 20,
@@ -153,6 +154,7 @@ export function spawnMonster(key: string, isBoss = false): Enemy {
     id: `${key}_${Math.random().toString(36).slice(2, 7)}`,
     name: tpl.name,
     icon: tpl.icon,
+    sprite: tpl.sprite,
     flavorText: tpl.flavorText,
     hp,
     maxHp: hp,

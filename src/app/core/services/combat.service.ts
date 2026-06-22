@@ -59,6 +59,9 @@ export class CombatService {
   companionAbilitiesUsed = signal<Map<string, Set<string>>>(new Map());
   enemyWeakenedTurns = signal(0);
   enemyWeakenAmount = signal(0);
+  /** Fúria Bárbara: rodadas restantes do buff de +2F/+2R do jogador */
+  playerRageTurns = signal(0);
+  readonly playerRageAmount = 2;
   /** Aguardando confirmação do jogador antes de ir para game_over */
   pendingDefeat = signal(false);
 
@@ -75,6 +78,8 @@ export class CombatService {
   private partyDodgePenalties = new Map<string, number>();
   /** Redução acumulada de armadura do grupo por Resistir com Armadura (reseta a cada turno inimigo) */
   private partyArmorReductions = new Map<string, number>();
+  /** Fúria Bárbara de companheiros: rodadas restantes de buff por companionId */
+  private companionRageTurns = new Map<string, number>();
 
   private resetPlayerRoundState(): void {
     this.enemyDodgePenalties.clear();
@@ -116,6 +121,8 @@ export class CombatService {
     this.companionAbilitiesUsed.set(new Map());
     this.enemyWeakenedTurns.set(0);
     this.enemyWeakenAmount.set(0);
+    this.playerRageTurns.set(0);
+    this.companionRageTurns.clear();
     this.resetPlayerRoundState();
     this.resetEnemyRoundState();
   }
@@ -175,6 +182,11 @@ export class CombatService {
         this.enemyWeakenedTurns.set(3);
         this.enemyWeakenAmount.set(amt);
         this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde ${amt} de Força por 2 turnos!`, 'player');
+        this.afterPlayerAction();
+        return;
+      }
+      case 'rage': {
+        this.activatePlayerRage(char, ab);
         this.afterPlayerAction();
         return;
       }
@@ -265,6 +277,10 @@ export class CombatService {
         this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde 2 de Força por 2 turnos!`, 'player');
         this.afterPlayerAction(); return;
       }
+      case 'rage': {
+        this.activatePlayerRage(char, ab);
+        this.afterPlayerAction(); return;
+      }
       case 'double_attack': {
         this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name} — Ataque 1`);
         const still = this.enemies().find(e => e.id === targetId && e.hp > 0)
@@ -323,6 +339,7 @@ export class CombatService {
     if (roll >= diff) {
       this.addLog(`🏃 ${char.name} foge com sucesso! (${roll} vs ${diff})`, 'system');
       this.phase.set('player_turn');
+      this.clearPlayerRageIfActive();
       setTimeout(() => this.gs.resolveEncounter('flee'), 600);
     } else {
       this.addLog(`🚫 Fuga falhou! (${roll} vs ${diff}) — os inimigos atacam!`, 'system');
@@ -444,6 +461,9 @@ export class CombatService {
       case 'weaken':
         this.enemyWeakenedTurns.set(3); this.enemyWeakenAmount.set(2);
         this.addLog(`${label} — ${target.name} perde 2 Força por 2 turnos!`, 'player');
+        break;
+      case 'rage':
+        this.activateCompanionRage(companion, ab);
         break;
       case 'double_attack': {
         this._companionMeleeAttack(companion, target, `${label} 1`);
@@ -623,6 +643,16 @@ export class CombatService {
       this.enemyWeakenedTurns.update(n => n - 1);
     }
     const weakened = this.enemyWeakenedTurns() > 0;
+
+    if (this.playerRageTurns() > 0) {
+      this.playerRageTurns.update(n => n - 1);
+      if (this.playerRageTurns() === 0) this.expirePlayerRage();
+    }
+    for (const [companionId, turns] of [...this.companionRageTurns]) {
+      const left = turns - 1;
+      if (left <= 0) this.expireCompanionRage(companionId);
+      else this.companionRageTurns.set(companionId, left);
+    }
 
     const charStats = getEffectiveStats(char);
     const aliveParty: Array<{ name: string; armadura: number; habilidade: number; isPlayer: boolean; id?: string }> = [
@@ -909,10 +939,64 @@ export class CombatService {
     } : c);
   }
 
+  /** Fúria Bárbara: aplica +2F/+2R por 3 rodadas (atributo, não PM/PF). */
+  private activatePlayerRage(char: Character, ab: CombatAbility): void {
+    const amt = this.playerRageAmount;
+    this.playerRageTurns.set(3);
+    this.gs.character.update(c => c ? {
+      ...c,
+      forca: { ...c.forca, current: c.forca.current + amt },
+      resistencia: { ...c.resistencia, current: c.resistencia.current + amt },
+    } : c);
+    this.addLog(`${ab.icon} ${char.name} entra em ${ab.name}! +${amt} F e +${amt} R por 3 rodadas!`, 'player');
+  }
+
+  /** Remove o buff de Fúria Bárbara ao expirar (chamado quando playerRageTurns chega a 0). */
+  private expirePlayerRage(): void {
+    const amt = this.playerRageAmount;
+    this.gs.character.update(c => c ? {
+      ...c,
+      forca: { ...c.forca, current: c.forca.current - amt },
+      resistencia: { ...c.resistencia, current: c.resistencia.current - amt },
+    } : c);
+    this.addLog('😡 A fúria se dissipa — F e R voltam ao normal.', 'system');
+  }
+
+  /** Garante que o buff de Fúria não "vaze" para o próximo combate se este terminar com ele ainda ativo. */
+  private clearPlayerRageIfActive(): void {
+    if (this.playerRageTurns() <= 0) return;
+    this.playerRageTurns.set(0);
+    this.expirePlayerRage();
+    for (const id of [...this.companionRageTurns.keys()]) this.expireCompanionRage(id);
+    this.companionRageTurns.clear();
+  }
+
+  private activateCompanionRage(companion: Character, ab: CombatAbility): void {
+    const amt = this.playerRageAmount;
+    this.companionRageTurns.set(companion.id, 3);
+    this.gs.companions.update(list => list.map(c => c.id === companion.id ? {
+      ...c,
+      forca: { ...c.forca, current: c.forca.current + amt },
+      resistencia: { ...c.resistencia, current: c.resistencia.current + amt },
+    } : c));
+    this.addLog(`${ab.icon} ${companion.name} entra em ${ab.name}! +${amt} F e +${amt} R por 3 rodadas!`, 'player');
+  }
+
+  private expireCompanionRage(companionId: string): void {
+    const amt = this.playerRageAmount;
+    this.companionRageTurns.delete(companionId);
+    this.gs.companions.update(list => list.map(c => c.id === companionId ? {
+      ...c,
+      forca: { ...c.forca, current: c.forca.current - amt },
+      resistencia: { ...c.resistencia, current: c.resistencia.current - amt },
+    } : c));
+  }
+
   checkVictory(): boolean {
     const alive = this.enemies().filter(e => e.hp > 0);
     if (alive.length > 0) return false;
     this.phase.set('victory');
+    this.clearPlayerRageIfActive();
     this.addLog('🏆 Todos os inimigos foram derrotados!', 'system');
 
     // Distribui PE e ouro ao final do combate
@@ -947,6 +1031,7 @@ export class CombatService {
     const char = this.gs.character();
     if (!char || char.pontosVida.current > 0) return false;
     this.phase.set('defeat');
+    this.clearPlayerRageIfActive();
     this.addLog('💀 Você caiu em combate...', 'system');
     setTimeout(() => this.pendingDefeat.set(true), 1200);
     return true;

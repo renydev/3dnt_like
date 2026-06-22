@@ -8,12 +8,14 @@ import { Character } from '../../../core/models/character.model';
 interface EnemyCard {
   container: Phaser.GameObjects.Container;
   hpBarFill: Phaser.GameObjects.Rectangle;
+  hpText: Phaser.GameObjects.Text;
   lastHp: number;
 }
 
 interface PartyCard {
   container: Phaser.GameObjects.Container;
   hpBarFill: Phaser.GameObjects.Rectangle;
+  hpText: Phaser.GameObjects.Text;
   lastHp: number;
 }
 
@@ -96,7 +98,7 @@ export class CombatScene extends Phaser.Scene {
         this.combat.selectedEnemyId.set(e.id);
       });
 
-      this.enemyCards.set(e.id, { container, hpBarFill: barFill, lastHp: e.hp });
+      this.enemyCards.set(e.id, { container, hpBarFill: barFill, hpText, lastHp: e.hp });
     });
   }
 
@@ -115,7 +117,7 @@ export class CombatScene extends Phaser.Scene {
       const hpText = this.add.text(-30, 10, `${m.pontosVida.current}/${m.pontosVida.max}`, { fontSize: '10px', color: '#ccc' });
 
       container.add([name, barBg, barFill, hpText]);
-      this.partyCards.set(m.id, { container, hpBarFill: barFill, lastHp: m.pontosVida.current });
+      this.partyCards.set(m.id, { container, hpBarFill: barFill, hpText, lastHp: m.pontosVida.current });
     });
   }
 
@@ -131,6 +133,7 @@ export class CombatScene extends Phaser.Scene {
       if (!card) return;
       const ratio = Math.max(0, e.hp / e.maxHp);
       card.hpBarFill.width = BAR_W * ratio;
+      card.hpText.setText(`${Math.max(0, e.hp)}/${e.maxHp}`);
       if (e.hp < card.lastHp) {
         this.cameras.main.shake(150, 0.008);
         this.tweens.add({ targets: card.container, alpha: 0.3, duration: 100, yoyo: true });
@@ -146,6 +149,7 @@ export class CombatScene extends Phaser.Scene {
       if (!card) return;
       const ratio = m.pontosVida.max > 0 ? Math.max(0, m.pontosVida.current / m.pontosVida.max) : 0;
       card.hpBarFill.width = BAR_W * ratio;
+      card.hpText.setText(`${Math.max(0, m.pontosVida.current)}/${m.pontosVida.max}`);
       if (m.pontosVida.current < card.lastHp) {
         this.tweens.add({ targets: card.container, alpha: 0.3, duration: 100, yoyo: true });
       }

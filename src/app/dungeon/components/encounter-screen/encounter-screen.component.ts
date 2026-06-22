@@ -198,7 +198,7 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
 }
   `,
   styles: [`
-    :host { display: block; height: 100%; overflow: hidden; }
+    :host { display: block; flex: 1; min-height: 0; overflow: hidden; }
 
     /* ── Tela principal ─────────────────────────────────────────── */
     .encounter-screen {

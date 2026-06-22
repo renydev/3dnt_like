@@ -325,13 +325,6 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
                     </circle>
                   }
 
-                  <!-- Halo especial: saída com chefe (bordas extras) -->
-                  @if (hs.type === 'boss' && hs['isGuardedExit']) {
-                    <circle [attr.cx]="nodeX(hs)" [attr.cy]="nodeY(hs)"
-                      r="26" fill="none" stroke="#ff6b35" stroke-width="1.5"
-                      stroke-dasharray="3 2" opacity="0.6" />
-                  }
-
                   <!-- Círculo do nó -->
                   <circle [attr.cx]="nodeX(hs)" [attr.cy]="nodeY(hs)"
                     r="22"
@@ -784,6 +777,15 @@ export class DebugComponent {
 
   // ── Gerador automático ────────────────────────────────────────────────────
 
+  /**
+   * Gera o layout no estilo Slay the Spire:
+   * - 4 a 5 lanes (trilhas verticais) por onde os caminhos passam.
+   * - Cada sala (da 2ª coluna até a última) conecta a 1 sala da próxima
+   *   coluna em 70% dos casos, ou a 2 salas em 30% dos casos.
+   * - Da 2ª à antepenúltima coluna, garante ao menos uma sala "funil"
+   *   conectada a uma única sala da próxima coluna (caminho único).
+   * - Nenhuma sala fica desconectada (toda sala tem ao menos 1 entrada).
+   */
   generateLayout(): void {
     const M  = Math.max(0, this.genMonsters);
     const T  = Math.max(0, this.genTreasures);
@@ -805,29 +807,88 @@ export class DebugComponent {
     ];
     shuffle(middle);
 
-    // Distribui em colunas de profundidade (1-2 por coluna)
-    const depthGroups: RoomType[][] = [];
-    let i = 0;
-    while (i < middle.length) {
-      const remaining = middle.length - i;
-      const twoHere = remaining > 2 && Math.random() > 0.4;
-      depthGroups.push(middle.slice(i, i + (twoHere ? 2 : 1)));
-      i += twoHere ? 2 : 1;
+    // ── Grade de lanes (estilo Slay the Spire): 4 ou 5 trilhas verticais ──
+    const numLanes = 4 + Math.round(Math.random()); // 4 ou 5
+
+    // Distribui as salas em colunas de profundidade, cada coluna ocupando
+    // entre 1 e numLanes lanes escolhidas aleatoriamente. Cada slot é um par
+    // {lane, type} para nunca perder a correspondência entre os dois ao
+    // reordenar/realocar colunas depois.
+    interface Slot { lane: number; type: RoomType; }
+    let columns: Slot[][] = [];
+    {
+      let idx = 0;
+      while (idx < middle.length) {
+        const remaining = middle.length - idx;
+        const roomsInCol = Math.min(remaining, 1 + Math.floor(Math.random() * numLanes));
+        const lanes = shuffle([...Array(numLanes).keys()]).slice(0, roomsInCol);
+        const types = middle.slice(idx, idx + roomsInCol);
+        columns.push(lanes.map((lane, li) => ({ lane, type: types[li] })));
+        idx += roomsInCol;
+      }
+      // Garante ao menos 4 colunas intermediárias para que a regra do
+      // "funil" (2ª à antepenúltima) tenha espaço — divide a última coluna
+      // se necessário (caso raro com poucos itens configurados).
+      while (columns.length < 4 && columns[columns.length - 1]?.length > 1) {
+        const last = columns[columns.length - 1];
+        const moved = last.pop()!;
+        columns.push([moved]);
+      }
+      // Nenhuma coluna entre a 2ª e a antepenúltima pode ter só 1 sala: com
+      // apenas 1 sala, ela é obrigada a cobrir sozinha todas as salas da
+      // próxima coluna (sem deixar órfãs), tornando impossível garantir uma
+      // sala com caminho único. Puxa uma sala do vizinho maior para cobrir.
+      // Repete em várias passagens — corrigir uma coluna pode reduzir o
+      // doador a 1 sala, exigindo outra rodada de ajustes em cascata.
+      for (let pass = 0; pass < columns.length; pass++) {
+        let fixedAny = false;
+        for (let ci = 1; ci <= columns.length - 3; ci++) {
+          if (columns[ci].length !== 1) continue;
+          const prevLen = columns[ci - 1]?.length ?? 0;
+          const nextLen = columns[ci + 1]?.length ?? 0;
+          // Prefere o vizinho que, após doar, ainda fica com 2+ salas
+          // (evita propagar o problema para o vizinho).
+          let donorIdx = -1;
+          if (prevLen > 2 || nextLen > 2) {
+            donorIdx = prevLen >= nextLen ? ci - 1 : ci + 1;
+          } else if (prevLen > 1 || nextLen > 1) {
+            donorIdx = prevLen >= nextLen ? ci - 1 : ci + 1;
+          }
+          const donor = donorIdx >= 0 ? columns[donorIdx] : undefined;
+          if (!donor || donor.length <= 1) continue;
+          const usedLanes = new Set(columns[ci].map(s => s.lane));
+          const pickIdx = donor.findIndex(s => !usedLanes.has(s.lane));
+          const moved = donor.splice(pickIdx === -1 ? 0 : pickIdx, 1)[0];
+          columns[ci] = [...columns[ci], moved];
+          fixedAny = true;
+        }
+        if (!fixedAny) break;
+      }
+      // Ordena cada coluna por lane (mantendo o par lane/type correto)
+      columns = columns.map(col => [...col].sort((a, b) => a.lane - b.lane));
     }
+    const columnLanes: number[][] = columns.map(col => col.map(s => s.lane));
+    const columnTypes: RoomType[][] = columns.map(col => col.map(s => s.type));
 
     const rooms: RoomState[] = [];
     const columnRoomIds: number[][] = [];
+    const roomLane = new Map<number, number>();
     let idCounter = 0;
 
-    // depth 0: entrada
-    rooms.push({ roomId: idCounter++, name: 'Entrada Principal', type: 'entrance', row: 0, col: 0, connections: [] });
-    columnRoomIds.push([0]);
+    // depth 0: entrada (lane central)
+    const entranceLane = Math.floor((numLanes - 1) / 2);
+    rooms.push({ roomId: idCounter, name: 'Entrada Principal', type: 'entrance', row: 0, col: entranceLane, connections: [] });
+    roomLane.set(idCounter, entranceLane);
+    columnRoomIds.push([idCounter]);
+    idCounter++;
 
-    // depths 1..n: salas intermediárias
-    depthGroups.forEach((types, gi) => {
+    // depths 1..n: grade de salas intermediárias
+    columnLanes.forEach((lanes, gi) => {
       const depth = gi + 1;
+      const types = columnTypes[gi];
       const ids: number[] = [];
-      types.forEach((type, lane) => {
+      lanes.forEach((lane, li) => {
+        const type = types[li];
         const id = idCounter++;
         const room: RoomState = { roomId: id, name: pickName(type, id), type, row: depth, col: lane, connections: [] };
         // Para salas social: atribui um cenário RP aleatório
@@ -837,19 +898,19 @@ export class DebugComponent {
           room.scenarioHint = scenario.hint;
         }
         rooms.push(room);
+        roomLane.set(id, lane);
         ids.push(id);
       });
       columnRoomIds.push(ids);
     });
 
-    const finalDepth = depthGroups.length + 1;
+    const numMiddleCols = columnLanes.length;
+    const finalDepth = numMiddleCols + 1;
 
     // Saídas protegidas por chefes: posicionadas antes da coluna final
     // Cada uma forma um "gargalo" que leva aos chefes finais
     if (GE > 0) {
-      const guardDepth = finalDepth; // mesma profundidade que os chefes (empurra chefes para frente)
-      // Na prática: guarded exits ficam no penúltimo nível
-      const guardedDepth = finalDepth; // realmente um nível antes dos chefes finais
+      const guardedDepth = finalDepth;
       const gIds: number[] = [];
       for (let g = 0; g < GE; g++) {
         const id = idCounter++;
@@ -886,27 +947,85 @@ export class DebugComponent {
       columnRoomIds.push(bIds);
     }
 
-    // Conecta coluna por coluna (esquerda → direita, sem conexões regressivas)
-    for (let d = 1; d < columnRoomIds.length; d++) {
-      const prevIds = columnRoomIds[d - 1];
-      const currIds = columnRoomIds[d];
+    // ── Conexões estilo Slay the Spire entre a entrada e a grade de lanes ──
+    if (columnRoomIds.length > 1) {
+      for (const id of columnRoomIds[1]) addBidir(rooms, columnRoomIds[0][0], id);
+    }
 
-      // Cada sala atual conecta a pelo menos um pai
-      for (const currId of currIds) {
-        const parentId = prevIds[Math.floor(Math.random() * prevIds.length)];
-        addBidir(rooms, currId, parentId);
+    for (let d = 1; d < numMiddleCols; d++) {
+      const currIds = columnRoomIds[d];
+      const nextIds = columnRoomIds[d + 1];
+      const funnelEligible = d >= 2 && d <= numMiddleCols - 2; // "do segundo à antepenúltima"
+      let hasSinglePath = false;
+
+      for (const curId of currIds) {
+        const curLane = roomLane.get(curId)!;
+        // Candidatos: salas da próxima coluna com lane a até 1 de distância
+        // (evita cruzamentos longos, como no mapa original)
+        let candidates = nextIds.filter(nid => Math.abs(roomLane.get(nid)! - curLane) <= 1);
+        if (candidates.length === 0) candidates = [...nextIds];
+        shuffle(candidates);
+
+        // 70% conecta a 1 sala da próxima coluna, 30% conecta a 2
+        const wantsTwo = candidates.length >= 2 && Math.random() < 0.3;
+        const picks = wantsTwo ? candidates.slice(0, 2) : candidates.slice(0, 1);
+        picks.forEach(nid => addBidir(rooms, curId, nid));
       }
-      // Cada sala anterior tem ao menos um filho
-      for (const prevId of prevIds) {
-        const prevRoom = rooms.find(r => r.roomId === prevId)!;
-        const hasChild = currIds.some(cid => prevRoom.connections.includes(cid));
-        if (!hasChild) addBidir(rooms, prevId, currIds[Math.floor(Math.random() * currIds.length)]);
-      }
-      // Conexão lateral ocasional
-      if (currIds.length >= 2 && Math.random() > 0.55) {
-        for (let ci = 0; ci < currIds.length - 1; ci++) {
-          if (Math.random() > 0.4) addBidir(rooms, currIds[ci], currIds[ci + 1]);
+
+      // Garante que toda sala da próxima coluna tenha ao menos uma entrada
+      for (const nid of nextIds) {
+        const room = rooms.find(r => r.roomId === nid)!;
+        if (room.connections.length === 0) {
+          const nLane = roomLane.get(nid)!;
+          const sorted = [...currIds].sort((a, b) =>
+            Math.abs(roomLane.get(a)! - nLane) - Math.abs(roomLane.get(b)! - nLane));
+          addBidir(rooms, nid, sorted[0]);
         }
+      }
+
+      // Recalcula com o estado final (após o ajuste de órfãos, que pode ter
+      // transformado uma sala "funil" de 1 conexão em uma de 2).
+      hasSinglePath = currIds.some(id =>
+        rooms.find(r => r.roomId === id)!.connections.filter(c => nextIds.includes(c)).length === 1);
+
+      // Regra do "funil": garante ao menos uma sala com caminho único à
+      // frente entre a 2ª e a antepenúltima coluna intermediária.
+      if (funnelEligible && !hasSinglePath) {
+        const withTwo = currIds.filter(id =>
+          rooms.find(r => r.roomId === id)!.connections.filter(c => nextIds.includes(c)).length === 2);
+        if (withTwo.length > 0) {
+          const pickId = withTwo[Math.floor(Math.random() * withTwo.length)];
+          const room = rooms.find(r => r.roomId === pickId)!;
+          const forwardConns = room.connections.filter(c => nextIds.includes(c));
+          const cid = forwardConns[Math.floor(Math.random() * forwardConns.length)];
+          const target = rooms.find(r => r.roomId === cid)!;
+          const incomingCount = currIds.filter(id2 =>
+            rooms.find(r => r.roomId === id2)!.connections.includes(cid)).length;
+
+          if (incomingCount > 1) {
+            // Seguro: o alvo continua com outra entrada após a remoção
+            room.connections = room.connections.filter(c => c !== cid);
+            target.connections = target.connections.filter(c => c !== pickId);
+          } else {
+            // Removeria a única entrada do alvo — realoca para outra sala
+            // desta mesma coluna antes de remover, mantendo a conectividade.
+            const altParent = currIds.find(id2 => id2 !== pickId);
+            if (altParent) {
+              addBidir(rooms, altParent, cid);
+              room.connections = room.connections.filter(c => c !== cid);
+              target.connections = target.connections.filter(c => c !== pickId);
+            }
+          }
+        }
+      }
+    }
+
+    // ── Conecta a grade intermediária às saídas guardadas/chefes finais ──
+    for (let d = numMiddleCols; d < columnRoomIds.length - 1; d++) {
+      const prevIds = columnRoomIds[d];
+      const currIds = columnRoomIds[d + 1];
+      for (const currId of currIds) {
+        for (const prevId of prevIds) addBidir(rooms, currId, prevId);
       }
     }
 

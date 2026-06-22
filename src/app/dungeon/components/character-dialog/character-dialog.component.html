@@ -36,7 +36,7 @@
         </div>
       }
 
-      <!-- ── PV / PF ──────────────────────────────────────────────── -->
+      <!-- ── PV / PM ──────────────────────────────────────────────── -->
       <div class="vitals-row">
         <div class="vital-block">
           <div class="vital-label">❤️ PV</div>
@@ -45,13 +45,13 @@
           </div>
           <div class="vital-value">{{ char()!.pontosVida.current }}/{{ char()!.pontosVida.max }}</div>
         </div>
-        @if (char()!.poderFogo.max > 0) {
+        @if (char()!.pontosMana.max > 0) {
           <div class="vital-block">
-            <div class="vital-label">✨ PF</div>
+            <div class="vital-label">✨ PM</div>
             <div class="vital-bar-wrap">
-              <div class="vital-bar pm" [style.width.%]="pfPct()"></div>
+              <div class="vital-bar pm" [style.width.%]="pmPct()"></div>
             </div>
-            <div class="vital-value">{{ char()!.poderFogo.current }}/{{ char()!.poderFogo.max }}</div>
+            <div class="vital-value">{{ char()!.pontosMana.current }}/{{ char()!.pontosMana.max }}</div>
           </div>
         }
       </div>

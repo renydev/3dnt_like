@@ -64,7 +64,11 @@
         <!-- Inimigos vivos -->
         <div class="enemies-summary">
           @for (e of combat.enemies(); track e.id) {
-            <div class="enemy-strip" [class.dead-strip]="e.hp <= 0">
+            <div class="enemy-strip"
+              [class.dead-strip]="e.hp <= 0"
+              [class.is-viewed]="e.id === viewedEnemyId()"
+              [class.clickable]="e.hp > 0"
+              (click)="selectEnemy(e)">
               <span class="es-icon">{{ e.icon }}</span>
               <div class="es-info">
                 <span class="es-name">{{ e.name }}</span>
@@ -74,6 +78,29 @@
               </div>
               <span class="es-hp">{{ e.hp }}/{{ e.maxHp }}</span>
             </div>
+
+            <!-- Painel de detalhes do inimigo selecionado -->
+            @if (viewedEnemy()?.id === e.id) {
+              <div class="enemy-detail-panel">
+                <div class="edp-header">
+                  <span class="edp-icon">{{ e.icon }}</span>
+                  <div>
+                    <div class="edp-name">{{ e.name }}</div>
+                    <div class="edp-flavor">{{ e.flavorText }}</div>
+                  </div>
+                </div>
+                <div class="edp-stats">
+                  <div class="edp-stat"><span class="edp-stat-label">Força</span><span class="edp-stat-val">{{ e.forca }}</span></div>
+                  <div class="edp-stat"><span class="edp-stat-label">Habilidade</span><span class="edp-stat-val">{{ e.habilidade }}</span></div>
+                  <div class="edp-stat"><span class="edp-stat-label">Armadura</span><span class="edp-stat-val">{{ e.armadura }}</span></div>
+                  <div class="edp-stat"><span class="edp-stat-label">Recomp.</span><span class="edp-stat-val">{{ e.xpReward }}xp / {{ e.goldReward }}🪙</span></div>
+                </div>
+                <div class="edp-attacks">
+                  <span class="edp-atk-label">Ataque:</span>
+                  <span class="edp-atk-desc">Físico — {{ e.forca }} + 1d6 − Arm({{ e.armadura }})</span>
+                </div>
+              </div>
+            }
           }
         </div>
 

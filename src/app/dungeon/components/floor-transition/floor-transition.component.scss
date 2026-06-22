@@ -1,5 +1,13 @@
 // ── Tela principal ────────────────────────────────────────────────────────────
 
+// Sem isto o host (<app-floor-transition>) fica "display: inline" (padrão
+// do navegador para elementos customizados) e não participa corretamente
+// do layout em coluna de .game-center.
+:host {
+  display: block;
+  width: 100%;
+}
+
 .transition-screen {
   min-height: 100%;
   background:

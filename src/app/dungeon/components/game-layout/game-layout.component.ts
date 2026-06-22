@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { CombatService } from '../../../core/services/combat.service';
 import { Character } from '../../../core/models/character.model';
+import { Enemy } from '../../../core/models/combat.model';
 
 import { PartyBarComponent } from '../party-bar/party-bar.component';
 import { CharacterDialogComponent } from '../character-dialog/character-dialog.component';
@@ -50,6 +51,20 @@ export class GameLayoutComponent {
   debugOpen = signal(false);
 
   inCombat = () => this.gs.screen() === 'encounter';
+
+  /** Inimigo cujo painel de detalhes está aberto (clique na lista lateral) */
+  viewedEnemyId = signal<string | null>(null);
+
+  viewedEnemy = computed<Enemy | null>(() => {
+    const id = this.viewedEnemyId();
+    return id ? (this.combat.enemies().find(e => e.id === id) ?? null) : null;
+  });
+
+  selectEnemy(e: Enemy): void {
+    if (e.hp <= 0) return;
+    if (this.combat.phase() === 'player_turn') this.combat.selectedEnemyId.set(e.id);
+    this.viewedEnemyId.set(this.viewedEnemyId() === e.id ? null : e.id);
+  }
 
   @HostListener('document:keydown', ['$event'])
   onKey(e: KeyboardEvent): void {

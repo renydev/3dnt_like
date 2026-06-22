@@ -224,16 +224,16 @@ export class CharacterDialogComponent {
     return Array.from({ length: 5 }, (_, i) => ({ filled: i < val }));
   }
 
-  // ── HP / PF bars ────────────────────────────────────────────────
+  // ── HP / PM bars ────────────────────────────────────────────────
 
   hpPct(): number {
     const c = this.char()!;
     return c.pontosVida.max > 0 ? Math.round((c.pontosVida.current / c.pontosVida.max) * 100) : 0;
   }
 
-  pfPct(): number {
+  pmPct(): number {
     const c = this.char()!;
-    return c.poderFogo.max > 0 ? Math.round((c.poderFogo.current / c.poderFogo.max) * 100) : 0;
+    return c.pontosMana.max > 0 ? Math.round((c.pontosMana.current / c.pontosMana.max) * 100) : 0;
   }
 
   // ── Vantagens ───────────────────────────────────────────────────

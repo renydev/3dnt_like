@@ -15,7 +15,7 @@ const MONSTER_POOLS: Record<number, Array<{ name: string; icon: string; sprite?:
   3: [
     { name: 'Goblin Guerreiro', icon: '⚔️', sprite: 'goblin-engenhoqueiro.png', flavorText: 'Empunha uma cimitarra enferrujada com surpreendente habilidade.' },
     { name: 'Zumbi Guardião', icon: '🧟', sprite: 'zumbi.png', flavorText: 'Criado para proteger este corredor por séculos.', isUndead: true },
-    { name: 'Caranguejo das Cavernas', icon: '🦀', sprite: 'placeholder.png', flavorText: 'Carapaça dura como pedra, garras que partem osso.' },
+    { name: 'Caranguejo das Cavernas', icon: '🦀', flavorText: 'Carapaça dura como pedra, garras que partem osso.' },
   ],
   4: [
     { name: 'Orc Batedor', icon: '👹', sprite: 'orc.png', flavorText: 'Musculoso e brutal. Cheira a sangue e cerveja azeda.' },
@@ -25,7 +25,7 @@ const MONSTER_POOLS: Record<number, Array<{ name: string; icon: string; sprite?:
   5: [
     { name: 'Troll das Cavernas', icon: '🧌', sprite: 'troll-das-cavernas.png', flavorText: 'Regenera ferimentos menores. Odeio fogo e ácido.' },
     { name: 'Gnoll Guerreiro', icon: '🐺', sprite: 'gnoll.png', flavorText: 'Metade homem, metade hiena. Ri enquanto mata.' },
-    { name: 'Mumia Menor', icon: '🤕', sprite: 'placeholder.png', flavorText: 'Enfaixada em bandagens apodrecidas. Emana maldição.', isUndead: true },
+    { name: 'Mumia Menor', icon: '🤕', flavorText: 'Enfaixada em bandagens apodrecidas. Emana maldição.', isUndead: true },
   ],
 };
 

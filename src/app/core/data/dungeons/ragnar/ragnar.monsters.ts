@@ -4,6 +4,7 @@ import { calcEnemyPP } from '../../../utils/pp-calculator';
 export interface MonsterTemplate {
   name: string;
   icon: string;
+  sprite?: string;
   flavorText: string;
   forca: number;
   habilidade: number;
@@ -17,49 +18,49 @@ export interface MonsterTemplate {
 
 export const RAGNAR_MONSTERS: Record<string, MonsterTemplate> = {
   goblin_guerreiro: {
-    name: 'Goblin Guerreiro', icon: '👺',
+    name: 'Goblin Guerreiro', icon: '👺', sprite: 'goblin-engenhoqueiro.png',
     flavorText: 'Pequeno e covarde, mas perigoso em grupo. Porta uma azagaia enferrujada e grita ao atacar para compensar o tamanho.',
     forca: 1, habilidade: 2, resistencia: 1, armadura: 0, poderFogo: 0,
     hp: 5,
     xpReward: 4, goldReward: 2,
   },
   orc_guerreiro: {
-    name: 'Orc Guerreiro', icon: '👹',
+    name: 'Orc Guerreiro', icon: '👹', sprite: 'orc.png',
     flavorText: 'Cinza e musculoso, treinado desde o nascimento para matar. Carrega machado de guerra com braço forte demais.',
     forca: 3, habilidade: 2, resistencia: 2, armadura: 1, poderFogo: 0,
     hp: 10,
     xpReward: 8, goldReward: 5,
   },
   orc_berserker: {
-    name: 'Orc Berserker', icon: '😡',
+    name: 'Orc Berserker', icon: '😡', sprite: 'orc.png',
     flavorText: 'Ao entrar em fúria, ignora a dor. Cada ferimento parece apenas aumentar sua brutalidade e velocidade de ataque.',
     forca: 4, habilidade: 2, resistencia: 3, armadura: 1, poderFogo: 0,
     hp: 15,
     xpReward: 12, goldReward: 5,
   },
   hobgoblin_capitao: {
-    name: 'Hobgoblin Capitão', icon: '🪖',
+    name: 'Hobgoblin Capitão', icon: '🪖', sprite: 'hobgoblin-soldado.png',
     flavorText: 'Mais alto que um orc, mais disciplinado que um goblin. Comanda pelotões com voz de trovão e espada curta de qualidade.',
     forca: 4, habilidade: 3, resistencia: 3, armadura: 2, poderFogo: 0,
     hp: 15,
     xpReward: 15, goldReward: 10,
   },
   ogre_batalha: {
-    name: 'Ogre de Batalha', icon: '🗿',
+    name: 'Ogre de Batalha', icon: '🗿', sprite: 'ogro.png',
     flavorText: 'Três metros de músculo e raiva. Usa um tronco de árvore como clava. Um único golpe pode derrubar um guerreiro de armadura pesada.',
     forca: 5, habilidade: 1, resistencia: 4, armadura: 2, poderFogo: 0,
     hp: 20,
     xpReward: 18, goldReward: 8,
   },
   troll_guerra: {
-    name: 'Troll da Guerra', icon: '🟢',
+    name: 'Troll da Guerra', icon: '🟢', sprite: 'troll.png',
     flavorText: 'Verde, imundo e com regeneração sobrenatural. Cortes e perfurações fecham em segundos — apenas fogo e ácido evitam a cura.',
     forca: 5, habilidade: 2, resistencia: 4, armadura: 3, poderFogo: 0,
     hp: 25,
     xpReward: 22, goldReward: 6,
   },
   gromthar: {
-    name: 'Warchief Gromthar', icon: '⚔️',
+    name: 'Warchief Gromthar', icon: '⚔️', sprite: 'orc-chefe.png',
     flavorText: 'Meio-ogre, meio-orc, completamente brutal. Lidera a horda com um machado de batalha encantado que zumbe ao cortar o ar.',
     forca: 6, habilidade: 3, resistencia: 5, armadura: 4, poderFogo: 0,
     hp: 30,
@@ -74,6 +75,7 @@ export function spawnMonster(key: string, isBoss = false): Enemy {
     id: `${key}_${Math.random().toString(36).slice(2, 7)}`,
     name: tpl.name,
     icon: tpl.icon,
+    sprite: tpl.sprite,
     flavorText: tpl.flavorText,
     hp,
     maxHp: hp,

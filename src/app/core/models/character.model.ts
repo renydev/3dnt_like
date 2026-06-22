@@ -127,14 +127,14 @@ export interface Character {
   patronGod?: string;    // ID do deus de devoção (ex: 'allihanna', 'khalmyr')
 }
 
-import { ITEM_CATALOG } from './item.model';
+import { ITEM_CATALOG, applyStartingRing } from './item.model';
 const I = ITEM_CATALOG;
 
 /**
  * 10 personagens lendários (tier Lenda).
  * Regras: nenhum atributo ultrapassa 5; PF mínimo 1; PV = R*5 (mín 1).
  */
-export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
+const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── TANKS ────────────────────────────────────────────────────────────────
   {
     name: 'Thorvald Chifre-de-Ferro',
@@ -330,6 +330,9 @@ export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     statusEffects: [], levelUpPoints: 0, portraitIcon: '🎵',
   },
 ];
+
+// Todo personagem lendário entra no Labirinto com o Anel de Vitalidade Dupla (+20 PV)
+export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = RAW_PRESET_CHARACTERS.map(applyStartingRing);
 
 export const LEGENDARY_CHARACTERS = PRESET_CHARACTERS;
 

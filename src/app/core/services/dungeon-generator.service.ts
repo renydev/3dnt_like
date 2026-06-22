@@ -17,7 +17,6 @@ export class DungeonGeneratorService {
         rooms,
         totalRooms: rooms.length,
         bossRoom: rooms.find(r => r.type === 'boss')!.id,
-        imageMap: config.imageMap,
       };
     }
 
