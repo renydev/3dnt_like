@@ -2,8 +2,11 @@ import { Enemy } from '../../../models/combat.model';
 import { calcEnemyPP } from '../../../utils/pp-calculator';
 
 // ── Definições base de monstros de Allihanna ─────────────────────────────────
-// Estatísticas canônicas de "A Libertação de Valkaria" (Jambô, 2004)
-// HP explícito conforme a fonte; PdF ignorado no combate atual
+// Estatísticas canônicas de "A Libertação de Valkaria" (Jambô, 2004), convertidas
+// de 3D&T Alpha para 3DeT Victory pelas regras oficiais de conversão:
+//   Poder       = floor((Força + Poder de Fogo) / 2)
+//   Resistência = floor((Armadura + Resistência) / 2)
+// Armadura não existe mais como atributo separado — foi absorvida em Resistência.
 
 export interface MonsterTemplate {
   name: string;
@@ -13,7 +16,6 @@ export interface MonsterTemplate {
   poder: number;
   habilidade: number;
   resistencia: number;
-  armadura: number;
   hp?: number;
   xpReward: number;
   goldReward: number;
@@ -25,49 +27,56 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
   elefante: {
     name: 'Elefante', icon: '🐘',
     flavorText: 'Manada protetora às margens do lago — se assustam com invasores e lutam até a morte pelos filhotes.',
-    poder: 5, habilidade: 1, resistencia: 4, armadura: 1,
+    // Alpha: F5 R4 A1 PF1 → P=floor((5+1)/2)=3, R=floor((1+4)/2)=2
+    poder: 3, habilidade: 1, resistencia: 2,
     hp: 20,
     xpReward: 12, goldReward: 0,
   },
   assassino_savana: {
     name: 'Assassino da Savana', icon: '🐆',
     flavorText: 'Felino com quatro pares de patas que salta da grama alta para atacar com garras e mordida simultaneamente.',
-    poder: 6, habilidade: 3, resistencia: 6, armadura: 3,
+    // Alpha: F6 R6 A3 PF0 → P=3, R=floor((3+6)/2)=4
+    poder: 3, habilidade: 3, resistencia: 4,
     hp: 30,
     xpReward: 18, goldReward: 0,
   },
   urso_coruja: {
     name: 'Urso-Coruja', icon: '🦉', sprite: 'urso-coruja.png',
     flavorText: 'Predador territorial coberto de penas escuras e pelos amarronzados. Ataca com garras e bico sem hesitar.',
-    poder: 5, habilidade: 2, resistencia: 4, armadura: 3,
+    // Alpha: F5 R4 A3 PF0 → P=2, R=floor((3+4)/2)=3
+    poder: 2, habilidade: 2, resistencia: 3,
     hp: 20,
     xpReward: 14, goldReward: 0,
   },
   urso_coruja_imenso: {
     name: 'Urso-Coruja Imenso', icon: '🦉', sprite: 'urso-coruja.png',
     flavorText: 'Talvez o maior urso-coruja de toda Arton. Confronta intrusos com fúria absoluta e luta até a morte.',
-    poder: 7, habilidade: 1, resistencia: 5, armadura: 5,
+    // Alpha: F7 R5 A5 PF0 → P=3, R=floor((5+5)/2)=5
+    poder: 3, habilidade: 1, resistencia: 5,
     hp: 25,
     xpReward: 25, goldReward: 0,
   },
   leao_fallandi: {
     name: 'Leão de Fallandi', icon: '🦁',
     flavorText: 'Leão maior que o comum, companheiro do druida. Ágil e feroz, protege seu mestre com garras e mordida.',
-    poder: 3, habilidade: 3, resistencia: 2, armadura: 0,
+    // Alpha: F3 R2 A0 PF0 → P=1, R=1
+    poder: 1, habilidade: 3, resistencia: 1,
     hp: 15,
     xpReward: 10, goldReward: 0,
   },
   urso_vegetal: {
     name: 'Urso Vegetal', icon: '🌿',
     flavorText: 'Criatura invocada pela magia Criatura Mágica de Fallandi. Construto feito de matéria vegetal — vulnerável ao fogo.',
-    poder: 2, habilidade: 1, resistencia: 2, armadura: 0,
+    // Alpha: F2 R2 A0 PF0 → P=1, R=1
+    poder: 1, habilidade: 1, resistencia: 1,
     hp: 20,
     xpReward: 8, goldReward: 0,
   },
   fallandi: {
     name: 'Fallandi', icon: '🌿',
     flavorText: 'Meio humano, meio dríade — o Guardião de Allihanna. Druida que serve a deusa no labirinto com seriedade absoluta.',
-    poder: 3, habilidade: 3, resistencia: 3, armadura: 1,
+    // Alpha: F3 R3 A1 PF0 → P=1, R=2
+    poder: 1, habilidade: 3, resistencia: 2,
     hp: 12,
     xpReward: 30, goldReward: 10,
   },
@@ -77,70 +86,80 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
   druida_allihanna: {
     name: 'Druida de Allihanna', icon: '🌱',
     flavorText: 'Servo da Mãe Natureza. Prefere a paz, mas defende a floresta com magia e animais aliados.',
-    poder: 1, habilidade: 3, resistencia: 2, armadura: 2,
+    // Alpha: F1 R2 A2 PF2 → P=floor((1+2)/2)=1, R=floor((2+2)/2)=2
+    poder: 1, habilidade: 3, resistencia: 2,
     hp: 10,
     xpReward: 10, goldReward: 5,
   },
   ranger: {
     name: 'Ranger', icon: '🏹',
     flavorText: 'Explorador da floresta, habilidoso com arco e espada. Ataca múltiplas vezes com agilidade.',
-    poder: 2, habilidade: 3, resistencia: 2, armadura: 2,
+    // Alpha: F2 R2 A2 PF3 → P=floor((2+3)/2)=2, R=2
+    poder: 2, habilidade: 3, resistencia: 2,
     hp: 10,
     xpReward: 10, goldReward: 3,
   },
   centauro_ranger: {
     name: 'Centauro Ranger', icon: '🐴', sprite: 'centauro-combatente.png',
     flavorText: 'Meio homem, meio cavalo — patrulha a floresta com arco na mão e casco certeiro.',
-    poder: 2, habilidade: 3, resistencia: 2, armadura: 2,
+    // Alpha: F2 R2 A2 PF2 → P=2, R=2
+    poder: 2, habilidade: 3, resistencia: 2,
     hp: 10,
     xpReward: 11, goldReward: 0,
   },
   lobo_cavernas: {
     name: 'Lobo-das-Cavernas', icon: '🐺', sprite: 'lobo-das-cavernas.png',
     flavorText: 'Lobo maior e mais feroz que o comum. Caça em matilha, fareja presas a grande distância.',
-    poder: 1, habilidade: 2, resistencia: 2, armadura: 1,
+    // Alpha: F1 R2 A1 PF0 → P=0, R=floor((1+2)/2)=1
+    poder: 0, habilidade: 2, resistencia: 1,
     hp: 10,
     xpReward: 6, goldReward: 0,
   },
   grifo: {
     name: 'Grifo', icon: '🦅', sprite: 'grifo.png',
     flavorText: 'Criatura alada com corpo de leão e cabeça de águia. Veloz e letal no ar ou no chão.',
-    poder: 2, habilidade: 5, resistencia: 4, armadura: 1,
+    // Alpha: F2 R4 A1 PF0 → P=1, R=floor((1+4)/2)=2
+    poder: 1, habilidade: 5, resistencia: 2,
     hp: 20,
     xpReward: 16, goldReward: 0,
   },
   gorila: {
     name: 'Gorila', icon: '🦍',
     flavorText: 'Primata colossal, territorialmente agressivo. Conhecido por habitar esta masmorra.',
-    poder: 2, habilidade: 2, resistencia: 2, armadura: 1,
+    // Alpha: F2 R2 A1 PF0 → P=1, R=floor((1+2)/2)=1
+    poder: 1, habilidade: 2, resistencia: 1,
     hp: 10,
     xpReward: 8, goldReward: 0,
   },
   driade: {
     name: 'Dríade', icon: '🌳',
     flavorText: 'Espírito feminino das árvores. Imortal enquanto sua árvore existir. Paralisa com um toque.',
-    poder: 1, habilidade: 2, resistencia: 1, armadura: 0,
+    // Alpha: F1 R1 A0 PF0 → P=0, R=0
+    poder: 0, habilidade: 2, resistencia: 0,
     hp: 5,
     xpReward: 14, goldReward: 0,
   },
   tigre: {
     name: 'Tigre', icon: '🐯',
     flavorText: 'Predador ágil da floresta, caça de surpresa e retira-se ao perder metade dos PVs.',
-    poder: 3, habilidade: 3, resistencia: 2, armadura: 0,
+    // Alpha: F3 R2 A0 PF0 → P=1, R=1
+    poder: 1, habilidade: 3, resistencia: 1,
     hp: 10,
     xpReward: 9, goldReward: 0,
   },
   crocodilo: {
     name: 'Crocodilo', icon: '🐊',
     flavorText: 'Réptil blindado que aguarda imóvel antes de atacar com mordida devastadora.',
-    poder: 3, habilidade: 0, resistencia: 3, armadura: 2,
+    // Alpha: F3 R3 A2 PF0 → P=1, R=floor((2+3)/2)=2
+    poder: 1, habilidade: 0, resistencia: 2,
     hp: 15,
     xpReward: 9, goldReward: 0,
   },
   urso_cavernas: {
     name: 'Urso das Cavernas', icon: '🐻',
     flavorText: 'Urso de grande porte que habita as cavernas da floresta. Poderoso e territorial.',
-    poder: 4, habilidade: 3, resistencia: 3, armadura: 1,
+    // Alpha: F4 R3 A1 PF0 → P=2, R=2
+    poder: 2, habilidade: 3, resistencia: 2,
     hp: 15,
     xpReward: 12, goldReward: 0,
   },
@@ -160,7 +179,7 @@ export function spawnMonster(key: string, isBoss = false): Enemy {
     poder: tpl.poder,
     habilidade: tpl.habilidade,
     resistencia: tpl.resistencia,
-    armadura: tpl.armadura,
+    armadura: 0, // Armadura foi absorvida em Resistência na conversão para Victory
     pp: calcEnemyPP(tpl.poder, tpl.habilidade, tpl.resistencia),
     xpReward: tpl.xpReward,
     goldReward: tpl.goldReward,
