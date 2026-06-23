@@ -102,39 +102,6 @@
         }
       </div>
 
-      <!-- ── Focos de Magia ──────────────────────────────────────────── -->
-      <div class="focus-section">
-        <div class="tags-group-header">
-          <span class="tags-title">🔮 Focos de Magia</span>
-          <span class="focus-hint">Qualquer classe pode aprender</span>
-        </div>
-        <div class="focus-grid">
-          @for (path of focusPaths; track path) {
-            <div class="focus-row">
-              <span class="focus-icon">{{ focusIcons[path] }}</span>
-              <span class="focus-name">{{ focusLabels[path] }}</span>
-              <div class="focus-dots">
-                @for (d of focusDots(path); track $index) {
-                  <span class="focus-dot" [class.focus-dot--filled]="d.filled"></span>
-                }
-              </div>
-              <span class="focus-num">{{ focusValue(path) }}</span>
-              <button
-                class="btn-inc"
-                [class.btn-inc--active]="canSpendFocus(path)"
-                [disabled]="!canSpendFocus(path)"
-                (click)="requestFocusSpend(path)"
-                [title]="'Custo: ' + focusUpgradeCost(path) + ' PE'">
-                +
-              </button>
-              <span class="attr-cost" [class.attr-cost--affordable]="canSpendFocus(path)">
-                {{ focusUpgradeCost(path) }}PE
-              </span>
-            </div>
-          }
-        </div>
-      </div>
-
       <!-- ── Vantagens ─────────────────────────────────────────────── -->
       <div class="tags-section">
         <div class="tags-group-header">
@@ -260,23 +227,6 @@
 
     </div>
   </div>
-
-  <!-- ── Confirmação de Focus ──────────────────────────────────────── -->
-  @if (pendingFocus()) {
-    <div class="confirm-backdrop" (click)="cancelFocusSpend()">
-      <div class="confirm-box" (click)="$event.stopPropagation()">
-        <p class="confirm-msg">
-          Gastar <strong>{{ focusUpgradeCost(pendingFocus()!) }} PE</strong>
-          para aumentar <strong>{{ focusIcons[pendingFocus()!] }} {{ focusLabels[pendingFocus()!] }}</strong>
-          para {{ focusValue(pendingFocus()!) + 1 }}?
-        </p>
-        <div class="confirm-actions">
-          <button class="btn-confirm-yes" (click)="confirmFocusSpend()">Confirmar</button>
-          <button class="btn-confirm-no"  (click)="cancelFocusSpend()">Cancelar</button>
-        </div>
-      </div>
-    </div>
-  }
 
   <!-- ── Confirmação de incremento ─────────────────────────────────── -->
   @if (pendingAttr()) {

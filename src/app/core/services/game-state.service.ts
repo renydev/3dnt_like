@@ -571,45 +571,6 @@ export class GameStateService {
     );
   }
 
-  // ── Focos de Magia ────────────────────────────────────────────────────────
-
-  /** Custo para ir de N para N+1 em Focus: N+1 (igual a atributos normais). */
-  focusUpgradeCost(current: number): number { return current + 1; }
-
-  spendFocusPoint(path: import('../models/character.model').FocusPath): void {
-    const char = this.character();
-    if (!char || !char.levelUpPoints) return;
-    const focus = char.focus ?? { fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 };
-    const current = focus[path];
-    if (current >= 5) return;
-    const cost = this.focusUpgradeCost(current);
-    if ((char.levelUpPoints ?? 0) < cost) return;
-    this.character.set({
-      ...char,
-      focus: { ...focus, [path]: current + 1 },
-      levelUpPoints: (char.levelUpPoints ?? 0) - cost,
-    });
-    this.addLog(`🔮 ${char.name} aumentou Focus ${path} para ${current + 1}! (-${cost} PE)`);
-  }
-
-  spendCompanionFocusPoint(companionId: string, path: import('../models/character.model').FocusPath): void {
-    this.companions.update(list =>
-      list.map(c => {
-        if (c.id !== companionId || !c.levelUpPoints) return c;
-        const focus = c.focus ?? { fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 };
-        const current = focus[path];
-        if (current >= 5) return c;
-        const cost = this.focusUpgradeCost(current);
-        if ((c.levelUpPoints ?? 0) < cost) return c;
-        return {
-          ...c,
-          focus: { ...focus, [path]: current + 1 },
-          levelUpPoints: (c.levelUpPoints ?? 0) - cost,
-        };
-      })
-    );
-  }
-
   // ── Inventário & Equipamento ───────────────────────────────────────────────
 
   backpackOpen = signal(false);

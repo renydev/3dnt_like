@@ -12,12 +12,21 @@ export interface PericiaDef {
   name: string;
   icon: string;
   cost: number; // sempre 3 no 3D&T base
-  category: 'conhecimento' | 'social' | 'fisico' | 'tecnico' | 'criminal';
+  category: 'combate' | 'conhecimento' | 'social' | 'fisico' | 'tecnico' | 'criminal';
   description: string;
   especializacoes: EspecializacaoDef[];
 }
 
 export const ALL_PERICIAS: PericiaDef[] = [
+  {
+    id: 'luta',
+    name: 'Luta',
+    icon: '🥊',
+    cost: 3,
+    category: 'combate',
+    description: 'Você é treinado em combate, corpo a corpo ou à distância. Garante +1d6 em toda rolagem de Força de Ataque (FA) e Força de Defesa (FD) — 3D&T Victory unificou perícia de combate em uma só, sem distinção de alcance.',
+    especializacoes: [],
+  },
   {
     id: 'animais',
     name: 'Animais',
@@ -203,6 +212,7 @@ export const PERICIA_MAP = new Map<string, PericiaDef>(
 );
 
 export const PERICIA_CATEGORIES: { id: string; label: string; icon: string }[] = [
+  { id: 'combate',      label: 'Combate',      icon: '🥊' },
   { id: 'conhecimento', label: 'Conhecimento', icon: '📚' },
   { id: 'social',       label: 'Social',       icon: '🤝' },
   { id: 'fisico',       label: 'Físico',        icon: '💪' },

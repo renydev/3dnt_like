@@ -6,21 +6,18 @@ import { getEffectiveStats, ITEM_CATALOG } from '../models/item.model';
 import { generateEnemy } from '../data/enemies.data';
 
 function d6() { return Math.ceil(Math.random() * 6); }
+
+/** Soma N rolagens simples de 1d6 — usado fora de FA/FD (cura, fuga), sem PA. */
 function d6n(n: number) { let t = 0; for (let i = 0; i < n; i++) t += d6(); return t; }
 
-/**
- * Teste de esquiva (H vs H):
- * Se H_atk >= H_def → acerto automático.
- * Caso contrário rola 1d6; acerta se resultado <= max(1, 6 - diferença).
- * 1 é sempre um acerto.
- * Habilidade serve apenas para esquiva e testes de perícia.
- */
-function hitCheck(atkH: number, defH: number): { hit: boolean; roll: number; threshold: number } {
-  const diff = Math.max(0, defH - atkH);
-  if (diff === 0) return { hit: true, roll: 0, threshold: 0 };
-  const threshold = Math.max(1, 6 - diff);
-  const roll = d6();
-  return { hit: roll <= threshold, roll, threshold };
+/** Teto de PA ganho por 6s num combate: metade (arredondado p/ cima) de Poder+Resistência. */
+function paGainCap(poder: number, resistencia: number): number {
+  return Math.ceil((poder + resistencia) / 2);
+}
+
+/** Todo ataque sempre acerta — não há teste de esquiva. */
+function hitCheck(_atkH: number, _defH: number): { hit: boolean; roll: number; threshold: number } {
+  return { hit: true, roll: 0, threshold: 0 };
 }
 
 /**
@@ -65,6 +62,18 @@ export class CombatService {
   /** Aguardando confirmação do jogador antes de ir para game_over */
   pendingDefeat = signal(false);
 
+  // ── PA (Pontos de Ação — 3D&T Victory) ──────────────────────────────────────
+  /** PA disponíveis do jogador neste combate (pool inicial = Poder; reseta a cada combate). */
+  playerPA = signal(0);
+  private playerPAGainCap = 0;
+  private playerPAGained = 0;
+  /** PA disponíveis de cada companheiro neste combate. */
+  companionPA = signal<Map<string, number>>(new Map());
+  private companionPAGainCap = new Map<string, number>();
+  private companionPAGained = new Map<string, number>();
+  /** Garante que a pool de PA comece preenchida na primeiríssima luta. */
+  private paInitialized = false;
+
   /** Inimigo selecionado como alvo — escrito tanto pela CombatScene (clique no canvas) quanto por menus Angular */
   selectedEnemyId = signal<string | null>(null);
 
@@ -89,6 +98,68 @@ export class CombatService {
   private resetEnemyRoundState(): void {
     this.partyDodgePenalties.clear();
     this.partyArmorReductions.clear();
+  }
+
+  // ── Rolagem de dados com PA (3D&T Victory) ──────────────────────────────────
+  // Regra: ao tirar 6, se ainda não atingiu o teto de PA ganho neste combate, o
+  // personagem ganha +1 PA. Se já atingiu o teto, o 6 "explode": rola +1d6 e soma
+  // ao resultado (podendo encadear se o novo dado também sair 6).
+
+  /** Rola 1d6 para o jogador, aplicando ganho de PA / explosão em 6. */
+  private rollPlayerDie(): number {
+    let total = d6();
+    let roll = total;
+    while (roll === 6) {
+      if (this.playerPAGained < this.playerPAGainCap) {
+        this.playerPAGained++;
+        this.playerPA.update(n => n + 1);
+        break;
+      }
+      roll = d6();
+      total += roll;
+    }
+    return total;
+  }
+
+  /** Rola 1d6 para um companheiro, aplicando ganho de PA / explosão em 6. */
+  private rollCompanionDie(companionId: string): number {
+    let total = d6();
+    let roll = total;
+    while (roll === 6) {
+      const gained = this.companionPAGained.get(companionId) ?? 0;
+      const cap = this.companionPAGainCap.get(companionId) ?? 0;
+      if (gained < cap) {
+        this.companionPAGained.set(companionId, gained + 1);
+        this.companionPA.update(m => {
+          const next = new Map(m);
+          next.set(companionId, (next.get(companionId) ?? 0) + 1);
+          return next;
+        });
+        break;
+      }
+      roll = d6();
+      total += roll;
+    }
+    return total;
+  }
+
+  /** Soma N rolagens via roller (jogador/companheiro). */
+  private rollDiceWith(n: number, roller: () => number): number {
+    let t = 0;
+    for (let i = 0; i < n; i++) t += roller();
+    return t;
+  }
+
+  private hasLuta(char: Character): boolean {
+    return !!char.pericias?.includes('luta');
+  }
+
+  /** Quantos PA o jogador pode gastar agora (clampado ao disponível). Cada PA = +1d6 em FA/FD. */
+  spendPlayerPA(requested: number): number {
+    const avail = this.playerPA();
+    const spend = Math.max(0, Math.min(requested, avail));
+    if (spend > 0) this.playerPA.update(n => n - spend);
+    return spend;
   }
 
   readonly abilities = computed<CombatAbility[]>(() => {
@@ -125,6 +196,37 @@ export class CombatService {
     this.companionRageTurns.clear();
     this.resetPlayerRoundState();
     this.resetEnemyRoundState();
+
+    // PA: a pool NÃO reseta aqui — ela persiste entre combates e só é realimentada
+    // (refillPA) ao fim de cada luta. Na primeiríssima luta (pool nunca preenchida),
+    // preenchemos uma vez para não começar com PA zerado.
+    if (!this.paInitialized) {
+      this.refillPA();
+      this.paInitialized = true;
+    }
+    // Aqui só recalculamos o teto de ganho por 6s (pode ter mudado com level up)
+    // e zeramos o contador de ganho desta luta.
+    const char = this.gs.character();
+    if (char) {
+      this.playerPAGainCap = paGainCap(char.poder.current, char.resistencia.current);
+      this.playerPAGained = 0;
+    }
+    this.companionPAGainCap.clear();
+    this.companionPAGained.clear();
+    for (const c of this.gs.companions()) {
+      this.companionPAGainCap.set(c.id, paGainCap(c.poder.current, c.resistencia.current));
+      this.companionPAGained.set(c.id, 0);
+    }
+  }
+
+  /** Realimenta a pool de PA (= Poder) de jogador e companheiros. Chamado ao FIM de cada combate
+   *  (vitória, derrota ou fuga) — assim o PA dura até a próxima luta em vez de ser zerado no início. */
+  private refillPA(): void {
+    const char = this.gs.character();
+    if (char) this.playerPA.set(char.poder.current);
+    const paMap = new Map<string, number>();
+    for (const c of this.gs.companions()) paMap.set(c.id, c.poder.current);
+    this.companionPA.set(paMap);
   }
 
   // ── Ações do Jogador ──────────────────────────────────────────────────────
@@ -136,25 +238,6 @@ export class CombatService {
     if (!char || !target) return;
 
     this.resolveMeleeAttack(char, target);
-    this.afterPlayerAction();
-  }
-
-  playerRangedAttack(): void {
-    if (this.phase() !== 'player_turn') return;
-    const char = this.gs.character();
-    const target = this.enemy();
-    if (!char || !target) return;
-    this.resolveRangedBasic(char, target);
-    this.afterPlayerAction();
-  }
-
-  playerRangedAttackTarget(targetId: string): void {
-    if (this.phase() !== 'player_turn') return;
-    const char = this.gs.character();
-    const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
-                ?? this.enemies().find(e => e.hp > 0);
-    if (!char || !target) return;
-    this.resolveRangedBasic(char, target);
     this.afterPlayerAction();
   }
 
@@ -219,8 +302,9 @@ export class CombatService {
           this.afterPlayerAction();
           return;
         }
-        const dAtk = d6();
-        const dBonus = d6n(ab.bonusDice ?? 1);
+        const lutaBonusHS = this.hasLuta(char) ? 1 : 0;
+        const dAtk = this.rollPlayerDie();
+        const dBonus = this.rollDiceWith((ab.bonusDice ?? 1) + lutaBonusHS, () => this.rollPlayerDie());
         const atkPower = char.poder.current + dAtk + dBonus;
         const dDef = d6();
         const defPower = target.resistencia + effectiveArmor + dDef;
@@ -232,30 +316,29 @@ export class CombatService {
       }
       case 'magic_damage':
       case 'pierce': {
-        if (ab.isRanged) {
-          this.resolveRangedAttack(char, target, ab);
-        } else {
-          this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor);
-        }
+        this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor);
         this.afterPlayerAction();
         return;
       }
     }
   }
 
-  /** Ataca um inimigo específico (pelo id). Fallback para o primeiro vivo. */
-  playerAttackTarget(targetId: string): void {
+  /** Ataca um inimigo específico (pelo id). Fallback para o primeiro vivo.
+   *  paSpend = quantos PA o jogador quer gastar nesse ataque (cada um = +1d6 em FA). */
+  playerAttackTarget(targetId: string, paSpend = 0): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
     const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
                 ?? this.enemies().find(e => e.hp > 0);
     if (!char || !target) return;
-    this.resolveMeleeAttack(char, target);
+    const spent = this.spendPlayerPA(paSpend);
+    this.resolveMeleeAttack(char, target, undefined, spent);
     this.afterPlayerAction();
   }
 
-  /** Usa habilidade em um inimigo específico. */
-  playerUseAbilityTarget(ab: CombatAbility, targetId: string): void {
+  /** Usa habilidade em um inimigo específico.
+   *  paSpend = quantos PA o jogador quer gastar (cada um = +1d6 na FA da habilidade, quando aplicável). */
+  playerUseAbilityTarget(ab: CombatAbility, targetId: string, paSpend = 0): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
     const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
@@ -265,6 +348,7 @@ export class CombatService {
 
     if (ab.pmCost > 0) this.spendPM(ab.pmCost);
     if (ab.usesPerCombat) this.abilitiesUsed.update(s => new Set([...s, ab.id]));
+    const spent = this.spendPlayerPA(paSpend);
 
     switch (ab.effect) {
       case 'heal': {
@@ -305,7 +389,9 @@ export class CombatService {
           this.applyDamageToEnemy(target.id, 1);
           this.afterPlayerAction(); return;
         }
-        const dAtk = d6(); const dBonus = d6n(ab.bonusDice ?? 1);
+        const lutaBonusHS2 = this.hasLuta(char) ? 1 : 0;
+        const dAtk = this.rollPlayerDie();
+        const dBonus = this.rollDiceWith((ab.bonusDice ?? 1) + lutaBonusHS2 + spent, () => this.rollPlayerDie());
         const atkP = char.poder.current + dAtk + dBonus;
         const dDef = d6(); const defP = target.resistencia + effectiveArmor + dDef;
         const { dmg, str: dmgStrP } = this.fmtDmg(atkP - defP);
@@ -315,8 +401,7 @@ export class CombatService {
       }
       case 'magic_damage':
       case 'pierce': {
-        if (ab.isRanged) this.resolveRangedAttack(char, target, ab);
-        else this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor);
+        this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor);
         this.afterPlayerAction(); return;
       }
     }
@@ -340,6 +425,7 @@ export class CombatService {
       this.addLog(`🏃 ${char.name} foge com sucesso! (${roll} vs ${diff})`, 'system');
       this.phase.set('player_turn');
       this.clearPlayerRageIfActive();
+      this.refillPA();
       setTimeout(() => this.gs.resolveEncounter('flee'), 600);
     } else {
       this.addLog(`🚫 Fuga falhou! (${roll} vs ${diff}) — os inimigos atacam!`, 'system');
@@ -489,7 +575,9 @@ export class CombatService {
           this.applyDamageToEnemy(target.id, 1);
           break;
         }
-        const dAtk = d6(); const dBonus = d6n(ab.bonusDice ?? 1);
+        const lutaBonusC = this.hasLuta(companion) ? 1 : 0;
+        const dAtk = this.rollCompanionDie(companion.id);
+        const dBonus = this.rollDiceWith((ab.bonusDice ?? 1) + lutaBonusC, () => this.rollCompanionDie(companion.id));
         const atk = companion.poder.current + dAtk + dBonus;
         const dDef = d6(); const def = target.resistencia + effectiveArmor + dDef;
         const { dmg, str: dmgStrH } = this.fmtDmg(atk - def);
@@ -500,8 +588,7 @@ export class CombatService {
       }
       case 'magic_damage':
       case 'pierce':
-        if (ab.isRanged) this._companionRangedAttack(companion, ab, target);
-        else this._companionMeleeAttack(companion, target, label, ab.bonusDice ?? 0, ab.ignoresArmor);
+        this._companionMeleeAttack(companion, target, label, ab.bonusDice ?? 0, ab.ignoresArmor);
         break;
       default:
         this._companionMeleeAttack(companion, target, label);
@@ -523,11 +610,13 @@ export class CombatService {
       );
       return;
     }
-    const dAtk = d6();
-    const dBonus = d6n(bonusDice);
+    const lutaBonus = this.hasLuta(companion) ? 1 : 0;
+    const totalBonusDice = bonusDice + lutaBonus;
+    const dAtk = this.rollCompanionDie(companion.id);
+    const dBonus = this.rollDiceWith(totalBonusDice, () => this.rollCompanionDie(companion.id));
     const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
-    const bonusPart = bonusDice > 0 ? `+🎲${dBonus}(x${bonusDice})` : '';
+    const bonusPart = totalBonusDice > 0 ? `+🎲${dBonus}(x${totalBonusDice}${lutaBonus ? ',🥊Luta' : ''})` : '';
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
@@ -553,55 +642,6 @@ export class CombatService {
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
       this.addLog(
         `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
-        'player'
-      );
-      this.applyDamageToEnemy(enemy.id, dmg);
-    }
-  }
-
-  private _companionRangedAttack(companion: Character, ab: CombatAbility, enemy: Enemy): void {
-    const s = getEffectiveStats(companion);
-    const label = `${ab.icon} ${companion.name}: ${ab.name}`;
-    const hPenalty = this.enemyDodgePenalties.get(enemy.id) ?? 0;
-    const effEnemyH = Math.max(0, enemy.habilidade - hPenalty);
-    const { hit, roll, threshold } = hitCheck(s.habilidade, effEnemyH);
-    if (!hit) {
-      this.enemyDodgePenalties.set(enemy.id, hPenalty + 1);
-      this.addLog(
-        `${label} ERROU! 🎯H${s.habilidade}vs${effEnemyH}${hPenalty > 0 ? `(-${hPenalty})` : ''} | 🎲${roll}>${threshold} — ${enemy.name} esquivou!`,
-        'miss'
-      );
-      return;
-    }
-    const dAtk = d6();
-    const dBonus = d6n(ab.bonusDice ?? 0);
-    const atkPower = s.poder + dAtk + dBonus;
-    const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
-    const bonusPart = (ab.bonusDice ?? 0) > 0 ? `+🎲${dBonus}(x${ab.bonusDice})` : '';
-    if (ab.ignoresArmor) {
-      const dmg = Math.max(1, atkPower);
-      this.addLog(
-        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
-        'player'
-      );
-      this.applyDamageToEnemy(enemy.id, dmg);
-    } else {
-      const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-      const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
-      this.enemyArmorReductions.set(enemy.id, newReduction);
-      if (resisted) {
-        this.addLog(
-          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
-          'player'
-        );
-        this.applyDamageToEnemy(enemy.id, 1);
-        return;
-      }
-      const dDef = d6();
-      const defPower = enemy.resistencia + effectiveArmor + dDef;
-      const { dmg, str: dmgStrR } = this.fmtDmg(atkPower - defPower);
-      this.addLog(
-        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrR} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -655,8 +695,8 @@ export class CombatService {
     }
 
     const charStats = getEffectiveStats(char);
-    const aliveParty: Array<{ name: string; armadura: number; resistencia: number; habilidade: number; isPlayer: boolean; id?: string }> = [
-      { name: char.name, armadura: charStats.armadura, resistencia: charStats.resistencia, habilidade: charStats.habilidade, isPlayer: true },
+    const aliveParty: Array<{ name: string; armadura: number; resistencia: number; habilidade: number; isPlayer: boolean; id?: string; hasLuta: boolean }> = [
+      { name: char.name, armadura: charStats.armadura, resistencia: charStats.resistencia, habilidade: charStats.habilidade, isPlayer: true, hasLuta: this.hasLuta(char) },
       ...this.gs.companions().filter(c => c.pontosVida.current > 0).map(c => ({
         name: c.name.split(',')[0],
         armadura: getEffectiveStats(c).armadura,
@@ -664,6 +704,7 @@ export class CombatService {
         habilidade: c.habilidade.current,
         isPlayer: false,
         id: c.id,
+        hasLuta: this.hasLuta(c),
       })),
     ];
 
@@ -714,9 +755,12 @@ export class CombatService {
         continue;
       }
 
-      // Dano normal: FA = P+1d6, FD = R+A+1d6
+      // Dano normal: FA = P+1d6, FD = R+A+1d6 (+1d6 se defensor tiver perícia Luta)
       const dAtk = d6();
-      const dDef = d6();
+      const defRoller = targetMember.isPlayer
+        ? () => this.rollPlayerDie()
+        : () => this.rollCompanionDie(targetMember.id!);
+      const dDef = this.rollDiceWith(1 + (targetMember.hasLuta ? 1 : 0), defRoller);
       const atkPower = effP + dAtk;
       const defPower = targetMember.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrE } = this.fmtDmg(atkPower - defPower);
@@ -767,11 +811,13 @@ export class CombatService {
       return;
     }
 
-    const dAtk = d6();
-    const dBonus = d6n(bonusDice);
+    const lutaBonus = this.hasLuta(char) ? 1 : 0;
+    const totalBonusDice = bonusDice + lutaBonus;
+    const dAtk = this.rollPlayerDie();
+    const dBonus = this.rollDiceWith(totalBonusDice, () => this.rollPlayerDie());
     const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
-    const bonusPart = bonusDice > 0 ? `+🎲${dBonus}(x${bonusDice})` : '';
+    const bonusPart = totalBonusDice > 0 ? `+🎲${dBonus}(x${totalBonusDice}${lutaBonus ? ',🥊Luta' : ''})` : '';
 
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
@@ -802,99 +848,6 @@ export class CombatService {
     const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
     this.addLog(
       `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
-      'player'
-    );
-    this.applyDamageToEnemy(enemy.id, dmg);
-  }
-
-  private resolveRangedBasic(char: Character, enemy: Enemy): void {
-    const s = getEffectiveStats(char);
-    const hPenalty = this.enemyDodgePenalties.get(enemy.id) ?? 0;
-    const effEnemyH = Math.max(0, enemy.habilidade - hPenalty);
-    const { hit, roll: hitRoll, threshold } = hitCheck(s.habilidade, effEnemyH);
-    if (!hit) {
-      this.enemyDodgePenalties.set(enemy.id, hPenalty + 1);
-      this.addLog(
-        `🏹 Ataque à Distância ERROU! 🎯H${s.habilidade}vs${effEnemyH}${hPenalty > 0 ? `(-${hPenalty})` : ''} | 🎲${hitRoll}>${threshold} — ${enemy.name} esquivou!`,
-        'miss'
-      );
-      return;
-    }
-    const dAtk = d6();
-    const atkPower = s.poder + dAtk;
-    const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
-
-    // Resistir com Armadura
-    const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
-    this.enemyArmorReductions.set(enemy.id, newReduction);
-    if (resisted) {
-      this.addLog(
-        `🏹 Ataque à Distância${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
-        'player'
-      );
-      this.applyDamageToEnemy(enemy.id, 1);
-      return;
-    }
-
-    const dDef = d6();
-    const defPower = enemy.resistencia + effectiveArmor + dDef;
-    const { dmg, str: dmgStrRB } = this.fmtDmg(atkPower - defPower);
-    this.addLog(
-      `🏹 Ataque à Distância${hitInfo} | FA: P${s.poder}+🎲${dAtk}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrRB} dano em ${enemy.name}!`,
-      'player'
-    );
-    this.applyDamageToEnemy(enemy.id, dmg);
-  }
-
-  private resolveRangedAttack(char: Character, enemy: Enemy, ab: CombatAbility): void {
-    const s = getEffectiveStats(char);
-    const hPenalty = this.enemyDodgePenalties.get(enemy.id) ?? 0;
-    const effEnemyH = Math.max(0, enemy.habilidade - hPenalty);
-    const { hit, roll: hitRoll, threshold } = hitCheck(s.habilidade, effEnemyH);
-    if (!hit) {
-      this.enemyDodgePenalties.set(enemy.id, hPenalty + 1);
-      this.addLog(
-        `${ab.icon} ${ab.name} ERROU! 🎯H${s.habilidade}vs${effEnemyH}${hPenalty > 0 ? `(-${hPenalty})` : ''} | 🎲${hitRoll}>${threshold} — ${enemy.name} esquivou!`,
-        'miss'
-      );
-      return;
-    }
-
-    const dAtk = d6();
-    const dBonus = d6n(ab.bonusDice ?? 0);
-    const atkPower = s.poder + dAtk + dBonus;
-    const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
-    const bonusPart = (ab.bonusDice ?? 0) > 0 ? `+🎲${dBonus}(x${ab.bonusDice})` : '';
-
-    if (ab.ignoresArmor) {
-      const dmg = Math.max(1, atkPower);
-      this.addLog(
-        `${ab.icon} ${ab.name}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
-        'player'
-      );
-      this.applyDamageToEnemy(enemy.id, dmg);
-      return;
-    }
-
-    // Resistir com Armadura
-    const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
-    this.enemyArmorReductions.set(enemy.id, newReduction);
-    if (resisted) {
-      this.addLog(
-        `${ab.icon} ${ab.name}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
-        'player'
-      );
-      this.applyDamageToEnemy(enemy.id, 1);
-      return;
-    }
-
-    const dDef = d6();
-    const defPower = enemy.resistencia + effectiveArmor + dDef;
-    const { dmg, str: dmgStrRA } = this.fmtDmg(atkPower - defPower);
-    this.addLog(
-      `${ab.icon} ${ab.name}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrRA} dano em ${enemy.name}!`,
       'player'
     );
     this.applyDamageToEnemy(enemy.id, dmg);
@@ -998,6 +951,7 @@ export class CombatService {
     if (alive.length > 0) return false;
     this.phase.set('victory');
     this.clearPlayerRageIfActive();
+    this.refillPA();
     this.addLog('🏆 Todos os inimigos foram derrotados!', 'system');
 
     // Distribui XP e ouro ao final do combate
@@ -1034,6 +988,7 @@ export class CombatService {
     if (!char || char.pontosVida.current > 0) return false;
     this.phase.set('defeat');
     this.clearPlayerRageIfActive();
+    this.refillPA();
     this.addLog('💀 Você caiu em combate...', 'system');
     setTimeout(() => this.pendingDefeat.set(true), 1200);
     return true;

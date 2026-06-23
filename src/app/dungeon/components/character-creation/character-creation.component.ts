@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { GameDataService } from '../../../core/services/game-data.service';
-import { Character, FocusPath, FOCUS_PATHS, FOCUS_PATH_LABELS, FOCUS_PATH_ICONS, FocusPaths } from '../../../core/models/character.model';
+import { Character } from '../../../core/models/character.model';
 import { applyStartingRing } from '../../../core/models/item.model';
 import { Race, ALL_RACES, RACE_MAP } from '../../../core/data/races.data';
 import { ClassDef, ALL_CLASSES, CLASS_MAP } from '../../../core/data/classes.data';
@@ -215,17 +215,6 @@ export class CharacterCreationComponent {
     poder: 0, habilidade: 0, resistencia: 0,
   });
 
-  // Focos de Magia — distribuídos junto com atributos no passo 5
-  readonly FOCUS_META = FOCUS_PATHS.map(p => ({
-    key: p,
-    label: FOCUS_PATH_LABELS[p],
-    icon: FOCUS_PATH_ICONS[p],
-  }));
-
-  distributedFocus = signal<FocusPaths>({
-    fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0,
-  });
-
   // ── Helpers de custo ────────────────────────────────────────────────────────
 
   /** Custo incremental (3D&T Victory): 1pt até o 5º, 2pts por ponto acima de 5. */
@@ -278,15 +267,10 @@ export class CharacterCreationComponent {
     return tier - raceCost + racebonus + desvRef;
   });
 
-  focusSpent = computed(() => {
-    const f = this.distributedFocus();
-    return FOCUS_PATHS.reduce((sum, p) => sum + this.totalCost(f[p]), 0);
-  });
-
   attrSpent = computed(() => {
     const d = this.distributedAttrs();
     return this.totalCost(d.poder) + this.totalCost(d.habilidade)
-         + this.totalCost(d.resistencia) + this.focusSpent();
+         + this.totalCost(d.resistencia);
   });
 
   vantagensSpent = computed(() =>
@@ -389,34 +373,6 @@ export class CharacterCreationComponent {
     return (s as any)[key];
   }
 
-  canUseFocus(): boolean {
-    const cls = this.selectedClass()?.id;
-    if (cls === 'mago' || cls === 'clerigo') return true;
-    const sel = this.selectedVantagens();
-    return sel.includes('arcano') || sel.includes('clericato');
-  }
-
-  canIncrementFocus(path: FocusPath): boolean {
-    if (!this.canUseFocus()) return false;
-    const cur = this.distributedFocus()[path];
-    if (cur >= 5) return false;
-    return this.pointsLeft() >= this.nextCost(cur);
-  }
-
-  canDecrementFocus(path: FocusPath): boolean {
-    return this.distributedFocus()[path] > 0;
-  }
-
-  incrementFocus(path: FocusPath): void {
-    if (!this.canIncrementFocus(path)) return;
-    this.distributedFocus.update(f => ({ ...f, [path]: f[path] + 1 }));
-  }
-
-  decrementFocus(path: FocusPath): void {
-    if (!this.canDecrementFocus(path)) return;
-    this.distributedFocus.update(f => ({ ...f, [path]: f[path] - 1 }));
-  }
-
   canIncrement(key: 'poder'|'habilidade'|'resistencia'): boolean {
     const maxAttr = this.selectedTier()?.maxCharacteristic ?? 5;
     const finalVal = this.finalAttr(key);
@@ -439,7 +395,6 @@ export class CharacterCreationComponent {
     this.selectedEspecializacoes.set([]);
     this.selectedGod.set(null);
     this.distributedAttrs.set({ poder: 0, habilidade: 0, resistencia: 0 });
-    this.distributedFocus.set({ fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 });
     this.nextStep();
   }
 
@@ -511,7 +466,6 @@ export class CharacterCreationComponent {
     this.selectedRace.set(race);
     this.selectedClass.set(cls);
     this.distributedAttrs.set({ ...preset.attrs });
-    this.distributedFocus.set({ fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 });
     this.selectedVantagens.set([...preset.vantagenIds]);
     this.selectedDesvantagens.set([...preset.desvIds]);
     this.selectedPericias.set([]);
@@ -545,7 +499,6 @@ export class CharacterCreationComponent {
       gold: 20 + (this.selectedTier()?.basePoints ?? 5) * 2,
       inventory: [],
       equipment: {},
-      focus: { ...this.distributedFocus() },
       racialMods: this.selectedRace()!.modifiers ?? {},
       statusEffects: [],
       levelUpPoints: 0,

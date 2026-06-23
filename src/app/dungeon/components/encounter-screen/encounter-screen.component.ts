@@ -36,9 +36,17 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
 
     <!-- ── Barra de ações ─────────────────────────────────────────── -->
     <div class="action-bar" [class.disabled-bar]="phase() !== 'player_turn'">
-      @if (!showMagicMenu() && !showAttackMenu()) {
+      @if (playerPA() > 0 || paSpendNext() > 0) {
+        <div class="pa-bar">
+          <span class="pa-label">🔷 PA: {{ playerPA() }}</span>
+          <button class="pa-btn" [disabled]="paSpendNext() <= 0" (click)="decPaSpend()">−</button>
+          <span class="pa-spend">Gastar {{ paSpendNext() }} (+{{ paSpendNext() }}d6)</span>
+          <button class="pa-btn" [disabled]="paSpendNext() >= playerPA()" (click)="incPaSpend()">+</button>
+        </div>
+      }
+      @if (!showMagicMenu()) {
         <div class="action-btns">
-          <button class="act-btn atk" [disabled]="phase() !== 'player_turn'" (click)="showAttackMenu.set(true)">
+          <button class="act-btn atk" [disabled]="phase() !== 'player_turn'" (click)="onAttack()">
             <span class="act-icon">⚔️</span><span class="act-lbl">Atacar</span>
           </button>
           @if (hasAbilities()) {
@@ -54,23 +62,6 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
               <span class="act-icon">🏃</span><span class="act-lbl">Fugir</span>
             </button>
           }
-        </div>
-      } @else if (showAttackMenu()) {
-        <!-- Sub-menu de tipo de ataque -->
-        <div class="magic-menu">
-          <button class="back-btn" (click)="showAttackMenu.set(false)">← Voltar</button>
-          <div class="ability-list">
-            <button class="ab-btn" (click)="onAttackMelee()">
-              <span class="ab-icon">⚔️</span>
-              <span class="ab-name">Corpo a Corpo</span>
-              <span class="ab-cost">F+H+1d6</span>
-            </button>
-            <button class="ab-btn" (click)="onAttackRanged()">
-              <span class="ab-icon">🏹</span>
-              <span class="ab-name">À Distância</span>
-              <span class="ab-cost">PF+H+1d6</span>
-            </button>
-          </div>
         </div>
       } @else if (showInventory()) {
         <!-- Sub-menu de itens -->
@@ -261,6 +252,21 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
     }
     .disabled-bar { opacity: 0.75; pointer-events: none; }
 
+    .pa-bar {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.2rem 0.3rem 0.5rem;
+      font-size: 0.7rem; color: #8fd0ff;
+    }
+    .pa-label { font-weight: 700; }
+    .pa-spend { color: #c9a84c; flex: 1; text-align: center; }
+    .pa-btn {
+      width: 22px; height: 22px; border-radius: 5px;
+      border: 1px solid #2a4a6a; background: #0d1a28; color: #8fd0ff;
+      cursor: pointer; font-weight: 700;
+      &:disabled { opacity: 0.3; cursor: not-allowed; }
+      &:not(:disabled):hover { filter: brightness(1.4); }
+    }
+
     .action-btns {
       display: flex; gap: 0.4rem; flex-wrap: wrap;
     }
@@ -412,7 +418,6 @@ export class EncounterScreenComponent implements OnInit {
   readonly combatSceneClass = CombatScene;
 
   showMagicMenu    = signal(false);
-  showAttackMenu   = signal(false);
   isRandomEncounter = signal(false);
 
   /** Inimigo efetivamente alvo: selecionado no canvas (se vivo) ou primeiro vivo */
@@ -467,30 +472,29 @@ export class EncounterScreenComponent implements OnInit {
 
   // ── Ações de combate (alvo escolhido por clique no canvas) ────────
 
+  /** Quantos PA o jogador escolheu gastar na próxima ação (cada um = +1d6 em FA). */
+  paSpendNext = signal(0);
+  playerPA = this.combat.playerPA;
+
+  incPaSpend(): void {
+    if (this.paSpendNext() < this.playerPA()) this.paSpendNext.update(n => n + 1);
+  }
+  decPaSpend(): void {
+    if (this.paSpendNext() > 0) this.paSpendNext.update(n => n - 1);
+  }
+
   onAttack(): void {
     const t = this.target();
     if (!t) return;
-    this.combat.playerAttackTarget(t.id);
-  }
-
-  onAttackMelee(): void {
-    this.showAttackMenu.set(false);
-    const t = this.target();
-    if (!t) return;
-    this.combat.playerAttackTarget(t.id);
-  }
-
-  onAttackRanged(): void {
-    this.showAttackMenu.set(false);
-    const t = this.target();
-    if (!t) return;
-    this.combat.playerRangedAttackTarget(t.id);
+    this.combat.playerAttackTarget(t.id, this.paSpendNext());
+    this.paSpendNext.set(0);
   }
 
   onAbility(ab: CombatAbility): void {
     const t = this.target();
     if (!t) return;
-    this.combat.playerUseAbilityTarget(ab, t.id);
+    this.combat.playerUseAbilityTarget(ab, t.id, this.paSpendNext());
+    this.paSpendNext.set(0);
     this.showMagicMenu.set(false);
   }
 

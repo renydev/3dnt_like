@@ -1,7 +1,7 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { Character, CLASS_COLORS, CLASS_ICONS, FocusPath, FOCUS_PATHS, FOCUS_PATH_LABELS, FOCUS_PATH_ICONS, EMPTY_FOCUS } from '../../../core/models/character.model';
+import { Character, CLASS_COLORS, CLASS_ICONS } from '../../../core/models/character.model';
 import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
 
 export type SpendableAttr = 'poder' | 'habilidade' | 'resistencia';
@@ -169,57 +169,6 @@ export class CharacterDialogComponent {
 
   pendingAttrLabel(): string {
     return ATTR_ROWS.find(r => r.key === this.pendingAttr())?.label ?? '';
-  }
-
-  // ── Focus de Magia ────────────────────────────────────────────────
-  focusPaths = FOCUS_PATHS;
-  focusLabels = FOCUS_PATH_LABELS;
-  focusIcons  = FOCUS_PATH_ICONS;
-
-  pendingFocus = signal<FocusPath | null>(null);
-
-  focusValue(path: FocusPath): number {
-    return (this.char()!.focus ?? EMPTY_FOCUS)[path];
-  }
-
-  focusUpgradeCost(path: FocusPath): number {
-    return this.focusValue(path) + 1;
-  }
-
-  canUseFocus(): boolean {
-    const c = this.char()!;
-    if (c.class === 'mago' || c.class === 'clerigo') return true;
-    const vantagens = new Set(c.vantagens);
-    return vantagens.has('Arcano') || vantagens.has('Clericato');
-  }
-
-  canSpendFocus(path: FocusPath): boolean {
-    if (!this.canUseFocus()) return false;
-    return this.pe() >= this.focusUpgradeCost(path) && this.focusValue(path) < 5;
-  }
-
-  requestFocusSpend(path: FocusPath): void {
-    if (!this.canSpendFocus(path)) return;
-    this.pendingFocus.set(path);
-  }
-
-  confirmFocusSpend(): void {
-    const path = this.pendingFocus();
-    this.pendingFocus.set(null);
-    if (!path) return;
-    const c = this.char()!;
-    if (c.isCompanion) {
-      this.gs.spendCompanionFocusPoint(c.id, path);
-    } else {
-      this.gs.spendFocusPoint(path);
-    }
-  }
-
-  cancelFocusSpend(): void { this.pendingFocus.set(null); }
-
-  focusDots(path: FocusPath): { filled: boolean }[] {
-    const val = this.focusValue(path);
-    return Array.from({ length: 5 }, (_, i) => ({ filled: i < val }));
   }
 
   // ── HP / PM bars ────────────────────────────────────────────────
