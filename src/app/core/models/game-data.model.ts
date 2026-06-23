@@ -117,7 +117,7 @@ export type EncounterTheme =
 
 export interface EncounterChoice {
   text: string;
-  testStat?: 'forca' | 'habilidade' | 'resistencia';
+  testStat?: 'poder' | 'habilidade' | 'resistencia';
   testModifier?: number;   // bônus/redutor no teste
   successText: string;
   failText?: string;       // só se houver teste

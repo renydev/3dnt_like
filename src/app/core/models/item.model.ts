@@ -19,12 +19,16 @@ export type EquipSlot =
 
 export type ItemRarity = 'common' | 'uncommon' | 'rare';
 
+/**
+ * No 3D&T Victory, Armadura não é um atributo comprado com PP — é uma qualidade
+ * de equipamento (artefato). Por isso `armadura` aqui é só um bônus de item,
+ * somado à Resistência no teste de defesa.
+ */
 export interface StatBonus {
-  forca?:       number;
+  poder?:       number;
   habilidade?:  number;
   resistencia?: number;
   armadura?:    number;
-  poderFogo?:   number;
   pontosVida?:  number;
   pontosMana?:  number;
 }
@@ -63,11 +67,10 @@ export interface Equipment {
 }
 
 export interface EffectiveStats {
-  forca:       number;
+  poder:       number;
   habilidade:  number;
   resistencia: number;
   armadura:    number;
-  poderFogo:   number;
 }
 
 // ── Utilitários ────────────────────────────────────────────────────────────────
@@ -81,11 +84,10 @@ export function mergeBonus(...items: (Item | undefined)[]): StatBonus {
   for (const item of items) {
     if (!item?.statBonus) continue;
     const s = item.statBonus;
-    if (s.forca)       b.forca       = (b.forca       ?? 0) + s.forca;
+    if (s.poder)       b.poder       = (b.poder       ?? 0) + s.poder;
     if (s.habilidade)  b.habilidade  = (b.habilidade  ?? 0) + s.habilidade;
     if (s.resistencia) b.resistencia = (b.resistencia ?? 0) + s.resistencia;
     if (s.armadura)    b.armadura    = (b.armadura    ?? 0) + s.armadura;
-    if (s.poderFogo)   b.poderFogo   = (b.poderFogo   ?? 0) + s.poderFogo;
     if (s.pontosVida)  b.pontosVida  = (b.pontosVida  ?? 0) + s.pontosVida;
     if (s.pontosMana)  b.pontosMana  = (b.pontosMana  ?? 0) + s.pontosMana;
   }
@@ -96,11 +98,10 @@ export function getEffectiveStats(char: Character): EffectiveStats {
   const eq = char.equipment ?? {};
   const b = mergeBonus(...allEquipItems(eq));
   return {
-    forca:       char.forca.current       + (b.forca       ?? 0),
+    poder:       char.poder.current       + (b.poder       ?? 0),
     habilidade:  char.habilidade.current  + (b.habilidade  ?? 0),
     resistencia: char.resistencia.current + (b.resistencia ?? 0),
-    armadura:    char.armadura            + (b.armadura    ?? 0),
-    poderFogo:   char.poderFogo.current   + (b.poderFogo   ?? 0),
+    armadura:    (b.armadura ?? 0), // Armadura é 100% equipamento — sem base no personagem
   };
 }
 
@@ -137,11 +138,10 @@ export function equipSlotLabel(slot: string): string {
 
 export function statBonusLabel(b: StatBonus): string {
   const parts: string[] = [];
-  if (b.forca)       parts.push(`${b.forca > 0 ? '+' : ''}${b.forca}F`);
+  if (b.poder)       parts.push(`${b.poder > 0 ? '+' : ''}${b.poder}P`);
   if (b.habilidade)  parts.push(`${b.habilidade > 0 ? '+' : ''}${b.habilidade}H`);
   if (b.resistencia) parts.push(`${b.resistencia > 0 ? '+' : ''}${b.resistencia}R`);
   if (b.armadura)    parts.push(`${b.armadura > 0 ? '+' : ''}${b.armadura}A`);
-  if (b.poderFogo)   parts.push(`${b.poderFogo > 0 ? '+' : ''}${b.poderFogo}PF`);
   if (b.pontosVida)  parts.push(`${b.pontosVida > 0 ? '+' : ''}${b.pontosVida}PV`);
   if (b.pontosMana)  parts.push(`${b.pontosMana > 0 ? '+' : ''}${b.pontosMana}PM`);
   return parts.join(' ') || '';
@@ -163,32 +163,32 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'espada-curta': {
     id: 'espada-curta', name: 'Espada Curta', icon: '🗡️',
     category: 'equipment', slot: 'weapon', rarity: 'common',
-    description: 'Espada leve e confiável. +1 Força.',
-    statBonus: { forca: 1 },
+    description: 'Espada leve e confiável. +1 Poder.',
+    statBonus: { poder: 1 },
   },
   'espada-longa': {
     id: 'espada-longa', name: 'Espada Longa', icon: '⚔️',
     category: 'equipment', slot: 'weapon', rarity: 'uncommon',
-    description: 'Espada equilibrada de dois gumes. +2 Força.',
-    statBonus: { forca: 2 },
+    description: 'Espada equilibrada de dois gumes. +2 Poder.',
+    statBonus: { poder: 2 },
   },
   'espada-encantada': {
     id: 'espada-encantada', name: 'Espada Encantada', icon: '✨',
     category: 'equipment', slot: 'weapon', rarity: 'rare',
-    description: 'Lâmina imbuída com magia arcana. +2 Força e +1 Habilidade.',
-    statBonus: { forca: 2, habilidade: 1 },
+    description: 'Lâmina imbuída com magia arcana. +2 Poder e +1 Habilidade.',
+    statBonus: { poder: 2, habilidade: 1 },
   },
   'martelo-sagrado': {
     id: 'martelo-sagrado', name: 'Martelo Sagrado', icon: '🔨',
     category: 'equipment', slot: 'weapon', rarity: 'uncommon',
-    description: 'Maça abençoada. +1 Força e +1 Poder de Fogo.',
-    statBonus: { forca: 1, poderFogo: 1 },
+    description: 'Maça abençoada. +2 Poder.',
+    statBonus: { poder: 2 },
   },
   'cajado-arcano': {
     id: 'cajado-arcano', name: 'Cajado Arcano', icon: '🪄',
     category: 'equipment', slot: 'weapon', rarity: 'common',
-    description: 'Cajado que amplifica magias. +1 Poder de Fogo e +2 PM.',
-    statBonus: { poderFogo: 1, pontosMana: 2 },
+    description: 'Cajado que amplifica magias. +1 Poder e +2 PM.',
+    statBonus: { poder: 1, pontosMana: 2 },
   },
   'adaga': {
     id: 'adaga', name: 'Adaga', icon: '🔪',
@@ -201,26 +201,26 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'machado-guerra': {
     id: 'machado-guerra', name: 'Machado de Guerra', icon: '🪓',
     category: 'equipment', slot: 'weapon', rarity: 'uncommon', twoHanded: true,
-    description: 'Machado pesado de duas mãos. +3 Força, −1 Habilidade.',
-    statBonus: { forca: 3, habilidade: -1 },
+    description: 'Machado pesado de duas mãos. +3 Poder, −1 Habilidade.',
+    statBonus: { poder: 3, habilidade: -1 },
   },
   'arco-curto': {
     id: 'arco-curto', name: 'Arco Curto', icon: '🏹',
     category: 'equipment', slot: 'weapon', rarity: 'common', twoHanded: true,
-    description: 'Arco leve à distância. +1 Poder de Fogo.',
-    statBonus: { poderFogo: 1 },
+    description: 'Arco leve à distância. +1 Poder.',
+    statBonus: { poder: 1 },
   },
   'arco-longo': {
     id: 'arco-longo', name: 'Arco Longo', icon: '🏹',
     category: 'equipment', slot: 'weapon', rarity: 'uncommon', twoHanded: true,
-    description: 'Arco de precisão para longas distâncias. +2 Poder de Fogo.',
-    statBonus: { poderFogo: 2 },
+    description: 'Arco de precisão para longas distâncias. +2 Poder.',
+    statBonus: { poder: 2 },
   },
   'lanca': {
     id: 'lanca', name: 'Lança', icon: '🗡️',
     category: 'equipment', slot: 'weapon', rarity: 'uncommon', twoHanded: true,
-    description: 'Lança de haste longa. +1 Força e +1 Habilidade.',
-    statBonus: { forca: 1, habilidade: 1 },
+    description: 'Lança de haste longa. +1 Poder e +1 Habilidade.',
+    statBonus: { poder: 1, habilidade: 1 },
   },
 
   // ── MÃO SECUNDÁRIA: ESCUDOS ───────────────────────────────────────────────────
@@ -239,8 +239,8 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'escudo-bento': {
     id: 'escudo-bento', name: 'Escudo Bento', icon: '🛡️',
     category: 'equipment', slot: 'offhand', rarity: 'uncommon',
-    description: 'Escudo abençoado por clérigos. +2 Armadura e +1 Poder de Fogo.',
-    statBonus: { armadura: 2, poderFogo: 1 },
+    description: 'Escudo abençoado por clérigos. +2 Armadura e +1 Poder.',
+    statBonus: { armadura: 2, poder: 1 },
   },
 
   // ── ARMADURAS (corpo) ─────────────────────────────────────────────────────────
@@ -271,8 +271,8 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'manto-druida': {
     id: 'manto-druida', name: 'Manto Druida', icon: '🌿',
     category: 'equipment', slot: 'armor', rarity: 'uncommon',
-    description: 'Manto de fibras naturais encantadas. +2 PM e +1 Poder de Fogo.',
-    statBonus: { pontosMana: 2, poderFogo: 1 },
+    description: 'Manto de fibras naturais encantadas. +2 PM e +1 Poder.',
+    statBonus: { pontosMana: 2, poder: 1 },
   },
 
   // ── CABEÇA ────────────────────────────────────────────────────────────────────
@@ -303,8 +303,8 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'elmo-sagrado': {
     id: 'elmo-sagrado', name: 'Elmo Sagrado', icon: '✨',
     category: 'equipment', slot: 'head', rarity: 'rare',
-    description: 'Elmo abençoado pelos deuses. +1 Armadura e +1 Poder de Fogo.',
-    statBonus: { armadura: 1, poderFogo: 1 },
+    description: 'Elmo abençoado pelos deuses. +1 Armadura e +1 Poder.',
+    statBonus: { armadura: 1, poder: 1 },
   },
 
   // ── LUVAS / MANOPLAS (braços) — exclui anéis ──────────────────────────────────
@@ -317,20 +317,20 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'manoplas-ferro': {
     id: 'manoplas-ferro', name: 'Manoplas de Ferro', icon: '🥊',
     category: 'equipment', slot: 'gloves', rarity: 'uncommon',
-    description: 'Manoplas de ferro. +1 Armadura e +1 Força.',
-    statBonus: { armadura: 1, forca: 1 },
+    description: 'Manoplas de ferro. +1 Armadura e +1 Poder.',
+    statBonus: { armadura: 1, poder: 1 },
   },
   'luvas-mago': {
     id: 'luvas-mago', name: 'Luvas de Mago', icon: '🧤',
     category: 'equipment', slot: 'gloves', rarity: 'uncommon',
-    description: 'Luvas encantadas para conjuradores. +1 Poder de Fogo e +2 PM.',
-    statBonus: { poderFogo: 1, pontosMana: 2 },
+    description: 'Luvas encantadas para conjuradores. +1 Poder e +2 PM.',
+    statBonus: { poder: 1, pontosMana: 2 },
   },
   'manoplas-sagradas': {
     id: 'manoplas-sagradas', name: 'Manoplas Sagradas', icon: '🥊',
     category: 'equipment', slot: 'gloves', rarity: 'rare',
-    description: 'Manoplas abençoadas. +1 Força, +1 Armadura e +1 Poder de Fogo.',
-    statBonus: { forca: 1, armadura: 1, poderFogo: 1 },
+    description: 'Manoplas abençoadas. +2 Poder e +1 Armadura.',
+    statBonus: { poder: 2, armadura: 1 },
   },
 
   // ── BOTAS (pés) ───────────────────────────────────────────────────────────────
@@ -355,8 +355,8 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'botas-mago': {
     id: 'botas-mago', name: 'Botas de Mago', icon: '👟',
     category: 'equipment', slot: 'boots', rarity: 'rare',
-    description: 'Botas para conjuradores. +2 PM e +1 Poder de Fogo.',
-    statBonus: { pontosMana: 2, poderFogo: 1 },
+    description: 'Botas para conjuradores. +2 PM e +1 Poder.',
+    statBonus: { pontosMana: 2, poder: 1 },
   },
 
   // ── ANÉIS (dedos) — um por mão, exclui luvas ──────────────────────────────────
@@ -369,8 +369,8 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'anel-fortuna': {
     id: 'anel-fortuna', name: 'Anel da Fortuna', icon: '🍀',
     category: 'equipment', slot: 'ring', rarity: 'rare',
-    description: 'Anel lendário que aguça mente e magia. +1 Habilidade e +1 Poder de Fogo.',
-    statBonus: { habilidade: 1, poderFogo: 1 },
+    description: 'Anel lendário que aguça mente e poder. +1 Habilidade e +1 Poder.',
+    statBonus: { habilidade: 1, poder: 1 },
   },
   'anel-protecao': {
     id: 'anel-protecao', name: 'Anel de Proteção', icon: '💍',
@@ -381,14 +381,14 @@ export const ITEM_CATALOG: Record<string, Item> = {
   'anel-forca': {
     id: 'anel-forca', name: 'Anel de Força', icon: '💍',
     category: 'equipment', slot: 'ring', rarity: 'common',
-    description: 'Anel encantado que amplifica a força. +1 Força.',
-    statBonus: { forca: 1 },
+    description: 'Anel encantado que amplifica o poder. +1 Poder.',
+    statBonus: { poder: 1 },
   },
   'anel-poder': {
     id: 'anel-poder', name: 'Anel de Poder', icon: '🌟',
     category: 'equipment', slot: 'ring', rarity: 'common',
-    description: 'Anel que potencializa ataques mágicos. +1 Poder de Fogo.',
-    statBonus: { poderFogo: 1 },
+    description: 'Anel que potencializa ataques. +1 Poder.',
+    statBonus: { poder: 1 },
   },
   'anel-resistencia': {
     id: 'anel-resistencia', name: 'Anel de Resistência', icon: '💍',

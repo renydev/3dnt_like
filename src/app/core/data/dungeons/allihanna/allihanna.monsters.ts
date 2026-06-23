@@ -10,11 +10,10 @@ export interface MonsterTemplate {
   icon: string;
   sprite?: string;
   flavorText: string;
-  forca: number;
+  poder: number;
   habilidade: number;
   resistencia: number;
   armadura: number;
-  poderFogo: number;
   hp?: number;
   xpReward: number;
   goldReward: number;
@@ -26,49 +25,49 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
   elefante: {
     name: 'Elefante', icon: '🐘',
     flavorText: 'Manada protetora às margens do lago — se assustam com invasores e lutam até a morte pelos filhotes.',
-    forca: 5, habilidade: 1, resistencia: 4, armadura: 1, poderFogo: 1,
+    poder: 5, habilidade: 1, resistencia: 4, armadura: 1,
     hp: 20,
     xpReward: 12, goldReward: 0,
   },
   assassino_savana: {
     name: 'Assassino da Savana', icon: '🐆',
     flavorText: 'Felino com quatro pares de patas que salta da grama alta para atacar com garras e mordida simultaneamente.',
-    forca: 6, habilidade: 3, resistencia: 6, armadura: 3, poderFogo: 0,
+    poder: 6, habilidade: 3, resistencia: 6, armadura: 3,
     hp: 30,
     xpReward: 18, goldReward: 0,
   },
   urso_coruja: {
     name: 'Urso-Coruja', icon: '🦉', sprite: 'urso-coruja.png',
     flavorText: 'Predador territorial coberto de penas escuras e pelos amarronzados. Ataca com garras e bico sem hesitar.',
-    forca: 5, habilidade: 2, resistencia: 4, armadura: 3, poderFogo: 0,
+    poder: 5, habilidade: 2, resistencia: 4, armadura: 3,
     hp: 20,
     xpReward: 14, goldReward: 0,
   },
   urso_coruja_imenso: {
     name: 'Urso-Coruja Imenso', icon: '🦉', sprite: 'urso-coruja.png',
     flavorText: 'Talvez o maior urso-coruja de toda Arton. Confronta intrusos com fúria absoluta e luta até a morte.',
-    forca: 7, habilidade: 1, resistencia: 5, armadura: 5, poderFogo: 0,
+    poder: 7, habilidade: 1, resistencia: 5, armadura: 5,
     hp: 25,
     xpReward: 25, goldReward: 0,
   },
   leao_fallandi: {
     name: 'Leão de Fallandi', icon: '🦁',
     flavorText: 'Leão maior que o comum, companheiro do druida. Ágil e feroz, protege seu mestre com garras e mordida.',
-    forca: 3, habilidade: 3, resistencia: 2, armadura: 0, poderFogo: 0,
+    poder: 3, habilidade: 3, resistencia: 2, armadura: 0,
     hp: 15,
     xpReward: 10, goldReward: 0,
   },
   urso_vegetal: {
     name: 'Urso Vegetal', icon: '🌿',
     flavorText: 'Criatura invocada pela magia Criatura Mágica de Fallandi. Construto feito de matéria vegetal — vulnerável ao fogo.',
-    forca: 2, habilidade: 1, resistencia: 2, armadura: 0, poderFogo: 0,
+    poder: 2, habilidade: 1, resistencia: 2, armadura: 0,
     hp: 20,
     xpReward: 8, goldReward: 0,
   },
   fallandi: {
     name: 'Fallandi', icon: '🌿',
     flavorText: 'Meio humano, meio dríade — o Guardião de Allihanna. Druida que serve a deusa no labirinto com seriedade absoluta.',
-    forca: 3, habilidade: 3, resistencia: 3, armadura: 1, poderFogo: 0,
+    poder: 3, habilidade: 3, resistencia: 3, armadura: 1,
     hp: 12,
     xpReward: 30, goldReward: 10,
   },
@@ -78,70 +77,70 @@ export const ALLIHANNA_MONSTERS: Record<string, MonsterTemplate> = {
   druida_allihanna: {
     name: 'Druida de Allihanna', icon: '🌱',
     flavorText: 'Servo da Mãe Natureza. Prefere a paz, mas defende a floresta com magia e animais aliados.',
-    forca: 1, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 2,
+    poder: 1, habilidade: 3, resistencia: 2, armadura: 2,
     hp: 10,
     xpReward: 10, goldReward: 5,
   },
   ranger: {
     name: 'Ranger', icon: '🏹',
     flavorText: 'Explorador da floresta, habilidoso com arco e espada. Ataca múltiplas vezes com agilidade.',
-    forca: 2, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 3,
+    poder: 2, habilidade: 3, resistencia: 2, armadura: 2,
     hp: 10,
     xpReward: 10, goldReward: 3,
   },
   centauro_ranger: {
     name: 'Centauro Ranger', icon: '🐴', sprite: 'centauro-combatente.png',
     flavorText: 'Meio homem, meio cavalo — patrulha a floresta com arco na mão e casco certeiro.',
-    forca: 2, habilidade: 3, resistencia: 2, armadura: 2, poderFogo: 2,
+    poder: 2, habilidade: 3, resistencia: 2, armadura: 2,
     hp: 10,
     xpReward: 11, goldReward: 0,
   },
   lobo_cavernas: {
     name: 'Lobo-das-Cavernas', icon: '🐺', sprite: 'lobo-das-cavernas.png',
     flavorText: 'Lobo maior e mais feroz que o comum. Caça em matilha, fareja presas a grande distância.',
-    forca: 1, habilidade: 2, resistencia: 2, armadura: 1, poderFogo: 0,
+    poder: 1, habilidade: 2, resistencia: 2, armadura: 1,
     hp: 10,
     xpReward: 6, goldReward: 0,
   },
   grifo: {
     name: 'Grifo', icon: '🦅', sprite: 'grifo.png',
     flavorText: 'Criatura alada com corpo de leão e cabeça de águia. Veloz e letal no ar ou no chão.',
-    forca: 2, habilidade: 5, resistencia: 4, armadura: 1, poderFogo: 0,
+    poder: 2, habilidade: 5, resistencia: 4, armadura: 1,
     hp: 20,
     xpReward: 16, goldReward: 0,
   },
   gorila: {
     name: 'Gorila', icon: '🦍',
     flavorText: 'Primata colossal, territorialmente agressivo. Conhecido por habitar esta masmorra.',
-    forca: 2, habilidade: 2, resistencia: 2, armadura: 1, poderFogo: 0,
+    poder: 2, habilidade: 2, resistencia: 2, armadura: 1,
     hp: 10,
     xpReward: 8, goldReward: 0,
   },
   driade: {
     name: 'Dríade', icon: '🌳',
     flavorText: 'Espírito feminino das árvores. Imortal enquanto sua árvore existir. Paralisa com um toque.',
-    forca: 1, habilidade: 2, resistencia: 1, armadura: 0, poderFogo: 0,
+    poder: 1, habilidade: 2, resistencia: 1, armadura: 0,
     hp: 5,
     xpReward: 14, goldReward: 0,
   },
   tigre: {
     name: 'Tigre', icon: '🐯',
     flavorText: 'Predador ágil da floresta, caça de surpresa e retira-se ao perder metade dos PVs.',
-    forca: 3, habilidade: 3, resistencia: 2, armadura: 0, poderFogo: 0,
+    poder: 3, habilidade: 3, resistencia: 2, armadura: 0,
     hp: 10,
     xpReward: 9, goldReward: 0,
   },
   crocodilo: {
     name: 'Crocodilo', icon: '🐊',
     flavorText: 'Réptil blindado que aguarda imóvel antes de atacar com mordida devastadora.',
-    forca: 3, habilidade: 0, resistencia: 3, armadura: 2, poderFogo: 0,
+    poder: 3, habilidade: 0, resistencia: 3, armadura: 2,
     hp: 15,
     xpReward: 9, goldReward: 0,
   },
   urso_cavernas: {
     name: 'Urso das Cavernas', icon: '🐻',
     flavorText: 'Urso de grande porte que habita as cavernas da floresta. Poderoso e territorial.',
-    forca: 4, habilidade: 3, resistencia: 3, armadura: 1, poderFogo: 0,
+    poder: 4, habilidade: 3, resistencia: 3, armadura: 1,
     hp: 15,
     xpReward: 12, goldReward: 0,
   },
@@ -158,11 +157,11 @@ export function spawnMonster(key: string, isBoss = false): Enemy {
     flavorText: tpl.flavorText,
     hp,
     maxHp: hp,
-    forca: tpl.forca,
+    poder: tpl.poder,
     habilidade: tpl.habilidade,
     resistencia: tpl.resistencia,
     armadura: tpl.armadura,
-    pp: calcEnemyPP(tpl.forca, tpl.habilidade, tpl.armadura, tpl.resistencia),
+    pp: calcEnemyPP(tpl.poder, tpl.habilidade, tpl.resistencia),
     xpReward: tpl.xpReward,
     goldReward: tpl.goldReward,
     isBoss,

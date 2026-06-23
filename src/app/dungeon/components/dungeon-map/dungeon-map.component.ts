@@ -118,11 +118,10 @@ import { MapScene } from '../../phaser/scenes/map.scene';
           </div>
           @if (effectiveStats(); as s) {
             <div class="eff-stats">
-              <span>F{{ s.forca }}</span>
+              <span>P{{ s.poder }}</span>
               <span>H{{ s.habilidade }}</span>
               <span>R{{ s.resistencia }}</span>
               <span>A{{ s.armadura }}</span>
-              <span>PF{{ s.poderFogo }}</span>
             </div>
           }
 

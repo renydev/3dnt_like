@@ -148,11 +148,10 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
             <span class="treasure-item-desc">{{ ti.description }}</span>
             @if (ti.statBonus) {
               <span class="treasure-item-bonus">
-                @if (ti.statBonus.forca)       { +{{ ti.statBonus.forca }}F }
+                @if (ti.statBonus.poder)       { +{{ ti.statBonus.poder }}P }
                 @if (ti.statBonus.habilidade)  { +{{ ti.statBonus.habilidade }}H }
                 @if (ti.statBonus.resistencia) { +{{ ti.statBonus.resistencia }}R }
                 @if (ti.statBonus.armadura)    { +{{ ti.statBonus.armadura }}A }
-                @if (ti.statBonus.poderFogo)   { +{{ ti.statBonus.poderFogo }}PF }
                 @if (ti.statBonus.pontosVida)  { +{{ ti.statBonus.pontosVida }}PV }
                 @if (ti.statBonus.pontosMana)  { +{{ ti.statBonus.pontosMana }}PM }
               </span>

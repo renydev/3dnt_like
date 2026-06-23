@@ -6,7 +6,7 @@ export type CharacterClass =
   | 'bardo' | 'druida' | 'paladino' | 'barbaro' | 'monge';
 
 export type CharacterRace =
-  | 'humano' | 'elfo' | 'anao' | 'halfling' | 'gnomo'
+  | 'humano' | 'arcanauta' | 'elfo' | 'anao' | 'halfling' | 'gnomo'
   | 'meio-elfo' | 'meio-orc' | 'lefou' | 'minotauro' | 'goblin';
 
 export type CharacterRole = 'tank' | 'dps' | 'healer' | 'mage';
@@ -88,17 +88,15 @@ export interface Character {
   xp: number;
   xpToNextLevel: number;
 
-  // Atributos 3D&T
-  forca: Attribute;       // F - Força
-  habilidade: Attribute;  // H - Habilidade
-  resistencia: Attribute; // R - Resistência
-  armadura: number;       // A - Armadura
-  poderFogo: Attribute; // PF - Poder de Fogo
+  // Atributos 3D&T Victory: Poder, Habilidade, Resistência
+  poder: Attribute;       // P - capacidade de impor esforço (ataque físico, social e mágico)
+  habilidade: Attribute;  // H - agilidade, raciocínio, define PM
+  resistencia: Attribute; // R - vigor e força de vontade, define PV
 
-  // PV = R * 5 no 3D&T
+  // PV = R × 5 (3D&T Victory)
   pontosVida: Attribute;
 
-  // PM = Pontos de Mana (consumível para habilidades)
+  // PM = H × 5 (3D&T Victory) — consumível para vantagens e técnicas
   pontosMana: Attribute;
 
   // Vantagens/Desvantagens/Perícias
@@ -116,9 +114,9 @@ export interface Character {
   focus?: FocusPaths;
 
   // Modificadores raciais (separados da base para cálculo correto de custo)
-  racialMods?: Partial<Record<'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo', number>>;
+  racialMods?: Partial<Record<'poder' | 'habilidade' | 'resistencia', number>>;
 
-  // Evolução — pontos disponíveis para gastar em atributos
+  // Evolução — pontos disponíveis para gastar em atributos (vindos de XP, 10XP = 1PP)
   levelUpPoints?: number;
 
   // Metadados visuais
@@ -131,8 +129,9 @@ import { ITEM_CATALOG, applyStartingRing } from './item.model';
 const I = ITEM_CATALOG;
 
 /**
- * 10 personagens lendários (tier Lenda).
- * Regras: nenhum atributo ultrapassa 5; PF mínimo 1; PV = R*5 (mín 1).
+ * 10 personagens lendários (tier Lenda), em atributos 3D&T Victory (Poder/Habilidade/Resistência).
+ * Poder = max do antigo Força/Poder de Fogo (preserva a especialidade de combate de cada um).
+ * PM = Habilidade × 5, PV = Resistência × 5.
  */
 const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── TANKS ────────────────────────────────────────────────────────────────
@@ -141,11 +140,9 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'barbaro',
     race: 'minotauro',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 5, current: 5, max: 5 },
+    poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 1, current: 1, max: 1 },
     resistencia:{ base: 5, current: 5, max: 5 },
-    armadura: 3,
-    poderFogo:  { base: 1, current: 1, max: 1 },
     pontosVida: { base: 25, current: 25, max: 25 },
     pontosMana: { base: 5, current: 5, max: 5 },
     vantagens: ['Fúria Bárbara', 'Alma Primitiva', 'Chifrada'],
@@ -160,13 +157,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'guerreiro',
     race: 'meio-orc',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 5, current: 5, max: 5 },
+    poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 2, current: 2, max: 2 },
     resistencia:{ base: 4, current: 4, max: 4 },
-    armadura: 4,
-    poderFogo:  { base: 1, current: 1, max: 1 },
     pontosVida: { base: 20, current: 20, max: 20 },
-    pontosMana: { base: 4, current: 4, max: 4 },
+    pontosMana: { base: 10, current: 10, max: 10 },
     vantagens: ['Ataque Duplo', 'Especialização em Arma', 'Implacável'],
     desvantagens: ['Má Fama'],
     gold: 25,
@@ -179,13 +174,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'paladino',
     race: 'anao',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 4, current: 4, max: 4 },
+    poder:      { base: 4, current: 4, max: 4 },
     habilidade: { base: 2, current: 2, max: 2 },
     resistencia:{ base: 4, current: 4, max: 4 },
-    armadura: 5,
-    poderFogo:  { base: 3, current: 3, max: 3 },
     pontosVida: { base: 20, current: 20, max: 20 },
-    pontosMana: { base: 12, current: 12, max: 12 },
+    pontosMana: { base: 10, current: 10, max: 10 },
     vantagens: ['Golpe Divino', 'Imposição de Mãos', 'Aura de Proteção', 'Resistência Anã'],
     desvantagens: ['Código de Honra'],
     gold: 30,
@@ -199,13 +192,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'ladino',
     race: 'goblin',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 2, current: 2, max: 2 },
+    poder:      { base: 2, current: 2, max: 2 },
     habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 2, current: 2, max: 2 },
-    armadura: 3,
-    poderFogo:  { base: 1, current: 1, max: 1 },
     pontosVida: { base: 10, current: 10, max: 10 },
-    pontosMana: { base: 4, current: 4, max: 4 },
+    pontosMana: { base: 25, current: 25, max: 25 },
     vantagens: ['Ataque Furtivo', 'Furtividade Profissional', 'Oportunista'],
     desvantagens: ['Desconfiado', 'Frágil'],
     gold: 60,
@@ -218,13 +209,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'ranger',
     race: 'meio-elfo',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 2, current: 2, max: 2 },
+    poder:      { base: 4, current: 4, max: 4 },
     habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 3, current: 3, max: 3 },
-    armadura: 3,
-    poderFogo:  { base: 4, current: 4, max: 4 },
     pontosVida: { base: 15, current: 15, max: 15 },
-    pontosMana: { base: 9, current: 9, max: 9 },
+    pontosMana: { base: 25, current: 25, max: 25 },
     vantagens: ['Tiro Certeiro', 'Rastreamento', 'Herança Dual'],
     desvantagens: ['Solitário'],
     gold: 35,
@@ -237,13 +226,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'monge',
     race: 'halfling',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 2, current: 2, max: 2 },
+    poder:      { base: 4, current: 4, max: 4 },
     habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 2, current: 2, max: 2 },
-    armadura: 2,
-    poderFogo:  { base: 4, current: 4, max: 4 },
     pontosVida: { base: 10, current: 10, max: 10 },
-    pontosMana: { base: 6, current: 6, max: 6 },
+    pontosMana: { base: 25, current: 25, max: 25 },
     vantagens: ['Ataque Desarmado', 'Armadura de Ki', 'Sorte de Halfling'],
     desvantagens: ['Código de Honra'],
     gold: 20,
@@ -257,13 +244,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'clerigo',
     race: 'humano',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 2, current: 2, max: 2 },
+    poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 3, current: 3, max: 3 },
     resistencia:{ base: 4, current: 4, max: 4 },
-    armadura: 3,
-    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 20, current: 20, max: 20 },
-    pontosMana: { base: 16, current: 16, max: 16 },
+    pontosMana: { base: 15, current: 15, max: 15 },
     vantagens: ['Cura Divina', 'Expulsar Mortos-Vivos', 'Versatilidade Humana'],
     desvantagens: ['Obrigação (Igreja de Khalmyr)'],
     gold: 20,
@@ -276,13 +261,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'druida',
     race: 'elfo',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 1, current: 1, max: 1 },
+    poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 4, current: 4, max: 4 },
     resistencia:{ base: 4, current: 4, max: 4 },
-    armadura: 2,
-    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 20, current: 20, max: 20 },
-    pontosMana: { base: 16, current: 16, max: 16 },
+    pontosMana: { base: 20, current: 20, max: 20 },
     vantagens: ['Forma Animal', 'Magia Natural', 'Sentidos Élficos'],
     desvantagens: ['Juramento da Natureza'],
     gold: 15,
@@ -296,13 +279,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'mago',
     race: 'lefou',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 1, current: 1, max: 1 },
+    poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 4, current: 4, max: 4 },
     resistencia:{ base: 3, current: 3, max: 3 },
-    armadura: 1,
-    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 15, current: 15, max: 15 },
-    pontosMana: { base: 15, current: 15, max: 15 },
+    pontosMana: { base: 20, current: 20, max: 20 },
     vantagens: ['Arcano Avançado', 'Conjuração Aprimorada', 'Visão nas Trevas'],
     desvantagens: ['Marca do Mal'],
     gold: 25,
@@ -315,13 +296,11 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
     class: 'bardo',
     race: 'gnomo',
     level: 1, xp: 0, xpToNextLevel: 100,
-    forca:      { base: 1, current: 1, max: 1 },
+    poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 5, current: 5, max: 5 },
     resistencia:{ base: 3, current: 3, max: 3 },
-    armadura: 2,
-    poderFogo:  { base: 5, current: 5, max: 5 },
     pontosVida: { base: 15, current: 15, max: 15 },
-    pontosMana: { base: 12, current: 12, max: 12 },
+    pontosMana: { base: 25, current: 25, max: 25 },
     vantagens: ['Inspiração Bardística', 'Jack of All Trades', 'Ilusionista Nato'],
     desvantagens: ['Curioso Demais'],
     gold: 45,

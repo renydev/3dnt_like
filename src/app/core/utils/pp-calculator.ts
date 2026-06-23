@@ -1,81 +1,97 @@
 import { Character } from '../models/character.model';
 
 /**
- * Custo acumulado de PP para um atributo no valor N.
- * Ex: F5 = 5+4+3+2+1 = 15
+ * Custo de PP de um atributo no 3D&T Victory: linear, 1PP por ponto (0–5).
+ * Acima de 5 (só possível gastando XP, fora da criação), cada ponto custa 2PP
+ * (equivalente a 20XP/ponto, já que 10XP = 1PP).
  */
 export function attrPPCost(value: number): number {
-  return (value * (value + 1)) / 2;
+  if (value <= 5) return Math.max(0, value);
+  return 5 + (value - 5) * 2;
 }
 
 /**
- * PP total gasto num personagem.
- * Usa o valor REAL (base + modificador racial) de cada atributo,
- * pois raças têm custo próprio embutido.
+ * PP total gasto num personagem: soma de Poder + Habilidade + Resistência.
+ * Usa o valor REAL (base + modificador racial) de cada atributo.
  */
 export function calcCharacterPP(char: Character): number {
-  const f  = char.forca.base;
-  const h  = char.habilidade.base;
-  const r  = char.resistencia.base;
-  const a  = char.armadura;
-  const pf = char.poderFogo.base;
-  return attrPPCost(f) + attrPPCost(h) + attrPPCost(r) + attrPPCost(a) + attrPPCost(pf);
+  const p = char.poder.base;
+  const h = char.habilidade.base;
+  const r = char.resistencia.base;
+  return attrPPCost(p) + attrPPCost(h) + attrPPCost(r);
 }
 
 /**
- * PP de um inimigo com base nos seus atributos.
- * Resistência estimada a partir do HP (HP = R*5).
+ * PP de um inimigo com base nos seus atributos (Poder, Habilidade, Resistência).
+ * Resistência estimada a partir do HP quando não informada (HP = R × 5).
  */
-export function calcEnemyPP(forca: number, habilidade: number, armadura: number, resistencia?: number): number {
+export function calcEnemyPP(poder: number, habilidade: number, resistencia?: number): number {
   const r = resistencia ?? 1;
-  return attrPPCost(forca) + attrPPCost(habilidade) + attrPPCost(armadura) + attrPPCost(r);
+  return attrPPCost(poder) + attrPPCost(habilidade) + attrPPCost(r);
 }
 
-/**
- * PE que um único monstro vale para um personagem com `charPP` pontos.
- * Regras:
- *   - monsterPP < charPP/2          → 0 PE
- *   - ratio 0.5× a 1.5×             → 1 PE
- *   - ratio 1.5× a 2.5×             → 2 PE
- *   - acima de 2.5×                 → 1 PE por cada metade (floor(ratio*2))
- */
-export function monsterPEForChar(monsterPP: number, charPP: number): number {
-  if (charPP <= 0) return 0;
-  const ratio = monsterPP / charPP;
-  if (ratio < 0.5) return 0;
-  if (ratio < 1.5) return 1;
-  if (ratio < 2.5) return 2;
-  return Math.floor(ratio * 2);
+/** Faixas de poder do 3D&T Victory, usadas para nomear marcos de campanha. */
+export type PowerTier = 'iniciante' | 'heroi' | 'veterano';
+
+export function tierForPP(pp: number): PowerTier {
+  if (pp >= 35) return 'veterano';
+  if (pp >= 20) return 'heroi';
+  return 'iniciante';
 }
 
-export interface CombatPEResult {
-  /** PE que cada membro da party recebe */
-  pePerCharacter: number;
-  /** PE total gerado pelo encontro */
-  totalPE: number;
-  /** PP médio da party usado no cálculo */
-  avgCharPP: number;
+export const TIER_LABELS: Record<PowerTier, string> = {
+  iniciante: 'Iniciante',
+  heroi: 'Herói',
+  veterano: 'Veterano',
+};
+
+/** XP concedido por marco de campanha, de acordo com a faixa de poder do personagem. */
+export function milestoneXp(tier: PowerTier): number {
+  return tier === 'veterano' ? 30 : tier === 'heroi' ? 20 : 10;
+}
+
+export interface CombatXpResult {
+  /** XP que cada membro da party recebe */
+  xpPerCharacter: number;
+  /** Se este combate era o objetivo maior da aventura (chefe) */
+  isMajorObjective: boolean;
+  /** XP bônus concedido por enfrentar inimigos muito mais fortes */
+  bonusXp: number;
   /** PP somado de todos os monstros */
   totalMonsterPP: number;
+  /** PP somado de toda a party */
+  totalPartyPP: number;
 }
 
 /**
- * Calcula a distribuição de PE do combate.
- * - Cada monstro gera PE com base no PP médio da party.
- * - O total é dividido igualmente entre os personagens.
+ * Calcula a recompensa de XP de um combate, seguindo as regras do 3D&T Victory:
+ *   - Inimigos com PP somado ≤ metade do PP da party → 0 XP (longe demais de um desafio).
+ *   - Combate comum (objetivo menor) → 1 XP por personagem.
+ *   - Combate de chefe (objetivo maior) → 5 XP por personagem.
+ *   - Inimigos mais fortes que a party rendem XP bônus: 1 XP a cada 10 pontos de
+ *     diferença de PP, até um máximo de +5 (livro limita a 5XP bônus por aventura;
+ *     aqui aplicamos o teto por combate como simplificação).
  */
-export function calcCombatPE(
+export function calcCombatXp(
   monsterPPs: number[],
-  charPPs: number[],
-): CombatPEResult {
-  if (charPPs.length === 0 || monsterPPs.length === 0) {
-    return { pePerCharacter: 0, totalPE: 0, avgCharPP: 0, totalMonsterPP: 0 };
+  partyPPs: number[],
+  isBossFight: boolean,
+): CombatXpResult {
+  if (partyPPs.length === 0 || monsterPPs.length === 0) {
+    return { xpPerCharacter: 0, isMajorObjective: isBossFight, bonusXp: 0, totalMonsterPP: 0, totalPartyPP: 0 };
   }
 
-  const avgCharPP = charPPs.reduce((s, p) => s + p, 0) / charPPs.length;
+  const totalPartyPP = partyPPs.reduce((s, p) => s + p, 0);
   const totalMonsterPP = monsterPPs.reduce((s, p) => s + p, 0);
-  const totalPE = monsterPPs.reduce((s, pp) => s + monsterPEForChar(pp, avgCharPP), 0);
-  const pePerCharacter = Math.floor(totalPE / charPPs.length);
 
-  return { pePerCharacter, totalPE, avgCharPP, totalMonsterPP };
+  if (totalMonsterPP <= totalPartyPP * 0.5) {
+    return { xpPerCharacter: 0, isMajorObjective: isBossFight, bonusXp: 0, totalMonsterPP, totalPartyPP };
+  }
+
+  const base = isBossFight ? 5 : 1;
+  const bonusXp = totalMonsterPP > totalPartyPP
+    ? Math.min(5, Math.floor((totalMonsterPP - totalPartyPP) / 10))
+    : 0;
+
+  return { xpPerCharacter: base + bonusXp, isMajorObjective: isBossFight, bonusXp, totalMonsterPP, totalPartyPP };
 }

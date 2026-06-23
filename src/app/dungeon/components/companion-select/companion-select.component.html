@@ -18,11 +18,11 @@
           <p class="cs-name">{{ c.name }}</p>
           <p class="cs-class">{{ c.race | titlecase }} · {{ c.class | titlecase }}</p>
           <div class="cs-stats">
-            <span class="stat" title="Força">⚔️ {{ statLabel(c.forca) }}</span>
+            <span class="stat" title="Poder">⚔️ {{ statLabel(c.poder) }}</span>
             <span class="stat" title="Habilidade">🎯 {{ statLabel(c.habilidade) }}</span>
             <span class="stat" title="Resistência">🛡️ {{ statLabel(c.resistencia) }}</span>
             <span class="stat" title="Pontos de Vida">❤️ {{ c.pontosVida.max }}</span>
-            <span class="stat" title="Poder de Fogo">✨ {{ c.poderFogo.max }}</span>
+            <span class="stat" title="Pontos de Mana">✨ {{ c.pontosMana.max }}</span>
           </div>
           <div class="cs-vantagens">
             @for (v of c.vantagens.slice(0, 2); track v) {

@@ -8,7 +8,7 @@ export interface Enemy {
   flavorText: string;
   hp: number;
   maxHp: number;
-  forca: number;
+  poder: number;
   habilidade: number;
   resistencia: number;
   armadura: number;

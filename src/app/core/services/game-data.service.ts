@@ -29,27 +29,22 @@ export class GameDataService {
   // ── Cálculo de personagem ──────────────────────────────────────────────────
 
   calculateFinalStats(raceId: CharacterRace, classId: CharacterClass): {
-    forca: number; habilidade: number; resistencia: number;
-    armadura: number; poderFogo: number; pontosVida: number;
+    poder: number; habilidade: number; resistencia: number; pontosVida: number;
     bonusPoints: number;
   } {
     const race = this.getRace(raceId);
     const cls = this.getClass(classId);
     if (!race || !cls) throw new Error(`Race ${raceId} or class ${classId} not found`);
 
-    const forca      = cls.baseStats.forca      + (race.modifiers.forca      ?? 0);
+    const poder      = cls.baseStats.poder      + (race.modifiers.poder      ?? 0);
     const habilidade = cls.baseStats.habilidade + (race.modifiers.habilidade ?? 0);
     const resistencia= cls.baseStats.resistencia+ (race.modifiers.resistencia?? 0);
-    const armadura   = cls.baseStats.armadura   + (race.modifiers.armadura   ?? 0);
-    const poderFogo= cls.baseStats.poderFogo+ (race.modifiers.poderFogo?? 0);
     const pontosVida = cls.pvBase + (race.modifiers.pontosVida ?? 0);
 
     return {
-      forca:       Math.max(1, forca),
+      poder:       Math.max(1, poder),
       habilidade:  Math.max(1, habilidade),
       resistencia: Math.max(1, resistencia),
-      armadura:    Math.max(0, armadura),
-      poderFogo: Math.max(0, poderFogo),
       pontosVida:  Math.max(5, pontosVida),
       bonusPoints: race.bonusPoints,
     };

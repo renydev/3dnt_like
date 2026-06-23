@@ -1,11 +1,9 @@
 import { CharacterRace } from '../models/character.model';
 
 export interface RaceModifiers {
-  forca?: number;
+  poder?: number;
   habilidade?: number;
   resistencia?: number;
-  armadura?: number;
-  poderFogo?: number;
   pontosVida?: number;
 }
 
@@ -57,13 +55,33 @@ export const ALL_RACES: Race[] = [
     recommendedClasses: []
   },
   {
+    id: 'arcanauta',
+    name: 'Arcanauta',
+    icon: '🧭',
+    color: '#3d8fb5',
+    difficulty: 'Fácil',
+    lore: 'Exploradores das Arcas — dimensões instáveis que se conectam ao mundo desde as Convergências. Sem talento inato, mas movidos por audácia e curiosidade insaciável, os Arcanautas vivem para o próximo mistério, tesouro ou perigo logo atrás da próxima porta.',
+    modifiers: {},
+    pointCost: 0,
+    bonusPoints: 2,
+    freeVantagens: [],
+    freeDesvantagens: [],
+    traits: [
+      '+2 pontos de personagem extras',
+      'Sem modificadores de atributo',
+      'Vínculo com a BUSCA e exploração de Arcas',
+      'Tão versátil quanto um Humano comum'
+    ],
+    recommendedClasses: []
+  },
+  {
     id: 'elfo',
     name: 'Elfo',
     icon: '🌿',
     color: '#27ae60',
     difficulty: 'Médio',
     lore: 'Ancestrais e graciosos, os elfos carregam séculos de sabedoria. Ligados à magia desde o nascimento, enxergam no escuro e possuem reflexos sobre-humanos.',
-    modifiers: { habilidade: 1, forca: -1, poderFogo: 2 },
+    modifiers: { habilidade: 1, poder: 1 },
     pointCost: 2,
     bonusPoints: 0,
     freeVantagens: [
@@ -72,8 +90,7 @@ export const ALL_RACES: Race[] = [
     ],
     freeDesvantagens: [],
     traits: [
-      '+1 Habilidade, −1 Força',
-      '+2 Poder de Fogo',
+      '+1 Habilidade, +1 Poder',
       'Visão no escuro (18m)',
       'Imune a sono mágico',
       '+2 em Percepção'
@@ -87,7 +104,7 @@ export const ALL_RACES: Race[] = [
     color: '#7f8c8d',
     difficulty: 'Fácil',
     lore: 'Forjados nas profundezas da terra, os anões são tão duros quanto o aço. Resistentes ao veneno e especialistas em combate subterrâneo e trabalho com metal.',
-    modifiers: { resistencia: 1, habilidade: -1, armadura: 1, poderFogo: -2 },
+    modifiers: { resistencia: 1, habilidade: -1, poder: -2 },
     pointCost: 1,
     bonusPoints: 0,
     freeVantagens: [
@@ -98,9 +115,7 @@ export const ALL_RACES: Race[] = [
       { name: 'Lento', description: 'Deslocamento reduzido em −3m. Não pode usar Corrida em combate.' }
     ],
     traits: [
-      '+1 Resistência, −1 Habilidade',
-      '+1 Armadura natural',
-      '−2 Poder de Fogo',
+      '+1 Resistência, −1 Habilidade, −2 Poder',
       'Imune a venenos',
       '+2 PV por nível'
     ],
@@ -113,7 +128,7 @@ export const ALL_RACES: Race[] = [
     color: '#f39c12',
     difficulty: 'Médio',
     lore: 'Pequenos mas incrivelmente sortudos, os halflings escapam de situações impossíveis com um sorriso no rosto. A fortuna os favorece de maneiras inexplicáveis.',
-    modifiers: { habilidade: 1, forca: -1, resistencia: -1, armadura: 1 },
+    modifiers: { habilidade: 1, poder: -1, resistencia: -1 },
     pointCost: 1,
     bonusPoints: 0,
     freeVantagens: [
@@ -122,8 +137,7 @@ export const ALL_RACES: Race[] = [
     ],
     freeDesvantagens: [],
     traits: [
-      '+1 Habilidade, −1 Força, −1 Resistência',
-      '+1 Armadura (agilidade)',
+      '+1 Habilidade, −1 Poder, −1 Resistência',
       'Rerrolamento 1×/combate',
       '+2 em Furtividade'
     ],
@@ -136,21 +150,20 @@ export const ALL_RACES: Race[] = [
     color: '#3498db',
     difficulty: 'Médio',
     lore: 'Inventores e illusionistas natos, os gnomos combinam curiosidade insaciável com talento mágico. Menores que halflings, compensam com engenho e criatividade.',
-    modifiers: { habilidade: 1, forca: -1, poderFogo: 2 },
+    modifiers: { habilidade: 1, poder: 1 },
     pointCost: 1,
     bonusPoints: 0,
     freeVantagens: [
       { name: 'Visão no Escuro', description: 'Enxerga perfeitamente no escuro até 18m.' },
-      { name: 'Ilusionista Nato', description: 'Magias da escola de Ilusão custam −1 PF. Pode lançar Luz como magia inata 1×/dia.' }
+      { name: 'Ilusionista Nato', description: 'Magias da escola de Ilusão custam −1 PM. Pode lançar Luz como magia inata 1×/dia.' }
     ],
     freeDesvantagens: [
-      { name: 'Pequeno', description: 'Desvantagem em testes de Força pura contra criaturas Grandes ou maiores.' }
+      { name: 'Pequeno', description: 'Desvantagem em testes de Poder puro contra criaturas Grandes ou maiores.' }
     ],
     traits: [
-      '+1 Habilidade, −1 Força',
-      '+2 Poder de Fogo',
+      '+1 Habilidade, +1 Poder',
       'Visão no escuro (18m)',
-      'Magias de Ilusão −1 PF',
+      'Magias de Ilusão −1 PM',
       'Luz 1×/dia (inato)'
     ],
     recommendedClasses: []
@@ -162,7 +175,7 @@ export const ALL_RACES: Race[] = [
     color: '#9b59b6',
     difficulty: 'Fácil',
     lore: 'Herdeiros de dois mundos, os meio-elfos possuem a graça élfica e a resiliência humana. Aceitos em ambas as sociedades, sua natureza híbrida os torna extraordinariamente versáteis.',
-    modifiers: { habilidade: 1, poderFogo: 1 },
+    modifiers: { habilidade: 1, poder: 1 },
     pointCost: 1,
     bonusPoints: 1,
     freeVantagens: [
@@ -171,7 +184,7 @@ export const ALL_RACES: Race[] = [
     ],
     freeDesvantagens: [],
     traits: [
-      '+1 Habilidade, +1 PF',
+      '+1 Habilidade, +1 Poder',
       '+1 ponto de personagem extra',
       'Visão no escuro (9m)',
       'Conta como Humano e Elfo',
@@ -186,19 +199,18 @@ export const ALL_RACES: Race[] = [
     color: '#e74c3c',
     difficulty: 'Médio',
     lore: 'Herdeiros da brutalidade orcish e da inteligência humana, os meio-orcs são guerreiros formidáveis. Temidos e mal compreendidos, encontraram seu lugar nas masmorras mais perigosas.',
-    modifiers: { forca: 2, habilidade: -1, resistencia: 1, poderFogo: -2 },
+    modifiers: { habilidade: -1, resistencia: 1 },
     pointCost: 1,
     bonusPoints: 0,
     freeVantagens: [
-      { name: 'Fúria Bárbara', description: '1×/combate: +2 Força e +2 Resistência por 3 rodadas. Após, fica Fatigado por 1 rodada.' },
+      { name: 'Fúria Bárbara', description: '1×/combate: +2 Poder e +2 Resistência por 3 rodadas. Após, fica Fatigado por 1 rodada.' },
       { name: 'Implacável', description: 'Quando reduzido a 0 PV, pode fazer 1 ataque adicional antes de cair.' }
     ],
     freeDesvantagens: [
       { name: 'Má Fama', description: '−2 em testes sociais com NPCs que conhecem sua herança orcish.' }
     ],
     traits: [
-      '+2 Força, +1 Resistência, −1 Habilidade',
-      '−2 Poder de Fogo',
+      '+1 Resistência, −1 Habilidade',
       'Fúria Bárbara 1×/combate',
       'Ataque ao cair',
       '−2 social (aparência orcish)'
@@ -212,11 +224,11 @@ export const ALL_RACES: Race[] = [
     color: '#8e44ad',
     difficulty: 'Difícil',
     lore: 'Corrompidos pelo toque de Suna ou outras forças das trevas, os lefou carregam a marca do mal em sua própria carne. Temidos por todos, mas dotados de poder sombrio incomparável.',
-    modifiers: { resistencia: 1, poderFogo: 3 },
+    modifiers: { resistencia: 1, poder: 3 },
     pointCost: 2,
     bonusPoints: 0,
     freeVantagens: [
-      { name: 'Toque das Trevas', description: 'Pode lançar Drenar Energia como magia inata 1×/combate (sem custo de PF).' },
+      { name: 'Toque das Trevas', description: 'Pode lançar Drenar Energia como magia inata 1×/combate (sem custo de PM).' },
       { name: 'Resistência Maldita', description: '+2 em testes de Resistência contra magia divina e efeitos sagrados.' },
       { name: 'Visão nas Trevas', description: 'Visão perfeita no escuro total até 18m.' }
     ],
@@ -225,7 +237,7 @@ export const ALL_RACES: Race[] = [
       { name: 'Sede de Magia Negra', description: 'Deve fazer teste de Resistência para não usar poderes sombrios quando possível.' }
     ],
     traits: [
-      '+1 Resistência, +3 Poder de Fogo',
+      '+1 Resistência, +3 Poder',
       'Drenar Energia 1×/combate (grátis)',
       'Visão no escuro total (18m)',
       '−3 em interações sociais de bem',
@@ -240,21 +252,20 @@ export const ALL_RACES: Race[] = [
     color: '#d35400',
     difficulty: 'Difícil',
     lore: 'Filhos de Tauron, os minotauros são guerreiros colossais com chifres que rasgam armaduras. Têm dificuldade em usar equipamentos comuns e são vistos como monstros pela maioria.',
-    modifiers: { forca: 3, resistencia: 2, habilidade: -2, armadura: 1, poderFogo: -3 },
+    modifiers: { resistencia: 2, habilidade: -2 },
     pointCost: 3,
     bonusPoints: 0,
     freeVantagens: [
-      { name: 'Chifrada', description: 'Ataque especial: Chifrada causa Força+1 de dano e empurra o alvo 3m. 1×/rodada.' },
+      { name: 'Chifrada', description: 'Ataque especial: Chifrada causa Poder+1 de dano e empurra o alvo 3m. 1×/rodada.' },
       { name: 'Orientação Natural', description: 'Nunca se perde em labirintos. +4 em testes de navegação subterrânea.' },
-      { name: 'Colossal', description: 'Tamanho Grande: +4 PV base, armas causar +1d de dano.' }
+      { name: 'Colossal', description: 'Tamanho Grande: +4 PV base, armas causam +1d de dano.' }
     ],
     freeDesvantagens: [
       { name: 'Monstruoso', description: '−4 em testes sociais. NPCs podem atacar preventivamente. Não pode usar armaduras comuns.' },
       { name: 'Instinto Bestial', description: 'Em combate, deve fazer teste H-2 para não atacar o alvo mais próximo ao invés do escolhido.' }
     ],
     traits: [
-      '+3 Força, +2 Resistência, +1 Armadura',
-      '−2 Habilidade, −3 Poder de Fogo',
+      '+2 Resistência, −2 Habilidade',
       'Chifrada (empurrão) 1×/rodada',
       'Nunca se perde em masmorras',
       'Tamanho Grande (+4 PV base)'
@@ -268,7 +279,7 @@ export const ALL_RACES: Race[] = [
     color: '#16a085',
     difficulty: 'Difícil',
     lore: 'Ao contrário de seus companheiros tribais, alguns goblins desenvolvem astúcia e ambição suficientes para aventurar-se nas masmorras. Pequenos, rápidos e traiçoeiros, compensam com criatividade e ousadia.',
-    modifiers: { habilidade: 3, forca: -2, resistencia: -1, poderFogo: -1 },
+    modifiers: { habilidade: 3, poder: -3, resistencia: -1 },
     pointCost: 1,
     bonusPoints: 0,
     freeVantagens: [
@@ -281,8 +292,7 @@ export const ALL_RACES: Race[] = [
       { name: 'Frágil', description: 'PV máximo −2 por nível.' }
     ],
     traits: [
-      '+3 Habilidade, −2 Força, −1 Resistência',
-      '−1 Poder de Fogo',
+      '+3 Habilidade, −3 Poder, −1 Resistência',
       'Retirada como ação bônus',
       'Visão no escuro (18m)',
       '+2 dano em flanqueio'

@@ -25,19 +25,19 @@ function hitCheck(atkH: number, defH: number): { hit: boolean; roll: number; thr
 
 /**
  * Resistir com Armadura:
- * Se A_defensor > F_atacante → defensor vence: recebe dano mínimo (1) e
- * a armadura é reduzida por F_atacante para o próximo teste no mesmo turno.
- * Quando F_atacante >= A_efetiva, a armadura é tratada normalmente no cálculo de FD.
+ * Se A_defensor > P_atacante → defensor vence: recebe dano mínimo (1) e
+ * a armadura é reduzida por P_atacante para o próximo teste no mesmo turno.
+ * Quando P_atacante >= A_efetiva, a armadura é tratada normalmente no cálculo de FD.
  * Retorna { resisted, effectiveArmor }.
  */
 function armorResistCheck(
   baseArmor: number,
   currentReduction: number,
-  attackerF: number
+  attackerPoder: number
 ): { resisted: boolean; effectiveArmor: number; newReduction: number } {
   const effArmor = Math.max(0, baseArmor - currentReduction);
-  if (effArmor > attackerF) {
-    return { resisted: true, effectiveArmor: effArmor, newReduction: currentReduction + attackerF };
+  if (effArmor > attackerPoder) {
+    return { resisted: true, effectiveArmor: effArmor, newReduction: currentReduction + attackerPoder };
   }
   return { resisted: false, effectiveArmor: effArmor, newReduction: currentReduction };
 }
@@ -59,7 +59,7 @@ export class CombatService {
   companionAbilitiesUsed = signal<Map<string, Set<string>>>(new Map());
   enemyWeakenedTurns = signal(0);
   enemyWeakenAmount = signal(0);
-  /** Fúria Bárbara: rodadas restantes do buff de +2F/+2R do jogador */
+  /** Fúria Bárbara: rodadas restantes do buff de +2P/+2R do jogador */
   playerRageTurns = signal(0);
   readonly playerRageAmount = 2;
   /** Aguardando confirmação do jogador antes de ir para game_over */
@@ -181,7 +181,7 @@ export class CombatService {
         const amt = 2;
         this.enemyWeakenedTurns.set(3);
         this.enemyWeakenAmount.set(amt);
-        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde ${amt} de Força por 2 turnos!`, 'player');
+        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde ${amt} de Poder por 2 turnos!`, 'player');
         this.afterPlayerAction();
         return;
       }
@@ -211,21 +211,21 @@ export class CombatService {
         }
         // Resistir com Armadura
         const armorRed = this.enemyArmorReductions.get(target.id) ?? 0;
-        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.forca.current);
+        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.poder.current);
         this.enemyArmorReductions.set(target.id, newReduction);
         if (resisted) {
-          this.addLog(`${ab.icon} ${ab.name} | 🛡️ Armadura resiste! A${effectiveArmor} > F${char.forca.current} → 1 dano sagrado!`, 'player');
+          this.addLog(`${ab.icon} ${ab.name} | 🛡️ Armadura resiste! A${effectiveArmor} > P${char.poder.current} → 1 dano sagrado!`, 'player');
           this.applyDamageToEnemy(target.id, 1);
           this.afterPlayerAction();
           return;
         }
         const dAtk = d6();
         const dBonus = d6n(ab.bonusDice ?? 1);
-        const atkPower = char.forca.current + dAtk + dBonus;
+        const atkPower = char.poder.current + dAtk + dBonus;
         const dDef = d6();
-        const defPower = effectiveArmor + dDef;
+        const defPower = target.resistencia + effectiveArmor + dDef;
         const { dmg, str: dmgStr1 } = this.fmtDmg(atkPower - defPower);
-        this.addLog(`${ab.icon} ${ab.name} — FA(F${char.forca.current}+🎲${dAtk}+✝${dBonus}=${atkPower}) vs FD(A${effectiveArmor}+🎲${dDef}=${defPower}) = ${dmgStr1} dano sagrado!`, 'player');
+        this.addLog(`${ab.icon} ${ab.name} — FA(P${char.poder.current}+🎲${dAtk}+✝${dBonus}=${atkPower}) vs FD(R${target.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower}) = ${dmgStr1} dano sagrado!`, 'player');
         this.applyDamageToEnemy(target.id, dmg);
         this.afterPlayerAction();
         return;
@@ -274,7 +274,7 @@ export class CombatService {
       }
       case 'weaken': {
         this.enemyWeakenedTurns.set(3); this.enemyWeakenAmount.set(2);
-        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde 2 de Força por 2 turnos!`, 'player');
+        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde 2 de Poder por 2 turnos!`, 'player');
         this.afterPlayerAction(); return;
       }
       case 'rage': {
@@ -298,16 +298,16 @@ export class CombatService {
           this.afterPlayerAction(); return;
         }
         const armorRed = this.enemyArmorReductions.get(target.id) ?? 0;
-        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.forca.current);
+        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.poder.current);
         this.enemyArmorReductions.set(target.id, newReduction);
         if (resisted) {
-          this.addLog(`${ab.icon} ${ab.name} | 🛡️ A${effectiveArmor}>F${char.forca.current} → 1 dano sagrado!`, 'player');
+          this.addLog(`${ab.icon} ${ab.name} | 🛡️ A${effectiveArmor}>P${char.poder.current} → 1 dano sagrado!`, 'player');
           this.applyDamageToEnemy(target.id, 1);
           this.afterPlayerAction(); return;
         }
         const dAtk = d6(); const dBonus = d6n(ab.bonusDice ?? 1);
-        const atkP = char.forca.current + dAtk + dBonus;
-        const dDef = d6(); const defP = effectiveArmor + dDef;
+        const atkP = char.poder.current + dAtk + dBonus;
+        const dDef = d6(); const defP = target.resistencia + effectiveArmor + dDef;
         const { dmg, str: dmgStrP } = this.fmtDmg(atkP - defP);
         this.addLog(`${ab.icon} ${ab.name} — FA(${atkP}) vs FD(${defP}) = ${dmgStrP} dano sagrado!`, 'player');
         this.applyDamageToEnemy(target.id, dmg);
@@ -402,14 +402,14 @@ export class CombatService {
     }
   }
 
-  /** Prioridade: chefe > maior Força > menor HP > menor Armadura */
+  /** Prioridade: chefe > maior Poder > menor HP > menor Armadura */
   private _pickTarget(alive: Enemy[]): Enemy {
     const boss = alive.find(e => e.isBoss);
     if (boss) return boss;
     return alive.reduce((best, e) => {
-      if (e.forca > best.forca) return e;
-      if (e.forca === best.forca && e.hp < best.hp) return e;
-      if (e.forca === best.forca && e.hp === best.hp && e.armadura < best.armadura) return e;
+      if (e.poder > best.poder) return e;
+      if (e.poder === best.poder && e.hp < best.hp) return e;
+      if (e.poder === best.poder && e.hp === best.hp && e.armadura < best.armadura) return e;
       return best;
     });
   }
@@ -460,7 +460,7 @@ export class CombatService {
     switch (ab.effect) {
       case 'weaken':
         this.enemyWeakenedTurns.set(3); this.enemyWeakenAmount.set(2);
-        this.addLog(`${label} — ${target.name} perde 2 Força por 2 turnos!`, 'player');
+        this.addLog(`${label} — ${target.name} perde 2 Poder por 2 turnos!`, 'player');
         break;
       case 'rage':
         this.activateCompanionRage(companion, ab);
@@ -482,19 +482,19 @@ export class CombatService {
           break;
         }
         const armorRed = this.enemyArmorReductions.get(target.id) ?? 0;
-        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, companion.forca.current);
+        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, companion.poder.current);
         this.enemyArmorReductions.set(target.id, newReduction);
         if (resisted) {
-          this.addLog(`${label} | 🛡️ A${effectiveArmor}>F${companion.forca.current} → 1 dano sagrado em ${target.name}!`, 'player');
+          this.addLog(`${label} | 🛡️ A${effectiveArmor}>P${companion.poder.current} → 1 dano sagrado em ${target.name}!`, 'player');
           this.applyDamageToEnemy(target.id, 1);
           break;
         }
         const dAtk = d6(); const dBonus = d6n(ab.bonusDice ?? 1);
-        const atk = companion.forca.current + dAtk + dBonus;
-        const dDef = d6(); const def = effectiveArmor + dDef;
+        const atk = companion.poder.current + dAtk + dBonus;
+        const dDef = d6(); const def = target.resistencia + effectiveArmor + dDef;
         const { dmg, str: dmgStrH } = this.fmtDmg(atk - def);
         const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
-        this.addLog(`${label}${hitInfo} | FA: F${companion.forca.current}+🎲${dAtk}+✝${dBonus}=${atk} vs FD: A${effectiveArmor}+🎲${dDef}=${def} → ${dmgStrH} dano sagrado em ${target.name}!`, 'player');
+        this.addLog(`${label}${hitInfo} | FA: P${companion.poder.current}+🎲${dAtk}+✝${dBonus}=${atk} vs FD: R${target.resistencia}+A${effectiveArmor}+🎲${dDef}=${def} → ${dmgStrH} dano sagrado em ${target.name}!`, 'player');
         this.applyDamageToEnemy(target.id, dmg);
         break;
       }
@@ -525,34 +525,34 @@ export class CombatService {
     }
     const dAtk = d6();
     const dBonus = d6n(bonusDice);
-    const atkPower = s.forca + dAtk + dBonus;
+    const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
     const bonusPart = bonusDice > 0 ? `+🎲${dBonus}(x${bonusDice})` : '';
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: F${s.forca}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
     } else {
       const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-      const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.forca);
+      const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
       this.enemyArmorReductions.set(enemy.id, newReduction);
       if (resisted) {
         this.addLog(
-          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>F${s.forca} → 1 dano em ${enemy.name}!`,
+          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
           'player'
         );
         this.applyDamageToEnemy(enemy.id, 1);
         return;
       }
       const dDef = d6();
-      const defPower = effectiveArmor + dDef;
+      const defPower = enemy.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrM } = this.fmtDmg(atkPower - defPower);
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
       this.addLog(
-        `${label}${hitInfo} | FA: F${s.forca}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -575,33 +575,33 @@ export class CombatService {
     }
     const dAtk = d6();
     const dBonus = d6n(ab.bonusDice ?? 0);
-    const atkPower = s.poderFogo + dAtk + dBonus;
+    const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
     const bonusPart = (ab.bonusDice ?? 0) > 0 ? `+🎲${dBonus}(x${ab.bonusDice})` : '';
     if (ab.ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: PF${s.poderFogo}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
     } else {
       const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-      const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poderFogo);
+      const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
       this.enemyArmorReductions.set(enemy.id, newReduction);
       if (resisted) {
         this.addLog(
-          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>PF${s.poderFogo} → 1 dano em ${enemy.name}!`,
+          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
           'player'
         );
         this.applyDamageToEnemy(enemy.id, 1);
         return;
       }
       const dDef = d6();
-      const defPower = effectiveArmor + dDef;
+      const defPower = enemy.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrR } = this.fmtDmg(atkPower - defPower);
       this.addLog(
-        `${label}${hitInfo} | FA: PF${s.poderFogo}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrR} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrR} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -655,11 +655,12 @@ export class CombatService {
     }
 
     const charStats = getEffectiveStats(char);
-    const aliveParty: Array<{ name: string; armadura: number; habilidade: number; isPlayer: boolean; id?: string }> = [
-      { name: char.name, armadura: charStats.armadura, habilidade: charStats.habilidade, isPlayer: true },
+    const aliveParty: Array<{ name: string; armadura: number; resistencia: number; habilidade: number; isPlayer: boolean; id?: string }> = [
+      { name: char.name, armadura: charStats.armadura, resistencia: charStats.resistencia, habilidade: charStats.habilidade, isPlayer: true },
       ...this.gs.companions().filter(c => c.pontosVida.current > 0).map(c => ({
         name: c.name.split(',')[0],
-        armadura: c.armadura,
+        armadura: getEffectiveStats(c).armadura,
+        resistencia: c.resistencia.current,
         habilidade: c.habilidade.current,
         isPlayer: false,
         id: c.id,
@@ -667,7 +668,7 @@ export class CombatService {
     ];
 
     for (const enemy of aliveEnemies) {
-      const effF = Math.max(1, enemy.forca - (weakened ? this.enemyWeakenAmount() : 0));
+      const effP = Math.max(1, enemy.poder - (weakened ? this.enemyWeakenAmount() : 0));
       const effH = enemy.habilidade;
 
       const targetMember = aliveParty[Math.floor(Math.random() * aliveParty.length)];
@@ -689,15 +690,15 @@ export class CombatService {
 
       // Resistir com Armadura
       const armorRed = this.partyArmorReductions.get(targetKey) ?? 0;
-      const { resisted, effectiveArmor, newReduction } = armorResistCheck(targetMember.armadura, armorRed, effF);
+      const { resisted, effectiveArmor, newReduction } = armorResistCheck(targetMember.armadura, armorRed, effP);
       this.partyArmorReductions.set(targetKey, newReduction);
 
       const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
-      const weakPart = weakened ? ` [F-${this.enemyWeakenAmount()}]` : '';
+      const weakPart = weakened ? ` [P-${this.enemyWeakenAmount()}]` : '';
 
       if (resisted) {
         this.addLog(
-          `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | 🛡️ Armadura resiste! A${effectiveArmor}>F${effF} → 1 dano!`,
+          `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | 🛡️ Armadura resiste! A${effectiveArmor}>P${effP} → 1 dano!`,
           'enemy'
         );
         if (targetMember.isPlayer) {
@@ -713,15 +714,15 @@ export class CombatService {
         continue;
       }
 
-      // Dano normal: FA = F+1d6, FD = A+1d6 (sem H)
+      // Dano normal: FA = P+1d6, FD = R+A+1d6
       const dAtk = d6();
       const dDef = d6();
-      const atkPower = effF + dAtk;
-      const defPower = effectiveArmor + dDef;
+      const atkPower = effP + dAtk;
+      const defPower = targetMember.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrE } = this.fmtDmg(atkPower - defPower);
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
       this.addLog(
-        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | FA: F${effF}+🎲${dAtk}=${atkPower} vs FD: A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrE} dano!`,
+        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | FA: P${effP}+🎲${dAtk}=${atkPower} vs FD: R${targetMember.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrE} dano!`,
         'enemy'
       );
 
@@ -768,14 +769,14 @@ export class CombatService {
 
     const dAtk = d6();
     const dBonus = d6n(bonusDice);
-    const atkPower = s.forca + dAtk + dBonus;
+    const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
     const bonusPart = bonusDice > 0 ? `+🎲${dBonus}(x${bonusDice})` : '';
 
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: F${s.forca}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -784,11 +785,11 @@ export class CombatService {
 
     // Resistir com Armadura
     const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.forca);
+    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
     this.enemyArmorReductions.set(enemy.id, newReduction);
     if (resisted) {
       this.addLog(
-        `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>F${s.forca} → 1 dano em ${enemy.name}!`,
+        `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, 1);
@@ -796,11 +797,11 @@ export class CombatService {
     }
 
     const dDef = d6();
-    const defPower = effectiveArmor + dDef;
+    const defPower = enemy.resistencia + effectiveArmor + dDef;
     const { dmg, str: dmgStrMel } = this.fmtDmg(atkPower - defPower);
     const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
     this.addLog(
-      `${label}${hitInfo} | FA: F${s.forca}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
+      `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
       'player'
     );
     this.applyDamageToEnemy(enemy.id, dmg);
@@ -820,16 +821,16 @@ export class CombatService {
       return;
     }
     const dAtk = d6();
-    const atkPower = s.poderFogo + dAtk;
+    const atkPower = s.poder + dAtk;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
 
     // Resistir com Armadura
     const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poderFogo);
+    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
     this.enemyArmorReductions.set(enemy.id, newReduction);
     if (resisted) {
       this.addLog(
-        `🏹 Ataque à Distância${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>PF${s.poderFogo} → 1 dano em ${enemy.name}!`,
+        `🏹 Ataque à Distância${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, 1);
@@ -837,10 +838,10 @@ export class CombatService {
     }
 
     const dDef = d6();
-    const defPower = effectiveArmor + dDef;
+    const defPower = enemy.resistencia + effectiveArmor + dDef;
     const { dmg, str: dmgStrRB } = this.fmtDmg(atkPower - defPower);
     this.addLog(
-      `🏹 Ataque à Distância${hitInfo} | FA: PF${s.poderFogo}+🎲${dAtk}=${atkPower} vs FD: A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrRB} dano em ${enemy.name}!`,
+      `🏹 Ataque à Distância${hitInfo} | FA: P${s.poder}+🎲${dAtk}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrRB} dano em ${enemy.name}!`,
       'player'
     );
     this.applyDamageToEnemy(enemy.id, dmg);
@@ -862,14 +863,14 @@ export class CombatService {
 
     const dAtk = d6();
     const dBonus = d6n(ab.bonusDice ?? 0);
-    const atkPower = s.poderFogo + dAtk + dBonus;
+    const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
     const bonusPart = (ab.bonusDice ?? 0) > 0 ? `+🎲${dBonus}(x${ab.bonusDice})` : '';
 
     if (ab.ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${ab.icon} ${ab.name}${hitInfo} | FA: PF${s.poderFogo}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${ab.icon} ${ab.name}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -878,11 +879,11 @@ export class CombatService {
 
     // Resistir com Armadura
     const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poderFogo);
+    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
     this.enemyArmorReductions.set(enemy.id, newReduction);
     if (resisted) {
       this.addLog(
-        `${ab.icon} ${ab.name}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>PF${s.poderFogo} → 1 dano em ${enemy.name}!`,
+        `${ab.icon} ${ab.name}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, 1);
@@ -890,10 +891,10 @@ export class CombatService {
     }
 
     const dDef = d6();
-    const defPower = effectiveArmor + dDef;
+    const defPower = enemy.resistencia + effectiveArmor + dDef;
     const { dmg, str: dmgStrRA } = this.fmtDmg(atkPower - defPower);
     this.addLog(
-      `${ab.icon} ${ab.name}${hitInfo} | FA: PF${s.poderFogo}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrRA} dano em ${enemy.name}!`,
+      `${ab.icon} ${ab.name}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}+🎲${dDef}=${defPower} → ${dmgStrRA} dano em ${enemy.name}!`,
       'player'
     );
     this.applyDamageToEnemy(enemy.id, dmg);
@@ -939,16 +940,16 @@ export class CombatService {
     } : c);
   }
 
-  /** Fúria Bárbara: aplica +2F/+2R por 3 rodadas (atributo, não PM/PF). */
+  /** Fúria Bárbara: aplica +2P/+2R por 3 rodadas (atributo, não PM). */
   private activatePlayerRage(char: Character, ab: CombatAbility): void {
     const amt = this.playerRageAmount;
     this.playerRageTurns.set(3);
     this.gs.character.update(c => c ? {
       ...c,
-      forca: { ...c.forca, current: c.forca.current + amt },
+      poder: { ...c.poder, current: c.poder.current + amt },
       resistencia: { ...c.resistencia, current: c.resistencia.current + amt },
     } : c);
-    this.addLog(`${ab.icon} ${char.name} entra em ${ab.name}! +${amt} F e +${amt} R por 3 rodadas!`, 'player');
+    this.addLog(`${ab.icon} ${char.name} entra em ${ab.name}! +${amt} P e +${amt} R por 3 rodadas!`, 'player');
   }
 
   /** Remove o buff de Fúria Bárbara ao expirar (chamado quando playerRageTurns chega a 0). */
@@ -956,10 +957,10 @@ export class CombatService {
     const amt = this.playerRageAmount;
     this.gs.character.update(c => c ? {
       ...c,
-      forca: { ...c.forca, current: c.forca.current - amt },
+      poder: { ...c.poder, current: c.poder.current - amt },
       resistencia: { ...c.resistencia, current: c.resistencia.current - amt },
     } : c);
-    this.addLog('😡 A fúria se dissipa — F e R voltam ao normal.', 'system');
+    this.addLog('😡 A fúria se dissipa — P e R voltam ao normal.', 'system');
   }
 
   /** Garante que o buff de Fúria não "vaze" para o próximo combate se este terminar com ele ainda ativo. */
@@ -976,10 +977,10 @@ export class CombatService {
     this.companionRageTurns.set(companion.id, 3);
     this.gs.companions.update(list => list.map(c => c.id === companion.id ? {
       ...c,
-      forca: { ...c.forca, current: c.forca.current + amt },
+      poder: { ...c.poder, current: c.poder.current + amt },
       resistencia: { ...c.resistencia, current: c.resistencia.current + amt },
     } : c));
-    this.addLog(`${ab.icon} ${companion.name} entra em ${ab.name}! +${amt} F e +${amt} R por 3 rodadas!`, 'player');
+    this.addLog(`${ab.icon} ${companion.name} entra em ${ab.name}! +${amt} P e +${amt} R por 3 rodadas!`, 'player');
   }
 
   private expireCompanionRage(companionId: string): void {
@@ -987,7 +988,7 @@ export class CombatService {
     this.companionRageTurns.delete(companionId);
     this.gs.companions.update(list => list.map(c => c.id === companionId ? {
       ...c,
-      forca: { ...c.forca, current: c.forca.current - amt },
+      poder: { ...c.poder, current: c.poder.current - amt },
       resistencia: { ...c.resistencia, current: c.resistencia.current - amt },
     } : c));
   }
@@ -999,10 +1000,11 @@ export class CombatService {
     this.clearPlayerRageIfActive();
     this.addLog('🏆 Todos os inimigos foram derrotados!', 'system');
 
-    // Distribui PE e ouro ao final do combate
+    // Distribui XP e ouro ao final do combate
     const defeated = this.enemies();
     const totalGold = defeated.reduce((s, e) => s + Math.max(e.goldReward ?? 0, e.pp), 0);
-    this.gs.awardCombatPE(defeated, totalGold);
+    const isBossFight = defeated.some(e => e.isBoss);
+    this.gs.awardCombatXp(defeated, totalGold, isBossFight);
 
     // Drop de itens: cada inimigo com itemsReward tem 50% de chance de dropar 1 item
     for (const enemy of defeated) {

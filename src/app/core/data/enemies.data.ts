@@ -52,7 +52,7 @@ export function generateEnemy(floor: number, isBoss: boolean): Enemy {
   if (isBoss) {
     const tpl = getBossTemplate(floor);
     const hp = 20 + floor * 5;
-    const forca = 2 + Math.floor(floor / 2);
+    const poder = 2 + Math.floor(floor / 2);
     const habilidade = 1 + Math.floor(floor / 3);
     const resistencia = Math.max(1, Math.floor(hp / 5));
     const armadura = 1 + Math.floor(floor / 3);
@@ -61,11 +61,11 @@ export function generateEnemy(floor: number, isBoss: boolean): Enemy {
       ...tpl,
       hp,
       maxHp: hp,
-      forca,
+      poder,
       habilidade,
       resistencia,
       armadura,
-      pp: calcEnemyPP(forca, habilidade, armadura, resistencia),
+      pp: calcEnemyPP(poder, habilidade, resistencia),
       xpReward: 50 + floor * 20,
       goldReward: 20 + floor * 10,
       isBoss: true,
@@ -74,7 +74,7 @@ export function generateEnemy(floor: number, isBoss: boolean): Enemy {
 
   const tpl = getMonsterTemplate(floor);
   const hp = 8 + floor * 2;
-  const forca = 1 + Math.floor(floor / 3);
+  const poder = 1 + Math.floor(floor / 3);
   const habilidade = Math.max(1, Math.floor(floor / 4));
   const resistencia = Math.max(1, Math.floor(hp / 5));
   const armadura = Math.floor(floor / 4);
@@ -83,11 +83,11 @@ export function generateEnemy(floor: number, isBoss: boolean): Enemy {
     ...tpl,
     hp,
     maxHp: hp,
-    forca,
+    poder,
     habilidade,
     resistencia,
     armadura,
-    pp: calcEnemyPP(forca, habilidade, armadura, resistencia),
+    pp: calcEnemyPP(poder, habilidade, resistencia),
     xpReward: 10 + floor * 5,
     goldReward: 5 + floor * 3,
     isBoss: false,

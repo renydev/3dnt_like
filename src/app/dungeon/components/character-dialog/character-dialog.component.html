@@ -56,6 +56,14 @@
         }
       </div>
 
+      <!-- ── Armadura (equipamento) ──────────────────────────────────── -->
+      @if (armorBonus() > 0) {
+        <div class="pe-summary">
+          <span class="pe-label">🔰 Armadura (equipamento):</span>
+          <span class="pe-value">{{ armorBonus() }}</span>
+        </div>
+      }
+
       <!-- ── Atributos com círculos ────────────────────────────────── -->
       <div class="attrs-grid">
         @for (row of attrRows; track row.key) {

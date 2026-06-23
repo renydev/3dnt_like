@@ -29,20 +29,19 @@
                 [style.width.%]="pct(char.pontosVida.current, char.pontosVida.max)">
               </div>
             </div>
-            @if (char.poderFogo.max > 0) {
-              <div class="mini-bar pm" title="PF">
+            @if (char.pontosMana.max > 0) {
+              <div class="mini-bar pm" title="PM">
                 <div class="mini-bar-fill pm-fill"
-                  [style.width.%]="pct(char.poderFogo.current, char.poderFogo.max)">
+                  [style.width.%]="pct(char.pontosMana.current, char.pontosMana.max)">
                 </div>
               </div>
             }
           </div>
 
           <div class="mini-stats">
-            <span>F{{ char.forca.current }}</span>
+            <span>P{{ char.poder.current }}</span>
             <span>H{{ char.habilidade.current }}</span>
             <span>R{{ char.resistencia.current }}</span>
-            <span>A{{ char.armadura }}</span>
           </div>
         </div>
       </button>

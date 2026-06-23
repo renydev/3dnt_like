@@ -78,10 +78,10 @@
             <span>PV</span>
             <strong style="color:#e74c3c">{{ finalStats().pontosVida }}</strong>
           </div>
-          @if (finalStats().poderFogo > 0) {
+          @if (finalStats().pontosMana > 0) {
             <div class="pv-line">
-              <span>PF</span>
-              <strong style="color:#8e44ad">{{ finalStats().poderFogo }}</strong>
+              <span>PM</span>
+              <strong style="color:#8e44ad">{{ finalStats().pontosMana }}</strong>
             </div>
           }
         </div>
@@ -201,20 +201,14 @@
                 </ul>
 
                 <div class="preset-attrs">
-                  @if (preset.attrs.forca > 0) {
-                    <span class="pa-chip">⚔️ F{{ preset.attrs.forca }}</span>
+                  @if (preset.attrs.poder > 0) {
+                    <span class="pa-chip">⚔️ P{{ preset.attrs.poder }}</span>
                   }
                   @if (preset.attrs.habilidade > 0) {
                     <span class="pa-chip">🎯 H{{ preset.attrs.habilidade }}</span>
                   }
                   @if (preset.attrs.resistencia > 0) {
                     <span class="pa-chip">🛡️ R{{ preset.attrs.resistencia }}</span>
-                  }
-                  @if (preset.attrs.armadura > 0) {
-                    <span class="pa-chip">🔰 A{{ preset.attrs.armadura }}</span>
-                  }
-                  @if (preset.attrs.poderFogo > 0) {
-                    <span class="pa-chip">✨ PF{{ preset.attrs.poderFogo }}</span>
                   }
                 </div>
 
@@ -272,9 +266,9 @@
                 <p class="card-lore">{{ race.lore }}</p>
 
                 <div class="modifiers-row">
-                  @if (race.modifiers.forca) {
-                    <span class="mod-chip" [class.pos]="race.modifiers.forca! > 0" [class.neg]="race.modifiers.forca! < 0">
-                      F{{ race.modifiers.forca! > 0 ? '+' : '' }}{{ race.modifiers.forca }}
+                  @if (race.modifiers.poder) {
+                    <span class="mod-chip" [class.pos]="race.modifiers.poder! > 0" [class.neg]="race.modifiers.poder! < 0">
+                      P{{ race.modifiers.poder! > 0 ? '+' : '' }}{{ race.modifiers.poder }}
                     </span>
                   }
                   @if (race.modifiers.habilidade) {
@@ -285,16 +279,6 @@
                   @if (race.modifiers.resistencia) {
                     <span class="mod-chip" [class.pos]="race.modifiers.resistencia! > 0" [class.neg]="race.modifiers.resistencia! < 0">
                       R{{ race.modifiers.resistencia! > 0 ? '+' : '' }}{{ race.modifiers.resistencia }}
-                    </span>
-                  }
-                  @if (race.modifiers.armadura) {
-                    <span class="mod-chip" [class.pos]="race.modifiers.armadura! > 0" [class.neg]="race.modifiers.armadura! < 0">
-                      A{{ race.modifiers.armadura! > 0 ? '+' : '' }}{{ race.modifiers.armadura }}
-                    </span>
-                  }
-                  @if (race.modifiers.poderFogo) {
-                    <span class="mod-chip" [class.pos]="race.modifiers.poderFogo! > 0" [class.neg]="race.modifiers.poderFogo! < 0">
-                      PF{{ race.modifiers.poderFogo! > 0 ? '+' : '' }}{{ race.modifiers.poderFogo }}
                     </span>
                   }
                   @if (race.bonusPoints > 0) {

@@ -4,7 +4,7 @@ import { GameStateService } from '../../../core/services/game-state.service';
 import { Character, CLASS_COLORS, CLASS_ICONS, FocusPath, FOCUS_PATHS, FOCUS_PATH_LABELS, FOCUS_PATH_ICONS, EMPTY_FOCUS } from '../../../core/models/character.model';
 import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
 
-export type SpendableAttr = 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo';
+export type SpendableAttr = 'poder' | 'habilidade' | 'resistencia';
 
 export interface AttrRow {
   key: SpendableAttr;
@@ -15,11 +15,9 @@ export interface AttrRow {
 }
 
 export const ATTR_ROWS: AttrRow[] = [
-  { key: 'forca',       label: 'Força',          abbr: 'F',  icon: '⚔️', value: c => c.forca.current },
+  { key: 'poder',       label: 'Poder',          abbr: 'P',  icon: '⚔️', value: c => c.poder.current },
   { key: 'habilidade',  label: 'Habilidade',     abbr: 'H',  icon: '🎯', value: c => c.habilidade.current },
   { key: 'resistencia', label: 'Resistência',    abbr: 'R',  icon: '🛡️', value: c => c.resistencia.current },
-  { key: 'armadura',    label: 'Armadura',       abbr: 'A',  icon: '🔰', value: c => c.armadura },
-  { key: 'poderFogo',   label: 'Poder de Fogo',  abbr: 'PF', icon: '✨', value: c => c.poderFogo.current },
 ];
 
 // ── Catálogos de vantagens e desvantagens 3D&T ───────────────────────────────
@@ -142,8 +140,8 @@ export class CharacterDialogComponent {
 
   upgradeCost(attr: SpendableAttr): number {
     const c = this.char()!;
-    const base = attr === 'armadura' ? c.armadura : c[attr].base;
-    return (base - this.racialMod(attr)) + 1;
+    const base = c[attr].base - this.racialMod(attr);
+    return base < 5 ? 1 : 2;
   }
 
   canSpend(attr: SpendableAttr): boolean {
@@ -298,18 +296,21 @@ export class CharacterDialogComponent {
     const c = this.char()!;
     const b = mergeBonus(...allEquipItems(c.equipment ?? {}));
     switch (attr) {
-      case 'forca':       return b.forca       ?? 0;
+      case 'poder':       return b.poder       ?? 0;
       case 'habilidade':  return b.habilidade  ?? 0;
       case 'resistencia': return b.resistencia ?? 0;
-      case 'armadura':    return b.armadura    ?? 0;
-      case 'poderFogo':   return b.poderFogo   ?? 0;
     }
   }
 
   effectiveValue(attr: SpendableAttr): number {
     const c = this.char()!;
-    const base = attr === 'armadura' ? c.armadura : c[attr].current;
-    return base + this.equipBonus(attr);
+    return c[attr].current + this.equipBonus(attr);
+  }
+
+  /** Armadura é 100% equipamento no 3D&T Victory — exibida fora da grade de atributos. */
+  armorBonus(): number {
+    const b = mergeBonus(...allEquipItems(this.char()!.equipment ?? {}));
+    return b.armadura ?? 0;
   }
 
   readonly equipSlots: { key: EquipSlot; label: string }[] = [

@@ -8,7 +8,7 @@ import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '..
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
-import { calcCharacterPP, calcCombatPE } from '../utils/pp-calculator';
+import { calcCharacterPP, calcCombatXp } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
 
@@ -416,25 +416,23 @@ export class GameStateService {
 
   /**
    * Chamado ao fim de um combate com vitória.
-   * Distribui PE (Pontos de Experiência) igualmente entre os membros da party,
-   * converte PE acumulados em PP (Pontos de Personagem) gastáveis.
+   * Concede XP a todos os membros da party seguindo a regra oficial do 3D&T Victory:
+   *   - combate comum vencido = 1 XP (objetivo menor)
+   *   - combate de chefe vencido = 5 XP (objetivo maior)
+   *   - inimigos com PP somado ≤ metade do PP da party = 0 XP (longe demais de um desafio)
+   *   - inimigos mais fortes que a party rendem XP bônus (1 a cada 10 PP de diferença, máx +5)
+   * 10 XP acumulados = 1 PP (Ponto de Personagem) gastável em atributos/vantagens.
    *
-   * Regras de PE por monstro vs PP médio da party:
-   *   < 0.5× → 0 PE
-   *   0.5–1.5× → 1 PE
-   *   1.5–2.5× → 2 PE
-   *   > 2.5× → floor(ratio × 2) PE
-   *
-   * PE necessários para 1 PP: 10 PE = 1 ponto de atributo.
-   * Terminar a masmorra concede 1 PP extra.
+   * Terminar a masmorra concede 1 PP extra (awardFloorCompletionPP).
    */
-  awardCombatPE(defeatedEnemies: Enemy[], goldAmount: number): void {
+  awardCombatXp(defeatedEnemies: Enemy[], goldAmount: number, isBossFight: boolean): void {
     const partyPPs = this.partyPPs();
     if (partyPPs.length === 0) return;
 
     const monsterPPs = defeatedEnemies.map(e => e.pp);
-    const result = calcCombatPE(monsterPPs, partyPPs);
-    const pe = result.pePerCharacter;
+    const result = calcCombatXp(monsterPPs, partyPPs, isBossFight);
+    const xp = result.xpPerCharacter;
+    const PE_PER_PP = 10;
 
     if (goldAmount > 0) {
       const partySize = 1 + this.companions().length;
@@ -447,44 +445,30 @@ export class GameStateService {
       this.addLog(`💰 +${goldAmount} ouro dividido entre ${partySize} personagem${partySize > 1 ? 's' : ''} (+${share + remainder} para ${this.character()?.name}${partySize > 1 ? `, +${share} para cada companheiro` : ''})`);
     }
 
-    if (pe <= 0) {
-      this.addLog(`⚔️ Combate resolvido. Inimigos fracos demais para gerar experiência.`);
+    if (xp <= 0) {
+      this.addLog(`⚔️ Combate resolvido. Inimigos fracos demais para gerar XP.`);
       return;
     }
-
-    const PE_PER_PP = 10;
 
     // Personagem principal
     this.character.update(c => {
       if (!c) return c;
       const oldXp = c.xp;
-      const newXp = oldXp + pe;
+      const newXp = oldXp + xp;
       const newPP = Math.floor(newXp / PE_PER_PP) - Math.floor(oldXp / PE_PER_PP);
-      return {
-        ...c,
-        xp: newXp,
-        levelUpPoints: (c.levelUpPoints ?? 0) + newPP,
-      };
+      return { ...c, xp: newXp, levelUpPoints: (c.levelUpPoints ?? 0) + newPP };
     });
 
     // Companheiros
     this.companions.update(list => list.map(c => {
       const oldXp = c.xp;
-      const newXp = oldXp + pe;
+      const newXp = oldXp + xp;
       const newPP = Math.floor(newXp / PE_PER_PP) - Math.floor(oldXp / PE_PER_PP);
       return { ...c, xp: newXp, levelUpPoints: (c.levelUpPoints ?? 0) + newPP };
     }));
 
-    this.addLog(`✨ +${pe} PE por personagem (monstros PP total: ${result.totalMonsterPP})`);
-
-    // Verifica novos pontos para o jogador principal
-    const char = this.character();
-    if (char) {
-      const pp = Math.floor(char.xp / PE_PER_PP) - Math.floor((char.xp - pe) / PE_PER_PP);
-      if (pp > 0) {
-        this.addLog(`🌟 +${pp} PP disponível para distribuir em atributos!`);
-      }
-    }
+    const bonusNote = result.bonusXp > 0 ? ` (+${result.bonusXp} XP bônus por inimigos fortes)` : '';
+    this.addLog(`✨ +${xp} XP por personagem${bonusNote} (monstros PP total: ${result.totalMonsterPP})`);
 
     if (goldAmount > 0) {
       this.addLog(`💰 +${goldAmount} PO`);
@@ -504,30 +488,39 @@ export class GameStateService {
     this.addLog(`💰 +${goldAmount} PO`);
   }
 
-  /** Custo para ir de N para N+1: N+1 pontos. */
-  private attrUpgradeCost(currentBase: number): number { return currentBase + 1; }
+  /**
+   * Custo para ir de N para N+1 (3D&T Victory): 1PP por ponto até o 5º,
+   * 2PP por ponto acima de 5 (equivalente a 20XP/ponto, já que 10XP = 1PP).
+   */
+  private attrUpgradeCost(currentValue: number): number { return currentValue < 5 ? 1 : 2; }
 
   /** Gasta pontos de level-up em um atributo do personagem principal. */
-  spendLevelUpPoint(attr: 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo'): void {
+  spendLevelUpPoint(attr: 'poder' | 'habilidade' | 'resistencia'): void {
     const char = this.character();
     if (!char || !char.levelUpPoints) return;
 
-    const currentBase = attr === 'armadura' ? char.armadura : char[attr].base;
+    const currentBase = char[attr].base;
     const racialMod = char.racialMods?.[attr] ?? 0;
     const cost = this.attrUpgradeCost(currentBase - racialMod);
     if ((char.levelUpPoints ?? 0) < cost) return;
 
     const updated = { ...char, levelUpPoints: (char.levelUpPoints ?? 0) - cost };
 
-    if (attr === 'armadura') {
-      updated.armadura = char.armadura + 1;
-    } else if (attr === 'resistencia') {
+    if (attr === 'resistencia') {
       const newR = char.resistencia.base + 1;
       updated.resistencia = { base: newR, current: newR, max: newR };
       updated.pontosVida = {
         base: char.pontosVida.base + 5,
         current: char.pontosVida.current + 5,
         max: char.pontosVida.max + 5,
+      };
+    } else if (attr === 'habilidade') {
+      const newH = char.habilidade.base + 1;
+      updated.habilidade = { base: newH, current: newH, max: newH };
+      updated.pontosMana = {
+        base: char.pontosMana.base + 5,
+        current: char.pontosMana.current + 5,
+        max: char.pontosMana.max + 5,
       };
     } else {
       const old = char[attr];
@@ -536,31 +529,37 @@ export class GameStateService {
     }
 
     this.character.set(updated);
-    this.addLog(`📈 ${char.name} melhorou ${attr}! (custou ${cost}pt)`);
+    this.addLog(`📈 ${char.name} melhorou ${attr}! (custou ${cost}PP)`);
   }
 
   /** Gasta pontos de level-up em um atributo de um companheiro. */
   spendCompanionLevelUpPoint(
     companionId: string,
-    attr: 'forca' | 'habilidade' | 'resistencia' | 'armadura' | 'poderFogo',
+    attr: 'poder' | 'habilidade' | 'resistencia',
   ): void {
     this.companions.update(list =>
       list.map(c => {
         if (c.id !== companionId || !c.levelUpPoints) return c;
-        const currentBase = attr === 'armadura' ? c.armadura : c[attr].base;
+        const currentBase = c[attr].base;
         const racialMod = c.racialMods?.[attr] ?? 0;
         const cost = this.attrUpgradeCost(currentBase - racialMod);
         if ((c.levelUpPoints ?? 0) < cost) return c;
         const updated = { ...c, levelUpPoints: (c.levelUpPoints ?? 0) - cost };
-        if (attr === 'armadura') {
-          updated.armadura = c.armadura + 1;
-        } else if (attr === 'resistencia') {
+        if (attr === 'resistencia') {
           const newR = c.resistencia.base + 1;
           updated.resistencia = { base: newR, current: newR, max: newR };
           updated.pontosVida = {
             base: c.pontosVida.base + 5,
             current: c.pontosVida.current + 5,
             max: c.pontosVida.max + 5,
+          };
+        } else if (attr === 'habilidade') {
+          const newH = c.habilidade.base + 1;
+          updated.habilidade = { base: newH, current: newH, max: newH };
+          updated.pontosMana = {
+            base: c.pontosMana.base + 5,
+            current: c.pontosMana.current + 5,
+            max: c.pontosMana.max + 5,
           };
         } else {
           const old = c[attr];

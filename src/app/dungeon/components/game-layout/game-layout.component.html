@@ -90,14 +90,14 @@
                   </div>
                 </div>
                 <div class="edp-stats">
-                  <div class="edp-stat"><span class="edp-stat-label">Força</span><span class="edp-stat-val">{{ e.forca }}</span></div>
+                  <div class="edp-stat"><span class="edp-stat-label">Poder</span><span class="edp-stat-val">{{ e.poder }}</span></div>
                   <div class="edp-stat"><span class="edp-stat-label">Habilidade</span><span class="edp-stat-val">{{ e.habilidade }}</span></div>
                   <div class="edp-stat"><span class="edp-stat-label">Armadura</span><span class="edp-stat-val">{{ e.armadura }}</span></div>
                   <div class="edp-stat"><span class="edp-stat-label">Recomp.</span><span class="edp-stat-val">{{ e.xpReward }}xp / {{ e.goldReward }}🪙</span></div>
                 </div>
                 <div class="edp-attacks">
                   <span class="edp-atk-label">Ataque:</span>
-                  <span class="edp-atk-desc">Físico — {{ e.forca }} + 1d6 − Arm({{ e.armadura }})</span>
+                  <span class="edp-atk-desc">P{{ e.poder }} + 1d6 vs R{{ e.resistencia }}+A{{ e.armadura }} + 1d6</span>
                 </div>
               </div>
             }

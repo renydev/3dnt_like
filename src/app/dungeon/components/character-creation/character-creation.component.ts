@@ -96,7 +96,7 @@ export interface PresetCharacter {
   tierId: 'lutador';
   raceId: string;
   classId: string;
-  attrs: { forca: number; habilidade: number; resistencia: number; armadura: number; poderFogo: number };
+  attrs: { poder: number; habilidade: number; resistencia: number };
   vantagenIds: string[];
   desvIds: string[];
   highlights: string[];
@@ -113,11 +113,11 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     tierId: 'lutador',
     raceId: 'humano',
     classId: 'guerreiro',
-    // Humano: 7 base + 2 bonus = 9pts. Custo: totalCost(3)+totalCost(1)+totalCost(1)+totalCost(1) = 6+1+1+1 = 9
-    attrs: { forca: 3, habilidade: 1, resistencia: 1, armadura: 1, poderFogo: 0 },
+    // Humano: 7 base + 2 bonus = 9pts. Custo linear: 3+1+1 = 5 (4 sobram para perícias/vantagens)
+    attrs: { poder: 3, habilidade: 1, resistencia: 1 },
     vantagenIds: [],
     desvIds: [],
-    highlights: ['Força máxima de um Lutador', 'Combate corpo a corpo', 'Simples de jogar'],
+    highlights: ['Poder máximo de um Lutador', 'Combate corpo a corpo', 'Simples de jogar'],
   },
   {
     id: 'mago-preset',
@@ -129,12 +129,12 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     tierId: 'lutador',
     raceId: 'elfo',
     classId: 'mago',
-    // Elfo: 7 base - 2 custo raça = 5pts. Custo: totalCost(1)+totalCost(1)+totalCost(1) = 1+1+1 = 3 (2 sobram para perícias)
-    // Final: forca:0 (1-1), habilidade:2 (1+1), resistencia:1, poderFogo:3 (1+2)
-    attrs: { forca: 1, habilidade: 1, resistencia: 1, armadura: 0, poderFogo: 1 },
+    // Elfo: 7 base - 2 custo raça = 5pts. Custo linear: 1+2+1 = 4 (1 sobra)
+    // Final: poder:0 (1-1), habilidade:2 (1+1), resistencia:1
+    attrs: { poder: 1, habilidade: 1, resistencia: 1 },
     vantagenIds: [],
     desvIds: [],
-    highlights: ['Poder de Fogo 3 + bônus élfico', 'Dano mágico devastador', 'Requer posicionamento'],
+    highlights: ['Poder 3 com bônus élfico', 'Dano mágico devastador', 'Requer posicionamento'],
   },
   {
     id: 'arqueiro-preset',
@@ -146,9 +146,9 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     tierId: 'lutador',
     raceId: 'meio-elfo',
     classId: 'ranger',
-    // Meio-elfo: 7 base - 1 custo raça + 1 bonus = 7pts. Custo: totalCost(1)+totalCost(2)+totalCost(1) = 1+3+1 = 5 (2 sobram)
-    // Final: forca:1, habilidade:3 (2+1), resistencia:1, poderFogo:max(1,0+1)=1
-    attrs: { forca: 1, habilidade: 2, resistencia: 1, armadura: 0, poderFogo: 0 },
+    // Meio-elfo: 7 base - 1 custo raça + 1 bonus = 7pts. Custo linear: 1+2+1 = 4 (3 sobram)
+    // Final: poder:1, habilidade:3 (2+1), resistencia:1
+    attrs: { poder: 1, habilidade: 2, resistencia: 1 },
     vantagenIds: [],
     desvIds: [],
     highlights: ['Habilidade 3 para ataques certeiros', 'Mobilidade e alcance', 'Estilo de jogo versátil'],
@@ -174,11 +174,9 @@ export class CharacterCreationComponent {
   periciasSvc  = inject(PericiaService);
 
   readonly ATTR_META = [
-    { key: 'forca'       as const, label: 'Força',           icon: '⚔️',  color: '#e74c3c' },
+    { key: 'poder'       as const, label: 'Poder',           icon: '⚔️',  color: '#e74c3c' },
     { key: 'habilidade'  as const, label: 'Habilidade',      icon: '🎯',  color: '#3498db' },
     { key: 'resistencia' as const, label: 'Resistência',     icon: '🛡️', color: '#27ae60' },
-    { key: 'armadura'    as const, label: 'Armadura',        icon: '🔰',  color: '#95a5a6' },
-    { key: 'poderFogo' as const, label: 'Poder de Fogo', icon: '✨',  color: '#8e44ad' },
   ];
 
   tiers             = STARTING_TIERS;
@@ -214,7 +212,7 @@ export class CharacterCreationComponent {
   classDiffFilter      = signal('Todas');
 
   distributedAttrs = signal({
-    forca: 0, habilidade: 0, resistencia: 0, armadura: 0, poderFogo: 0,
+    poder: 0, habilidade: 0, resistencia: 0,
   });
 
   // Focos de Magia — distribuídos junto com atributos no passo 5
@@ -230,11 +228,11 @@ export class CharacterCreationComponent {
 
   // ── Helpers de custo ────────────────────────────────────────────────────────
 
-  /** Custo incremental: ir de N para N+1 custa N+1 pontos. */
-  nextCost(currentVal: number): number { return currentVal + 1; }
+  /** Custo incremental (3D&T Victory): 1pt até o 5º, 2pts por ponto acima de 5. */
+  nextCost(currentVal: number): number { return currentVal < 5 ? 1 : 2; }
 
-  /** Custo total para ter um atributo no nível N: N*(N+1)/2. */
-  totalCost(n: number): number { return n * (n + 1) / 2; }
+  /** Custo total para ter um atributo no nível N: linear, N pontos (até 5; 2/ponto acima). */
+  totalCost(n: number): number { return n <= 5 ? Math.max(0, n) : 5 + (n - 5) * 2; }
 
   // ── Computed ────────────────────────────────────────────────────────────────
 
@@ -253,13 +251,12 @@ export class CharacterCreationComponent {
     const r    = this.selectedRace();
     const mods = r?.modifiers ?? {};
     const d    = this.distributedAttrs();
-    const forca       = d.forca       + (mods.forca       ?? 0);
+    const poder       = d.poder       + (mods.poder       ?? 0);
     const habilidade  = d.habilidade  + (mods.habilidade  ?? 0);
     const resistencia = d.resistencia + (mods.resistencia ?? 0);
-    const armadura    = d.armadura    + (mods.armadura    ?? 0);
-    const poderFogo  = Math.max(1, d.poderFogo + (mods.poderFogo ?? 0));
     const pontosVida = resistencia === 0 ? 1 : resistencia * 5;
-    return { forca, habilidade, resistencia, armadura, poderFogo, pontosVida };
+    const pontosMana = habilidade === 0 ? 1 : habilidade * 5;
+    return { poder, habilidade, resistencia, pontosVida, pontosMana };
   });
 
   statRows = computed(() => {
@@ -268,9 +265,7 @@ export class CharacterCreationComponent {
     return this.ATTR_META.map(m => ({
       ...m,
       distributed: d[m.key],
-      final: m.key === 'armadura' ? s.armadura
-           : m.key === 'poderFogo' ? s.poderFogo
-           : (s as any)[m.key],
+      final: (s as any)[m.key],
     }));
   });
 
@@ -290,9 +285,8 @@ export class CharacterCreationComponent {
 
   attrSpent = computed(() => {
     const d = this.distributedAttrs();
-    return this.totalCost(d.forca) + this.totalCost(d.habilidade)
-         + this.totalCost(d.resistencia) + this.totalCost(d.armadura)
-         + this.totalCost(d.poderFogo) + this.focusSpent();
+    return this.totalCost(d.poder) + this.totalCost(d.habilidade)
+         + this.totalCost(d.resistencia) + this.focusSpent();
   });
 
   vantagensSpent = computed(() =>
@@ -322,13 +316,11 @@ export class CharacterCreationComponent {
   // ── Helpers de exibição ─────────────────────────────────────────────────────
 
   classStatBars(cls: ClassDef): { label: string; value: number; pct: number }[] {
-    const maxF = 5;
+    const maxAttr = 10;
     return [
-      { label: 'F', value: cls.baseStats.forca,       pct: (cls.baseStats.forca / maxF) * 100 },
-      { label: 'H', value: cls.baseStats.habilidade,  pct: (cls.baseStats.habilidade / maxF) * 100 },
-      { label: 'R', value: cls.baseStats.resistencia, pct: (cls.baseStats.resistencia / maxF) * 100 },
-      { label: 'A', value: cls.baseStats.armadura,    pct: (cls.baseStats.armadura / maxF) * 100 },
-      { label: 'PF', value: cls.baseStats.poderFogo, pct: Math.min(100, (cls.baseStats.poderFogo / 8) * 100) },
+      { label: 'P', value: cls.baseStats.poder,       pct: Math.min(100, (cls.baseStats.poder / maxAttr) * 100) },
+      { label: 'H', value: cls.baseStats.habilidade,  pct: (cls.baseStats.habilidade / 5) * 100 },
+      { label: 'R', value: cls.baseStats.resistencia, pct: (cls.baseStats.resistencia / 5) * 100 },
     ];
   }
 
@@ -392,11 +384,9 @@ export class CharacterCreationComponent {
   }
 
   /** Valor final do atributo (distribuído + racial). */
-  finalAttr(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo'): number {
+  finalAttr(key: 'poder'|'habilidade'|'resistencia'): number {
     const s = this.finalStats();
-    return key === 'armadura' ? s.armadura
-         : key === 'poderFogo' ? s.poderFogo
-         : (s as any)[key];
+    return (s as any)[key];
   }
 
   canUseFocus(): boolean {
@@ -427,7 +417,7 @@ export class CharacterCreationComponent {
     this.distributedFocus.update(f => ({ ...f, [path]: f[path] - 1 }));
   }
 
-  canIncrement(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo'): boolean {
+  canIncrement(key: 'poder'|'habilidade'|'resistencia'): boolean {
     const maxAttr = this.selectedTier()?.maxCharacteristic ?? 5;
     const finalVal = this.finalAttr(key);
     if (finalVal >= maxAttr) return false;
@@ -435,7 +425,7 @@ export class CharacterCreationComponent {
     return this.pointsLeft() >= cost;
   }
 
-  canDecrement(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo'): boolean {
+  canDecrement(key: 'poder'|'habilidade'|'resistencia'): boolean {
     return this.distributedAttrs()[key] > 0;
   }
 
@@ -448,7 +438,7 @@ export class CharacterCreationComponent {
     this.selectedPericias.set([]);
     this.selectedEspecializacoes.set([]);
     this.selectedGod.set(null);
-    this.distributedAttrs.set({ forca: 0, habilidade: 0, resistencia: 0, armadura: 0, poderFogo: 0 });
+    this.distributedAttrs.set({ poder: 0, habilidade: 0, resistencia: 0 });
     this.distributedFocus.set({ fogo: 0, agua: 0, ar: 0, terra: 0, luz: 0, trevas: 0 });
     this.nextStep();
   }
@@ -457,12 +447,12 @@ export class CharacterCreationComponent {
   selectClass(c: ClassDef) { this.selectedClass.set(c); this.step.set(5); }
   goToStep(n: number)      { this.step.set(n); }
 
-  incrementAttr(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo') {
+  incrementAttr(key: 'poder'|'habilidade'|'resistencia') {
     if (!this.canIncrement(key)) return;
     this.distributedAttrs.update(d => ({ ...d, [key]: d[key] + 1 }));
   }
 
-  decrementAttr(key: 'forca'|'habilidade'|'resistencia'|'armadura'|'poderFogo') {
+  decrementAttr(key: 'poder'|'habilidade'|'resistencia') {
     if (!this.canDecrement(key)) return;
     this.distributedAttrs.update(d => ({ ...d, [key]: d[key] - 1 }));
   }
@@ -544,13 +534,11 @@ export class CharacterCreationComponent {
       class: this.selectedClass()!.id,
       race:  this.selectedRace()!.id,
       level: 1, xp: 0, xpToNextLevel: 100,
-      forca:       { base: stats.forca,       current: stats.forca,       max: stats.forca },
+      poder:       { base: stats.poder,       current: stats.poder,       max: stats.poder },
       habilidade:  { base: stats.habilidade,  current: stats.habilidade,  max: stats.habilidade },
       resistencia: { base: stats.resistencia, current: stats.resistencia, max: stats.resistencia },
-      armadura: stats.armadura,
-      poderFogo:  { base: stats.poderFogo, current: stats.poderFogo, max: stats.poderFogo },
       pontosVida: { base: stats.pontosVida, current: stats.pontosVida, max: stats.pontosVida },
-      pontosMana: { base: stats.resistencia * 3, current: stats.resistencia * 3, max: stats.resistencia * 3 },
+      pontosMana: { base: stats.pontosMana, current: stats.pontosMana, max: stats.pontosMana },
       vantagens:    [...this.allFreeVantagens(), ...this.selectedVantagensNames()],
       desvantagens: this.selectedDesvantagens().map(id => this.getDesv(id)!.name),
       pericias:     [...this.selectedPericias(), ...this.selectedEspecializacoes()],
