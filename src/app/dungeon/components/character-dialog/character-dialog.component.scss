@@ -262,6 +262,20 @@
   }
 }
 
+.attr-abacus {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+  color: var(--color-amber, #d4aa20);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scale-symbol {
+  margin-right: 2px;
+}
+
 .attr-num {
   font-family: var(--font-display);
   font-size: 0.9rem;

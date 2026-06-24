@@ -12,6 +12,7 @@ import { ALL_DESVANTAGENS, DesvantagemDef } from '../../../core/data/desvantagen
 import { parseCostValue } from '../../../core/utils/pp-calculator';
 import { PericiaService } from '../../../core/services/pericias.service';
 import { PericiaDef } from '../../../core/data/pericias.data';
+import { powerScaleSymbol } from '../../../core/utils/power-scale';
 
 const VANTAGEM_CATEGORY_ICONS: Record<VantagemCategory, string> = {
   combate: '⚔️', defesa: '🛡️', atributo: '💪', mental: '🧠',
@@ -364,6 +365,11 @@ export class CharacterCreationComponent {
   finalAttr(key: 'poder'|'habilidade'|'resistencia'): number {
     const s = this.finalStats();
     return (s as any)[key];
+  }
+
+  /** Símbolo de Escala de Poder (3D&T) — vazio em Ningen (0–9), cobre criações futuras com tetos maiores. */
+  attrScaleSymbol(key: 'poder'|'habilidade'|'resistencia'): string {
+    return powerScaleSymbol(this.finalAttr(key));
   }
 
   canIncrement(key: 'poder'|'habilidade'|'resistencia'): boolean {

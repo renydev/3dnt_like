@@ -4,6 +4,13 @@ import { GameStateService } from '../../../core/services/game-state.service';
 import { CombatService } from '../../../core/services/combat.service';
 import { Enemy } from '../../../core/models/combat.model';
 import { Character } from '../../../core/models/character.model';
+import { powerScaleSymbol } from '../../../core/utils/power-scale';
+
+/** Maior símbolo de Escala de Poder (3D&T) entre os atributos do inimigo, se algum passar de Ningen. */
+function enemyScaleBadge(e: Enemy): string {
+  const symbols = [e.poder, e.habilidade, e.resistencia, e.armadura].map(powerScaleSymbol).filter(Boolean);
+  return symbols.length ? ` ${symbols[0]}` : '';
+}
 
 interface EnemyCard {
   container: Phaser.GameObjects.Container;
@@ -85,7 +92,7 @@ export class CombatScene extends Phaser.Scene {
       const icon = hasSprite
         ? this.add.image(-60, 0, this.spriteKey(e.sprite!)).setDisplaySize(48, 48)
         : this.add.text(-60, 0, e.icon, { fontSize: '32px' }).setOrigin(0.5);
-      const name = this.add.text(-30, -22, e.name, { fontSize: '12px', color: '#faa' });
+      const name = this.add.text(-30, -22, e.name + enemyScaleBadge(e), { fontSize: '12px', color: '#faa' });
       const barBg = this.add.rectangle(-30, 0, BAR_W, BAR_H, 0x333333).setOrigin(0, 0.5);
       const barFill = this.add.rectangle(-30, 0, BAR_W, BAR_H, 0xcc2244).setOrigin(0, 0.5);
       const hpText = this.add.text(-30, 10, `${e.hp}/${e.maxHp}`, { fontSize: '10px', color: '#ccc' });

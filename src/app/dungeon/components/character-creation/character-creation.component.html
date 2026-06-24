@@ -333,7 +333,7 @@
                     }
                   </div>
 
-                  <span class="ard-val" [style.color]="m.color">{{ finalAttr(m.key) }}</span>
+                  <span class="ard-val" [style.color]="m.color">{{ attrScaleSymbol(m.key) }}{{ finalAttr(m.key) }}</span>
 
                   <button class="ard-btn plus"
                     [disabled]="!canIncrement(m.key)"

@@ -102,6 +102,18 @@ Três atributos primários, cada um `{ base, current, max }`:
 - **10 XP = 1 PP.** PP acumulado é gasto manualmente (`spendLevelUpPoint`) para subir 1 ponto de atributo — custo 1PP se o atributo atual < 5, senão 2PP. Subir Resistência dá +5 PV; subir Habilidade dá +5 PM.
 - Completar o chefe de um andar dá +1 PP de bônus a todo o grupo, independente do combate.
 
+### 4.4 Escalas de Poder
+`core/utils/power-scale.ts` — notação visual (ainda sem efeito nas contas de combate) para quando um atributo passa de uma ordem de grandeza:
+
+| Escala | Faixa | Símbolo |
+|---|---|---|
+| Ningen ("humano") | 0–9 | — |
+| Sugoi ("incrível") | 10–99 | ⭐ |
+| Kiodai ("gigante") | 100–999 | ☁️ |
+| Kami ("deus") | 1000+ | 👑 |
+
+O símbolo aparece na ficha do personagem (`character-dialog`) e na criação, e no nome do inimigo em combate quando algum de seus atributos atinge Sugoi+. Acima de 9, o valor é mostrado em notação de ábaco (letra por ordem de grandeza completa + círculos para o resto, ex.: 11 = `A●○○○○○○○○`) em vez de pontinhos individuais. Hoje só é cosmético: nenhuma regra de combate trata diferença de escala entre atacante e defensor.
+
 ---
 
 ## 5. Exploração (Mapa)

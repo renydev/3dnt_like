@@ -70,16 +70,23 @@
           <div class="attr-row">
             <span class="attr-abbr">{{ row.abbr }}</span>
             <span class="attr-label">{{ row.label }}</span>
-            <div class="dots-row">
-              @for (d of dotsDetailed(row.key, row.value(char()!)); track $index) {
-                <span class="dot"
-                  [class.dot--filled]="d.filled"
-                  [class.dot--racial-bonus]="d.type === 'racial-bonus'"
-                  [class.dot--racial-penalty]="d.type === 'racial-penalty'">
-                </span>
-              }
-            </div>
+            @if (isAboveNingen(row.key)) {
+              <span class="attr-abacus" [title]="scaleLabel(row.key)">{{ scaleAbacus(row.key) }}</span>
+            } @else {
+              <div class="dots-row">
+                @for (d of dotsDetailed(row.key, row.value(char()!)); track $index) {
+                  <span class="dot"
+                    [class.dot--filled]="d.filled"
+                    [class.dot--racial-bonus]="d.type === 'racial-bonus'"
+                    [class.dot--racial-penalty]="d.type === 'racial-penalty'">
+                  </span>
+                }
+              </div>
+            }
             <span class="attr-num">
+              @if (isAboveNingen(row.key)) {
+                <span class="scale-symbol" [title]="scaleLabel(row.key)">{{ scaleSymbol(row.key) }}</span>
+              }
               {{ effectiveValue(row.key) }}
               @if (equipBonus(row.key) !== 0) {
                 <span class="attr-bonus" [class.attr-bonus--neg]="equipBonus(row.key) < 0">

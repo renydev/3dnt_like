@@ -4,6 +4,7 @@ import { GameStateService } from '../../../core/services/game-state.service';
 import { Character, DEFAULT_CHAR_COLOR } from '../../../core/models/character.model';
 import { KIT_MAP } from '../../../core/data/kits.data';
 import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
+import { getPowerScale, powerScaleSymbol, powerScaleLabel, formatAttributeAbacus } from '../../../core/utils/power-scale';
 
 export type SpendableAttr = 'poder' | 'habilidade' | 'resistencia';
 
@@ -257,6 +258,15 @@ export class CharacterDialogComponent {
     const c = this.char()!;
     return c[attr].current + this.equipBonus(attr);
   }
+
+  /** Escala de Poder (3D&T) do atributo — Ningen é a escala normal e não mostra símbolo. */
+  isAboveNingen(attr: SpendableAttr): boolean {
+    return getPowerScale(this.effectiveValue(attr)) !== 'ningen';
+  }
+
+  scaleSymbol(attr: SpendableAttr): string { return powerScaleSymbol(this.effectiveValue(attr)); }
+  scaleLabel(attr: SpendableAttr): string { return powerScaleLabel(this.effectiveValue(attr)); }
+  scaleAbacus(attr: SpendableAttr): string { return formatAttributeAbacus(this.effectiveValue(attr)); }
 
   /** Armadura é 100% equipamento no 3D&T Victory — exibida fora da grade de atributos. */
   armorBonus(): number {
