@@ -11,6 +11,17 @@ export function attrPPCost(value: number): number {
 }
 
 /**
+ * Extrai o custo numérico (em PP) de um texto de custo do manual oficial
+ * (ex.: "1pt" → 1, "1-2pt" → 1, "2, 4 ou 6pt" → 2, "-1pt" → -1, "-1 ou -2pt" → -1).
+ * Sempre usa o menor valor absoluto citado, como custo/reembolso de criação —
+ * variações maiores (comprar de novo, escolher tier maior) ficam para escolhas futuras.
+ */
+export function parseCostValue(cost: string): number {
+  const match = cost.match(/-?\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
+/**
  * PP total gasto num personagem: soma de Poder + Habilidade + Resistência.
  * Usa o valor REAL (base + modificador racial) de cada atributo.
  */

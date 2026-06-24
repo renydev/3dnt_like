@@ -4,11 +4,32 @@ import { Enemy, CombatLogEntry, CombatPhase, CombatAbility } from '../models/com
 import { Character } from '../models/character.model';
 import { getEffectiveStats, ITEM_CATALOG } from '../models/item.model';
 import { generateEnemy } from '../data/enemies.data';
+import { d6, d6n, rollPerda } from '../utils/dice';
 
-function d6() { return Math.ceil(Math.random() * 6); }
-
-/** Soma N rolagens simples de 1d6 — usado fora de FA/FD (cura, fuga), sem PA. */
-function d6n(n: number) { let t = 0; for (let i = 0; i < n; i++) t += d6(); return t; }
+/**
+ * Habilidades de combate concedidas por Vantagens oficiais (vantagens.data.ts) cujo efeito
+ * no manual mapeia sem ambiguidade para um efeito de combate já resolvido por este serviço.
+ * Vantagens com sub-escolha (ex.: "Ataque Especial" tem 12 variantes) ou que exigem um
+ * subsistema novo (Anulação, Paralisia, Confusão, Acumulador, Golpe Final) ficam de fora
+ * por ora — precisam de UI de escolha ou de status effects que ainda não existem.
+ */
+const VANTAGEM_ABILITIES: Record<string, CombatAbility> = {
+  'Cura': {
+    id: 'vantagem_cura', name: 'Cura', icon: '💚', pmCost: 2,
+    description: 'Gasta 2PM para curar 1d6+Habilidade de PV.',
+    effect: 'heal', bonusDice: 1,
+  },
+  'Confusão': {
+    id: 'vantagem_confusao', name: 'Confusão', icon: '🌀', pmCost: 2,
+    description: 'Ataca e gasta 2PM; vencendo a defesa, o alvo fica confuso (ataca outro inimigo ao acaso) até sofrer dano ou resistir.',
+    effect: 'confusao',
+  },
+  'Paralisia': {
+    id: 'vantagem_paralisia', name: 'Paralisia', icon: '🥶', pmCost: 2,
+    description: 'Ataca e gasta 2PM; vencendo a defesa, o alvo fica paralisado (perde o turno) até sofrer dano ou resistir.',
+    effect: 'paralisia',
+  },
+};
 
 /** Teto de PA ganho por 6s num combate: metade (arredondado p/ cima) de Poder+Resistência. */
 function paGainCap(poder: number, resistencia: number): number {
@@ -55,7 +76,10 @@ export class CombatService {
   /** Habilidades usadas por cada companheiro neste combate (id → set de ability ids) */
   companionAbilitiesUsed = signal<Map<string, Set<string>>>(new Map());
   enemyWeakenedTurns = signal(0);
-  enemyWeakenAmount = signal(0);
+  /** Confuso (vantagem Confusão): enemyId → DC de Resistência (9+Poder do conjurador) para se livrar. */
+  private confusedEnemies = new Map<string, number>();
+  /** Paralisado (vantagem Paralisia): enemyId → DC de Resistência (6+Poder do conjurador) para se livrar. */
+  private paralyzedEnemies = new Map<string, number>();
   /** Fúria Bárbara: rodadas restantes do buff de +2P/+2R do jogador */
   playerRageTurns = signal(0);
   readonly playerRageAmount = 2;
@@ -171,8 +195,17 @@ export class CombatService {
     return spend;
   }
 
-  // Sem classes, não há habilidades de combate especiais — só Ataque/Defesa básicos.
-  readonly abilities = computed<CombatAbility[]>(() => []);
+  /**
+   * Habilidades de combate vêm das Vantagens compradas na criação (não de classe/kit —
+   * 3D&T Victory não tem classes; Kits são só profissão narrativa). Mapeamento por nome
+   * de vantagem; cobre por ora só as que têm efeito de combate inequívoco no manual.
+   */
+  readonly abilities = computed<CombatAbility[]>(() => {
+    const names = this.gs.character()?.vantagens ?? [];
+    return names
+      .map(name => VANTAGEM_ABILITIES[name])
+      .filter((ab): ab is CombatAbility => !!ab);
+  });
 
   canUseAbility(ab: CombatAbility): boolean {
     const char = this.gs.character();
@@ -190,15 +223,15 @@ export class CombatService {
       group = [generateEnemy(floor, isBoss)];
     }
     this.enemies.set(group);
-    this.phase.set('player_turn');
     this.selectedEnemyId.set(group.find(e => e.hp > 0)?.id ?? null);
 
+    const char = this.gs.character();
     const names = group.map(e => e.name).join(', ');
-    this.log.set([{ text: `${names} surgem das sombras!`, type: 'system' }]);
     this.abilitiesUsed.set(new Set());
     this.companionAbilitiesUsed.set(new Map());
     this.enemyWeakenedTurns.set(0);
-    this.enemyWeakenAmount.set(0);
+    this.confusedEnemies.clear();
+    this.paralyzedEnemies.clear();
     this.playerRageTurns.set(0);
     this.companionRageTurns.clear();
     this.resetPlayerRoundState();
@@ -213,7 +246,6 @@ export class CombatService {
     }
     // Aqui só recalculamos o teto de ganho por 6s (pode ter mudado com level up)
     // e zeramos o contador de ganho desta luta.
-    const char = this.gs.character();
     if (char) {
       this.playerPAGainCap = paGainCap(char.poder.current, char.resistencia.current);
       this.playerPAGained = 0;
@@ -223,6 +255,40 @@ export class CombatService {
     for (const c of this.gs.companions()) {
       this.companionPAGainCap.set(c.id, paGainCap(c.poder.current, c.resistencia.current));
       this.companionPAGained.set(c.id, 0);
+    }
+
+    // Iniciativa (3D&T Victory): cada combatente rola 1d6+Habilidade individualmente
+    // (não um valor agregado do grupo). Se QUALQUER um do grupo superar o melhor
+    // resultado dos inimigos, o grupo não é surpreendido — só a comparação dos
+    // melhores de cada lado decide; a ordem de turnos em si (jogador→companheiros→
+    // inimigos, ou inimigos primeiro em caso de surpresa) é definida depois disso.
+    // Ágil (+2 no teste, "incluso iniciativa") e Lento (Perda na iniciativa) entram por personagem.
+    const party = [char, ...this.gs.companions()].filter((c): c is Character => !!c);
+    const partyRolls = party.map(c => {
+      const agil = c.vantagens.includes('Ágil');
+      const lento = c.desvantagens.includes('Lento');
+      return (lento ? rollPerda() : d6()) + c.habilidade.current + (agil ? 2 : 0);
+    });
+    const enemyRolls = group.map(e => d6() + e.habilidade);
+    const bestPartyRoll = Math.max(0, ...partyRolls);
+    const bestEnemyRoll = Math.max(...enemyRolls);
+    const enemiesFirst = bestPartyRoll <= bestEnemyRoll;
+
+    this.log.set([
+      { text: `${names} surgem das sombras!`, type: 'system' },
+      {
+        text: enemiesFirst
+          ? `⚡ Iniciativa: inimigos surpreendem o grupo! (🎲${bestEnemyRoll} vs 🎲${bestPartyRoll})`
+          : `▶ Iniciativa: o grupo age primeiro! (🎲${bestPartyRoll} vs 🎲${bestEnemyRoll})`,
+        type: 'system',
+      },
+    ]);
+
+    if (enemiesFirst) {
+      this.phase.set('enemy_turn');
+      setTimeout(() => this.enemyTurn(), 700);
+    } else {
+      this.phase.set('player_turn');
     }
   }
 
@@ -268,10 +334,18 @@ export class CombatService {
         return;
       }
       case 'weaken': {
-        const amt = 2;
         this.enemyWeakenedTurns.set(3);
-        this.enemyWeakenAmount.set(amt);
-        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde ${amt} de Poder por 2 turnos!`, 'player');
+        this.addLog(`${ab.icon} ${ab.name} — ${target.name} sofre Perda nos ataques por 2 turnos!`, 'player');
+        this.afterPlayerAction();
+        return;
+      }
+      case 'confusao': {
+        this.resolveStatusAttack(char.poder.current, target, `${ab.icon} ${ab.name}`, () => this.applyConfusao(char.poder.current, target));
+        this.afterPlayerAction();
+        return;
+      }
+      case 'paralisia': {
+        this.resolveStatusAttack(char.poder.current, target, `${ab.icon} ${ab.name}`, () => this.applyParalisia(char.poder.current, target));
         this.afterPlayerAction();
         return;
       }
@@ -364,8 +438,16 @@ export class CombatService {
         this.afterPlayerAction(); return;
       }
       case 'weaken': {
-        this.enemyWeakenedTurns.set(3); this.enemyWeakenAmount.set(2);
-        this.addLog(`${ab.icon} ${ab.name} — ${target.name} perde 2 de Poder por 2 turnos!`, 'player');
+        this.enemyWeakenedTurns.set(3);
+        this.addLog(`${ab.icon} ${ab.name} — ${target.name} sofre Perda nos ataques por 2 turnos!`, 'player');
+        this.afterPlayerAction(); return;
+      }
+      case 'confusao': {
+        this.resolveStatusAttack(char.poder.current, target, `${ab.icon} ${ab.name}`, () => this.applyConfusao(char.poder.current, target));
+        this.afterPlayerAction(); return;
+      }
+      case 'paralisia': {
+        this.resolveStatusAttack(char.poder.current, target, `${ab.icon} ${ab.name}`, () => this.applyParalisia(char.poder.current, target));
         this.afterPlayerAction(); return;
       }
       case 'rage': {
@@ -475,7 +557,9 @@ export class CombatService {
     const alive = this.enemies().filter(e => e.hp > 0);
     if (alive.length === 0) return;
 
-    const abilities: CombatAbility[] = [];
+    const abilities: CombatAbility[] = (companion.vantagens ?? [])
+      .map(name => VANTAGEM_ABILITIES[name])
+      .filter((ab): ab is CombatAbility => !!ab);
     const hasBoss = alive.some(e => e.isBoss);
 
     const target = this._pickTarget(alive);
@@ -544,8 +628,14 @@ export class CombatService {
     const label = `${ab.icon} ${companion.name}: ${ab.name}`;
     switch (ab.effect) {
       case 'weaken':
-        this.enemyWeakenedTurns.set(3); this.enemyWeakenAmount.set(2);
-        this.addLog(`${label} — ${target.name} perde 2 Poder por 2 turnos!`, 'player');
+        this.enemyWeakenedTurns.set(3);
+        this.addLog(`${label} — ${target.name} sofre Perda nos ataques por 2 turnos!`, 'player');
+        break;
+      case 'confusao':
+        this.resolveStatusAttack(companion.poder.current, target, label, () => this.applyConfusao(companion.poder.current, target));
+        break;
+      case 'paralisia':
+        this.resolveStatusAttack(companion.poder.current, target, label, () => this.applyParalisia(companion.poder.current, target));
         break;
       case 'rage':
         this.activateCompanionRage(companion, ab);
@@ -708,7 +798,43 @@ export class CombatService {
     ];
 
     for (const enemy of aliveEnemies) {
-      const effP = Math.max(1, enemy.poder - (weakened ? this.enemyWeakenAmount() : 0));
+      // Paralisia/Confusão (3D&T Victory): tenta resistir (R+1d6 vs DC) antes de agir.
+      const paralyzeDc = this.paralyzedEnemies.get(enemy.id);
+      if (paralyzeDc !== undefined) {
+        const resistRoll = d6() + enemy.resistencia;
+        if (resistRoll >= paralyzeDc) {
+          this.paralyzedEnemies.delete(enemy.id);
+          this.addLog(`${enemy.icon} ${enemy.name} resiste à paralisia! (🎲${resistRoll} vs ${paralyzeDc})`, 'system');
+        } else {
+          this.addLog(`${enemy.icon} ${enemy.name} está paralisado e não pode agir!`, 'miss');
+          continue;
+        }
+      }
+      const confuseDc = this.confusedEnemies.get(enemy.id);
+      if (confuseDc !== undefined) {
+        const resistRoll = d6() + enemy.resistencia;
+        if (resistRoll >= confuseDc) {
+          this.confusedEnemies.delete(enemy.id);
+          this.addLog(`${enemy.icon} ${enemy.name} resiste à confusão! (🎲${resistRoll} vs ${confuseDc})`, 'system');
+        } else {
+          const otherEnemies = aliveEnemies.filter(e => e.id !== enemy.id && e.hp > 0);
+          if (otherEnemies.length === 0) {
+            this.addLog(`${enemy.icon} ${enemy.name} está confuso e não acha um alvo!`, 'miss');
+            continue;
+          }
+          const victim = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
+          const dAtk = d6();
+          const atkPower = enemy.poder + dAtk;
+          const dDef = d6();
+          const defPower = victim.resistencia + victim.armadura + dDef;
+          const { dmg, str: dmgStrC } = this.fmtDmg(atkPower - defPower);
+          this.addLog(`${enemy.icon} ${enemy.name} está confuso e ataca ${victim.name}! FA(${atkPower}) vs FD(${defPower}) → ${dmgStrC} dano!`, 'enemy');
+          this.applyDamageToEnemy(victim.id, dmg);
+          continue;
+        }
+      }
+
+      const effP = enemy.poder;
       const effH = enemy.habilidade;
 
       const targetMember = aliveParty[Math.floor(Math.random() * aliveParty.length)];
@@ -734,7 +860,7 @@ export class CombatService {
       this.partyArmorReductions.set(targetKey, newReduction);
 
       const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
-      const weakPart = weakened ? ` [P-${this.enemyWeakenAmount()}]` : '';
+      const weakPart = weakened ? ' [Perda — enfraquecido]' : '';
 
       if (resisted) {
         this.addLog(
@@ -755,7 +881,8 @@ export class CombatService {
       }
 
       // Dano normal: FA = P+1d6, FD = R+A+1d6 (+1d6 se defensor tiver perícia Luta)
-      const dAtk = d6();
+      // Enfraquecido (vantagem "weaken"): Perda no dado de ataque (2d6, pior) em vez de penalidade fixa em Poder.
+      const dAtk = weakened ? rollPerda() : d6();
       const defRoller = targetMember.isPlayer
         ? () => this.rollPlayerDie()
         : () => this.rollCompanionDie(targetMember.id!);
@@ -782,6 +909,9 @@ export class CombatService {
         if (fallen) this.addLog(`💀 ${fallen.name.split(',')[0]} caiu em combate!`, 'system');
       }
     }
+
+    // Um inimigo confuso pode ter abatido outro por fogo amigo — checa vitória antes de devolver o turno.
+    if (this.checkVictory()) return;
 
     // Reseta estado de esquiva/armadura de inimigos para próximo turno do jogador
     this.resetPlayerRoundState();
@@ -857,10 +987,40 @@ export class CombatService {
     this.applyDamageToEnemy(enemy.id, dmg);
   }
 
+  /**
+   * Ataque de Confusão/Paralisia (3D&T Victory): FA = Poder+1d6 vs FD = R+A+1d6 do alvo;
+   * vencendo, aplica o status (em vez de dano) via `apply`.
+   */
+  private resolveStatusAttack(casterPoder: number, target: Enemy, label: string, apply: () => void): void {
+    const dAtk = d6();
+    const atkPower = casterPoder + dAtk;
+    const dDef = d6();
+    const defPower = target.resistencia + target.armadura + dDef;
+    if (atkPower > defPower) {
+      apply();
+      this.addLog(`${label} — FA(P${casterPoder}+🎲${dAtk}=${atkPower}) vs FD(R${target.resistencia}+A${target.armadura}+🎲${dDef}=${defPower}) → vence a defesa!`, 'player');
+    } else {
+      this.addLog(`${label} — FA(${atkPower}) vs FD(${defPower}) → não vence a defesa.`, 'miss');
+    }
+  }
+
+  private applyConfusao(casterPoder: number, target: Enemy): void {
+    this.confusedEnemies.set(target.id, 9 + casterPoder);
+  }
+
+  private applyParalisia(casterPoder: number, target: Enemy): void {
+    this.paralyzedEnemies.set(target.id, 6 + casterPoder);
+  }
+
   applyDamageToEnemy(enemyId: string, dmg: number): void {
     this.enemies.update(list =>
       list.map(e => e.id === enemyId ? { ...e, hp: Math.max(0, e.hp - dmg) } : e)
     );
+    if (dmg > 0) {
+      // Confusão/Paralisia (3D&T Victory) terminam ao sofrer dano.
+      this.confusedEnemies.delete(enemyId);
+      this.paralyzedEnemies.delete(enemyId);
+    }
     const killed = this.enemies().find(e => e.id === enemyId && e.hp === 0);
     if (killed) {
       this.addLog(`💀 ${killed.name} foi abatido!`, 'system');
@@ -1004,10 +1164,10 @@ export class CombatService {
     return true;
   }
 
-  /** Formata o dano: se raw < 1 exibe o valor original tachado + o mínimo. */
+  /** Formata o dano: defesa pode anular o ataque por completo (dano mínimo 0, regra oficial). */
   private fmtDmg(raw: number): { dmg: number; str: string } {
-    const dmg = Math.max(1, raw);
-    const str = raw < 1 ? `<s>${raw}</s> ${dmg} (dano mín)` : `${dmg}`;
+    const dmg = Math.max(0, raw);
+    const str = dmg === 0 ? `<s>${raw}</s> 0 (defesa anula!)` : `${dmg}`;
     return { dmg, str };
   }
 

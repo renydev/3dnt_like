@@ -385,9 +385,9 @@
                       <div class="vdi-top">
                         <span class="vdi-icon">{{ v.icon }}</span>
                         <span class="vdi-name">{{ v.name }}</span>
-                        <span class="vdi-cost">{{ isVantagemSelected(v.id) ? '−' : '+' }}{{ v.cost }}pt</span>
+                        <span class="vdi-cost">{{ isVantagemSelected(v.id) ? '−' : '+' }}{{ vantagemCost(v) }}pt</span>
                       </div>
-                      <p class="vdi-effect">{{ v.effect }}</p>
+                      <p class="vdi-effect">{{ v.description }}</p>
                     </div>
                   }
                 </div>
@@ -404,9 +404,9 @@
                   <div class="vdi-top">
                     <span class="vdi-icon">{{ d.icon }}</span>
                     <span class="vdi-name">{{ d.name }}</span>
-                    <span class="vdi-cost refund">+{{ d.refund }}pt</span>
+                    <span class="vdi-cost refund">+{{ desvRefund(d) }}pt</span>
                   </div>
-                  <p class="vdi-effect desv-effect">{{ d.penalty }}</p>
+                  <p class="vdi-effect desv-effect">{{ d.description }}</p>
                 </div>
               }
             </div>

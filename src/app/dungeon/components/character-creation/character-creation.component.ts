@@ -7,9 +7,16 @@ import { Character } from '../../../core/models/character.model';
 import { Arquetipo, ALL_ARQUETIPOS, ARQUETIPO_MAP } from '../../../core/data/arquetipos.data';
 import { KitDef, ALL_KITS, KIT_MAP, kitsCost } from '../../../core/data/kits.data';
 import { VALKARIA_FLOORS, DungeonTheme } from '../../../core/models/dungeon.model';
-import { VANTAGENS, DESVANTAGENS, VANTAGEM_CATEGORIES, VantagemDef, DesvantagemDef } from '../../../core/models/character-creation.model';
+import { ALL_VANTAGENS, VANTAGEM_CATEGORIES, VantagemDef, VantagemCategory } from '../../../core/data/vantagens.data';
+import { ALL_DESVANTAGENS, DesvantagemDef } from '../../../core/data/desvantagens.data';
+import { parseCostValue } from '../../../core/utils/pp-calculator';
 import { PericiaService } from '../../../core/services/pericias.service';
 import { PericiaDef } from '../../../core/data/pericias.data';
+
+const VANTAGEM_CATEGORY_ICONS: Record<VantagemCategory, string> = {
+  combate: '⚔️', defesa: '🛡️', atributo: '💪', mental: '🧠',
+  social: '💬', movimento: '🏃', recursos: '💰', especial: '✨',
+};
 
 // ── Tier de origem ────────────────────────────────────────────────────────────
 
@@ -155,9 +162,9 @@ export class CharacterCreationComponent {
 
   tiers             = STARTING_TIERS;
   presets           = PRESET_CHARACTERS;
-  vantagens         = VANTAGENS;
-  desvantagens      = DESVANTAGENS;
-  categories        = VANTAGEM_CATEGORIES;
+  vantagens         = ALL_VANTAGENS;
+  desvantagens      = ALL_DESVANTAGENS;
+  categories        = VANTAGEM_CATEGORIES.map(c => ({ ...c, icon: VANTAGEM_CATEGORY_ICONS[c.id] }));
   periciaCategories = this.periciasSvc.categories;
   kits              = ALL_KITS;
   arquetipos        = ALL_ARQUETIPOS;
@@ -230,7 +237,7 @@ export class CharacterCreationComponent {
     const tier      = this.selectedTier()?.basePoints ?? 5;
     const raceCost  = this.selectedRace()?.cost ?? 0;
     const desvRef   = this.selectedDesvantagens()
-      .reduce((s, id) => s + (DESVANTAGENS.find(d => d.id === id)?.refund ?? 0), 0);
+      .reduce((s, id) => s + Math.abs(parseCostValue(ALL_DESVANTAGENS.find(d => d.id === id)?.refund ?? '0')), 0);
     return tier - raceCost + desvRef;
   });
 
@@ -245,7 +252,7 @@ export class CharacterCreationComponent {
 
   vantagensSpent = computed(() =>
     this.selectedVantagens()
-      .reduce((s, id) => s + (VANTAGENS.find(v => v.id === id)?.cost ?? 0), 0)
+      .reduce((s, id) => s + parseCostValue(ALL_VANTAGENS.find(v => v.id === id)?.cost ?? '0'), 0)
   );
 
   periciasSpent = computed(() =>
@@ -262,7 +269,7 @@ export class CharacterCreationComponent {
   });
 
   selectedVantagensNames = computed(() =>
-    this.selectedVantagens().map(id => VANTAGENS.find(v => v.id === id)?.name ?? id)
+    this.selectedVantagens().map(id => ALL_VANTAGENS.find(v => v.id === id)?.name ?? id)
   );
 
   selectedKitsNames = computed(() => this.selectedKits().map(id => KIT_MAP.get(id)?.name ?? id));
@@ -270,8 +277,11 @@ export class CharacterCreationComponent {
   // ── Helpers de exibição ─────────────────────────────────────────────────────
 
   vantagensByCategory(cat: string): VantagemDef[] {
-    return VANTAGENS.filter(v => v.category === cat);
+    return ALL_VANTAGENS.filter(v => v.category === cat);
   }
+
+  vantagemCost(v: VantagemDef): number { return parseCostValue(v.cost); }
+  desvRefund(d: DesvantagemDef): number { return Math.abs(parseCostValue(d.refund)); }
 
   periciasByCategory(cat: string): PericiaDef[] {
     return this.periciasSvc.periciasByCategory(cat);
@@ -344,7 +354,7 @@ export class CharacterCreationComponent {
 
   isVantagemSelected(id: string) { return this.selectedVantagens().includes(id); }
   isDesvSelected(id: string)     { return this.selectedDesvantagens().includes(id); }
-  getDesv(id: string)            { return DESVANTAGENS.find(d => d.id === id); }
+  getDesv(id: string)            { return ALL_DESVANTAGENS.find(d => d.id === id); }
 
   pip(val: number, max: number): boolean[] {
     return Array.from({ length: max }, (_, i) => i < val);
@@ -414,8 +424,7 @@ export class CharacterCreationComponent {
 
   canSelectVantagem(v: VantagemDef): boolean {
     if (this.isVantagemSelected(v.id)) return true;
-    if (this.pointsLeft() < v.cost) return false;
-    return !(v.incompatibleWith ?? []).some(id => this.isVantagemSelected(id));
+    return this.pointsLeft() >= this.vantagemCost(v);
   }
 
   canSelectDesv(d: DesvantagemDef): boolean {

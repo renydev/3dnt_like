@@ -35,11 +35,11 @@ export interface CombatAbility {
   pmCost: number;
   usesPerCombat?: number;
   description: string;
-  effect: 'attack' | 'magic_damage' | 'heal' | 'weaken' | 'pierce' | 'double_attack' | 'holy_strike' | 'rage';
+  effect: 'attack' | 'magic_damage' | 'heal' | 'weaken' | 'pierce' | 'double_attack' | 'holy_strike' | 'rage' | 'confusao' | 'paralisia';
   isRanged?: boolean;
   ignoresArmor?: boolean;
   bonusDice?: number;
 }
 
-// Sem classes, não há mais habilidades de combate por classe — todo personagem
-// usa apenas Ataque/Defesa básicos (teste de Poder vs Resistência), fiel ao 3DeT Victory.
+// Sem classes — habilidades de combate vêm das Vantagens compradas (não de classe/kit),
+// fiel ao 3DeT Victory. Ver VANTAGEM_ABILITIES em combat.service.ts.

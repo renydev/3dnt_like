@@ -6,6 +6,7 @@ import { CombatAbility, Enemy } from '../../../core/models/combat.model';
 import { Item, rollTreasureItem } from '../../../core/models/item.model';
 import { GameCanvasComponent } from '../game-canvas/game-canvas.component';
 import { CombatScene } from '../../phaser/scenes/combat.scene';
+import { d6 } from '../../../core/utils/dice';
 
 @Component({
   selector: 'app-encounter-screen',
@@ -649,13 +650,13 @@ export class EncounterScreenComponent implements OnInit {
   rollTrap(): void {
     const c = this.char();
     if (!c) return;
-    const roll = Math.ceil(Math.random() * 6);
+    const roll = d6();
     const total = roll + c.habilidade.current;
     const diff = this.trapDiff();
     this.trapTotal.set(total);
     this.trapResult.set(total - diff);
     if (total < diff) {
-      const dmg = Math.ceil(Math.random() * 6);
+      const dmg = d6();
       this.trapDmg.set(dmg);
       this.gs.character.update(ch => ch ? {
         ...ch, pontosVida: { ...ch.pontosVida, current: Math.max(0, ch.pontosVida.current - dmg) }
