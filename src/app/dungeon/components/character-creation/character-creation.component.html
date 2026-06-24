@@ -47,17 +47,16 @@
         </div>
       }
 
-      @if (selectedClass()) {
-        <div class="preview-badge" [style.border-color]="selectedClass()!.color">
-          <span class="pb-icon">{{ selectedClass()!.icon }}</span>
-          <div>
-            <div class="pb-name">{{ selectedClass()!.name }}</div>
-            <div class="pb-diff">{{ selectedClass()!.role }}</div>
-          </div>
+      @if (selectedKits().length > 0) {
+        <div class="preview-block">
+          <div class="pb-section-title">Profissão (Kits)</div>
+          @for (id of selectedKits(); track id) {
+            <div class="preview-tag v-tag">{{ kitById(id)?.icon }} {{ kitById(id)?.name }}</div>
+          }
         </div>
       }
 
-      @if (selectedClass()) {
+      @if (selectedKits().length > 0) {
         <div class="preview-stats">
           @for (stat of statRows(); track stat.label) {
             <div class="stat-row">
@@ -219,13 +218,13 @@
         </div>
       }
 
-      <!-- ── STEP 3: RAÇA ────────────────────────────────────────────────── -->
+      <!-- ── STEP 3: ARQUÉTIPO ───────────────────────────────────────────── -->
       @if (step() === 3) {
         <div class="step-content">
-          <h2 class="step-title">Escolha sua Raça</h2>
+          <h2 class="step-title">Escolha seu Arquétipo</h2>
           <p class="step-desc">
-            Sua origem molda seus atributos e talentos inatos.
-            <span class="step-count">{{ gameData.races.length }} raças disponíveis</span>
+            O arquétipo diz como seu personagem nasceu ou surgiu — sua origem, não sua profissão.
+            <span class="step-count">{{ arquetipos.length }} arquétipos disponíveis</span>
           </p>
 
           <div class="diff-filter">
@@ -247,16 +246,8 @@
                     <div class="card-name">{{ race.name }}</div>
                     <span class="diff-badge diff-{{ race.difficulty }}">{{ race.difficulty }}</span>
                   </div>
-                  <div class="race-cost-badge" [class.free]="race.pointCost === 0">
-                    @if (race.pointCost === 0 && race.bonusPoints === 0) {
-                      <span>Grátis</span>
-                    } @else if (race.pointCost === 0 && race.bonusPoints > 0) {
-                      <span>+{{ race.bonusPoints }}pt</span>
-                    } @else if (race.bonusPoints > 0) {
-                      <span>−{{ race.pointCost }}pt +{{ race.bonusPoints }}b</span>
-                    } @else {
-                      <span>−{{ race.pointCost }}pt</span>
-                    }
+                  <div class="race-cost-badge" [class.free]="race.cost === 0">
+                    <span>{{ race.cost === 0 ? 'Grátis' : '−' + race.cost + 'pt' }}</span>
                   </div>
                   @if (selectedRace()?.id === race.id) {
                     <span class="selected-check">✓</span>
@@ -265,107 +256,49 @@
 
                 <p class="card-lore">{{ race.lore }}</p>
 
-                <div class="modifiers-row">
-                  @if (race.modifiers.poder) {
-                    <span class="mod-chip" [class.pos]="race.modifiers.poder! > 0" [class.neg]="race.modifiers.poder! < 0">
-                      P{{ race.modifiers.poder! > 0 ? '+' : '' }}{{ race.modifiers.poder }}
-                    </span>
-                  }
-                  @if (race.modifiers.habilidade) {
-                    <span class="mod-chip" [class.pos]="race.modifiers.habilidade! > 0" [class.neg]="race.modifiers.habilidade! < 0">
-                      H{{ race.modifiers.habilidade! > 0 ? '+' : '' }}{{ race.modifiers.habilidade }}
-                    </span>
-                  }
-                  @if (race.modifiers.resistencia) {
-                    <span class="mod-chip" [class.pos]="race.modifiers.resistencia! > 0" [class.neg]="race.modifiers.resistencia! < 0">
-                      R{{ race.modifiers.resistencia! > 0 ? '+' : '' }}{{ race.modifiers.resistencia }}
-                    </span>
-                  }
-                  @if (race.bonusPoints > 0) {
-                    <span class="mod-chip pos">+{{ race.bonusPoints }}PP</span>
+                <div class="free-skills">
+                  @for (p of race.poderes; track p.name) {
+                    <div class="free-skill-item" [title]="p.description">
+                      <span class="fsi-dot">●</span>{{ p.name }}
+                    </div>
                   }
                 </div>
-
-                @if (race.freeVantagens.length > 0) {
-                  <div class="free-skills">
-                    @for (v of race.freeVantagens; track v.name) {
-                      <div class="free-skill-item" [title]="v.description">
-                        <span class="fsi-dot">●</span>{{ v.name }}
-                      </div>
-                    }
-                  </div>
-                }
-
-                @if (race.freeDesvantagens.length > 0) {
-                  <div class="free-desv">
-                    @for (d of race.freeDesvantagens; track d.name) {
-                      <div class="free-desv-item" [title]="d.description">⚠️ {{ d.name }}</div>
-                    }
-                  </div>
-                }
               </div>
             }
           </div>
         </div>
       }
 
-      <!-- ── STEP 4: CLASSE ──────────────────────────────────────────────── -->
+      <!-- ── STEP 4: PROFISSÃO (KITS) ─────────────────────────────────────── -->
       @if (step() === 4) {
         <div class="step-content">
-          <h2 class="step-title">Escolha sua Classe</h2>
+          <h2 class="step-title">Escolha sua Profissão</h2>
           <p class="step-desc">
-            Seu papel no labirinto.
-            <span class="step-count">{{ gameData.classes.length }} classes disponíveis</span>
+            O kit é aquilo que seu personagem se tornou — seu caminho, sua forma de enfrentar os desafios.
+            <span class="step-count">{{ kits.length }} kits disponíveis</span>.
+            1º kit custa 1pt; cada kit adicional custa mais 1pt (2pt o 2º, 3pt o 3º...).
+            Custo do próximo: <strong>{{ nextKitCost() }}pt</strong>.
           </p>
 
-          <div class="diff-filter">
-            @for (d of ['Todas', 'Iniciante', 'Intermediário', 'Avançado']; track d) {
-              <button class="diff-btn" [class.active]="classDiffFilter() === d" (click)="classDiffFilter.set(d)">{{ d }}</button>
-            }
-          </div>
-
           <div class="cards-grid class-grid">
-            @for (cls of filteredClasses(); track cls.id) {
+            @for (k of kits; track k.id) {
               <div class="option-card class-card"
-                [class.selected]="selectedClass()?.id === cls.id"
-                [style.--accent]="cls.color"
-                (click)="selectClass(cls)">
+                [class.selected]="isKitSelected(k.id)"
+                [class.disabled]="!canSelectKit(k)"
+                (click)="toggleKit(k)">
 
                 <div class="class-card-header">
-                  <span class="class-big-icon" [style.color]="cls.color">{{ cls.icon }}</span>
+                  <span class="class-big-icon">{{ k.icon }}</span>
                   <div>
-                    <div class="card-name">{{ cls.name }}</div>
-                    <div class="class-role">{{ cls.role }}</div>
-                    <span class="diff-badge" [style.background]="diffColor(cls.difficulty)">{{ cls.difficulty }}</span>
+                    <div class="card-name">{{ k.name }}</div>
+                    <div class="class-role">{{ k.requirement }}</div>
                   </div>
-                  @if (selectedClass()?.id === cls.id) {
+                  @if (isKitSelected(k.id)) {
                     <span class="selected-check">✓</span>
                   }
                 </div>
 
-                <p class="card-lore">{{ cls.lore }}</p>
-
-                <div class="stats-bar-row">
-                  @for (s of classStatBars(cls); track s.label) {
-                    <div class="stat-bar-item">
-                      <span class="sbi-label">{{ s.label }}</span>
-                      <div class="sbi-track">
-                        <div class="sbi-fill" [style.width.%]="s.pct" [style.background]="cls.color"></div>
-                      </div>
-                      <span class="sbi-val">{{ s.value }}</span>
-                    </div>
-                  }
-                </div>
-
-                <div class="free-skills">
-                  @for (v of cls.freeVantagens; track v.name) {
-                    <div class="free-skill-item" [title]="v.description">
-                      <span class="fsi-dot">⚡</span>{{ v.name }}
-                    </div>
-                  }
-                </div>
-
-                <p class="class-playstyle">{{ cls.playstyle }}</p>
+                <p class="card-lore">{{ k.description }}</p>
               </div>
             }
           </div>

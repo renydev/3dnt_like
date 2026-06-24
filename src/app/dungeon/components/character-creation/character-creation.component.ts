@@ -2,11 +2,10 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { GameDataService } from '../../../core/services/game-data.service';
+import { ArquetiposService } from '../../../core/services/arquetipos.service';
 import { Character } from '../../../core/models/character.model';
-import { applyStartingRing } from '../../../core/models/item.model';
-import { Race, ALL_RACES, RACE_MAP } from '../../../core/data/races.data';
-import { ClassDef, ALL_CLASSES, CLASS_MAP } from '../../../core/data/classes.data';
+import { Arquetipo, ALL_ARQUETIPOS, ARQUETIPO_MAP } from '../../../core/data/arquetipos.data';
+import { KitDef, ALL_KITS, KIT_MAP, kitsCost } from '../../../core/data/kits.data';
 import { VALKARIA_FLOORS, DungeonTheme } from '../../../core/models/dungeon.model';
 import { VANTAGENS, DESVANTAGENS, VANTAGEM_CATEGORIES, VantagemDef, DesvantagemDef } from '../../../core/models/character-creation.model';
 import { PericiaService } from '../../../core/services/pericias.service';
@@ -15,7 +14,7 @@ import { PericiaDef } from '../../../core/data/pericias.data';
 // ── Tier de origem ────────────────────────────────────────────────────────────
 
 export interface StartingTier {
-  id: 'pessoa-comum' | 'novato' | 'lutador' | 'campeao' | 'lenda';
+  id: 'iniciante' | 'heroi' | 'veterano';
   label: string;
   subtitle: string;
   description: string;
@@ -26,61 +25,41 @@ export interface StartingTier {
   extras: string[];
 }
 
+// As 3 faixas de poder oficiais do 3DeT Victory (cap. Recompensas, "Iniciantes, Heróis e Veteranos").
+// O limite de atributo 5 na criação vale para as três faixas — o que muda é o total de pontos.
 export const STARTING_TIERS: StartingTier[] = [
   {
-    id: 'lenda',
-    label: 'Lenda',
+    id: 'veterano',
+    label: 'Veterano',
     subtitle: '★ Modo Fácil',
-    description: 'Você conquista seu lugar entre os maiores heróis. Pontuação máxima — recomendada para conhecer o jogo.',
-    basePoints: 12,
+    description: 'Um campeão consagrado, destinado a vencer torneios mundiais ou proteger o planeta. 35 pontos de personagem.',
+    basePoints: 35,
     maxCharacteristic: 5,
     icon: '👑',
     color: '#d4aa14',
-    extras: ['Características máximas: 5', 'Até 3 Desvantagens de qualquer valor', 'Pontuação máxima inicial'],
+    extras: ['35 pontos de personagem', 'Atributos máximos na criação: 5', 'Recomendado para conhecer o jogo'],
   },
   {
-    id: 'campeao',
-    label: 'Campeão',
+    id: 'heroi',
+    label: 'Herói',
     subtitle: '⚔ Modo Médio',
-    description: 'Você tem muitas vitórias e seu nome é conhecido entre os aventureiros. Desafiador, mas equilibrado.',
-    basePoints: 10,
-    maxCharacteristic: 4,
+    description: 'Você tem boa experiência em sua área e começa a ser reconhecido ao redor do mundo. 20 pontos de personagem.',
+    basePoints: 20,
+    maxCharacteristic: 5,
     icon: '🏆',
     color: '#2980b9',
-    extras: ['Características máximas: 4', 'Até 3 Desvantagens de −1 a −2pts, ou 2 de qualquer valor'],
+    extras: ['20 pontos de personagem', 'Atributos máximos na criação: 5', 'Desafiador, mas equilibrado'],
   },
   {
-    id: 'lutador',
-    label: 'Lutador',
+    id: 'iniciante',
+    label: 'Iniciante',
     subtitle: '🔥 Modo Difícil',
-    description: 'Você tem certa experiência como aventureiro, mas cada ponto conta. Para quem quer um desafio real.',
-    basePoints: 7,
-    maxCharacteristic: 3,
-    icon: '⚔️',
-    color: '#e67e22',
-    extras: ['Características máximas: 3', 'Quaisquer Vantagens disponíveis', 'Até 3 Desvantagens de −1pt, ou 2 de −2pts'],
-  },
-  {
-    id: 'novato',
-    label: 'Novato',
-    subtitle: '💀 Modo Muito Difícil',
-    description: 'Você deu seus primeiros passos como aventureiro. O dungeon será implacável com você.',
-    basePoints: 5,
-    maxCharacteristic: 2,
+    description: 'Um personagem recém-criado, dando os primeiros passos como aventureiro. 10 pontos de personagem — o padrão do livro.',
+    basePoints: 10,
+    maxCharacteristic: 5,
     icon: '🌱',
     color: '#27ae60',
-    extras: ['Características máximas: 2', 'Até 2 Vantagens', 'Até 3 Desvantagens de −1pt, ou 1 de −2pts'],
-  },
-  {
-    id: 'pessoa-comum',
-    label: 'Pessoa Comum',
-    subtitle: '☠ Impossível',
-    description: 'Civil sem treinamento de combate. Quase todas as Características são zero. Boa sorte.',
-    basePoints: 2,
-    maxCharacteristic: 1,
-    icon: '🧑',
-    color: '#7f8c8d',
-    extras: ['Características máximas: 1', 'Até 1 Desvantagem suave (−1pt)', 'Sobrevivência: improvável'],
+    extras: ['10 pontos de personagem', 'Atributos máximos na criação: 5', 'Padrão oficial do 3DeT Victory'],
   },
 ];
 
@@ -93,9 +72,9 @@ export interface PresetCharacter {
   icon: string;
   color: string;
   tag: string;
-  tierId: 'lutador';
+  tierId: 'iniciante';
   raceId: string;
-  classId: string;
+  kitIds: string[];
   attrs: { poder: number; habilidade: number; resistencia: number };
   vantagenIds: string[];
   desvIds: string[];
@@ -110,10 +89,9 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     icon: '⚔️',
     color: '#e74c3c',
     tag: 'Guerreiro',
-    tierId: 'lutador',
+    tierId: 'iniciante',
     raceId: 'humano',
-    classId: 'guerreiro',
-    // Humano: 7 base + 2 bonus = 9pts. Custo linear: 3+1+1 = 5 (4 sobram para perícias/vantagens)
+    kitIds: ['guerreiro'],
     attrs: { poder: 3, habilidade: 1, resistencia: 1 },
     vantagenIds: [],
     desvIds: [],
@@ -126,11 +104,9 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     icon: '🔮',
     color: '#8e44ad',
     tag: 'Mago',
-    tierId: 'lutador',
+    tierId: 'iniciante',
     raceId: 'elfo',
-    classId: 'mago',
-    // Elfo: 7 base - 2 custo raça = 5pts. Custo linear: 1+2+1 = 4 (1 sobra)
-    // Final: poder:0 (1-1), habilidade:2 (1+1), resistencia:1
+    kitIds: ['mago'],
     attrs: { poder: 1, habilidade: 1, resistencia: 1 },
     vantagenIds: [],
     desvIds: [],
@@ -142,12 +118,10 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Meio-elfo ágil e preciso. Ataca à distância com alta habilidade antes que os inimigos cheguem perto.',
     icon: '🏹',
     color: '#27ae60',
-    tag: 'Ranger',
-    tierId: 'lutador',
-    raceId: 'meio-elfo',
-    classId: 'ranger',
-    // Meio-elfo: 7 base - 1 custo raça + 1 bonus = 7pts. Custo linear: 1+2+1 = 4 (3 sobram)
-    // Final: poder:1, habilidade:3 (2+1), resistencia:1
+    tag: 'Patrulheiro',
+    tierId: 'iniciante',
+    raceId: 'kemono',
+    kitIds: ['patrulheiro'],
     attrs: { poder: 1, habilidade: 2, resistencia: 1 },
     vantagenIds: [],
     desvIds: [],
@@ -169,9 +143,9 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   styleUrl: './character-creation.component.scss',
 })
 export class CharacterCreationComponent {
-  gameState    = inject(GameStateService);
-  gameData     = inject(GameDataService);
-  periciasSvc  = inject(PericiaService);
+  gameState     = inject(GameStateService);
+  arquetiposSvc = inject(ArquetiposService);
+  periciasSvc   = inject(PericiaService);
 
   readonly ATTR_META = [
     { key: 'poder'       as const, label: 'Poder',           icon: '⚔️',  color: '#e74c3c' },
@@ -185,11 +159,13 @@ export class CharacterCreationComponent {
   desvantagens      = DESVANTAGENS;
   categories        = VANTAGEM_CATEGORIES;
   periciaCategories = this.periciasSvc.categories;
+  kits              = ALL_KITS;
+  arquetipos        = ALL_ARQUETIPOS;
   steps             = [
     { n: 1, label: 'Origem'       },
     { n: 2, label: 'Início Rápido'},
     { n: 3, label: 'Raça'         },
-    { n: 4, label: 'Classe'       },
+    { n: 4, label: 'Profissão'    },
     { n: 5, label: 'Atributos'    },
     { n: 6, label: 'Vantagens'    },
     { n: 7, label: 'Perícias'     },
@@ -201,15 +177,14 @@ export class CharacterCreationComponent {
   step                 = signal(1);
   charName             = 'Aventureiro';
   selectedTier         = signal<StartingTier | null>(null);
-  selectedRace         = signal<Race | null>(null);
-  selectedClass        = signal<ClassDef | null>(null);
+  selectedRace         = signal<Arquetipo | null>(null);
+  selectedKits             = signal<string[]>([]);
   selectedVantagens        = signal<string[]>([]);
   selectedDesvantagens     = signal<string[]>([]);
   selectedPericias         = signal<string[]>([]);
   selectedEspecializacoes  = signal<string[]>([]);
   selectedGod              = signal<DungeonTheme | null>(null);
   raceDiffFilter       = signal('Todas');
-  classDiffFilter      = signal('Todas');
 
   distributedAttrs = signal({
     poder: 0, habilidade: 0, resistencia: 0,
@@ -227,22 +202,15 @@ export class CharacterCreationComponent {
 
   filteredRaces = computed(() => {
     const f = this.raceDiffFilter();
-    return f === 'Todas' ? this.gameData.races : this.gameData.races.filter(r => r.difficulty === f);
+    return f === 'Todas' ? this.arquetipos : this.arquetipos.filter(r => r.difficulty === f);
   });
 
-  filteredClasses = computed(() => {
-    const f = this.classDiffFilter();
-    return f === 'Todas' ? this.gameData.classes : this.gameData.classes.filter(c => c.difficulty === f);
-  });
-
-  /** Valor final de cada atributo = distribuído + modificador racial. */
+  /** Valor final de cada atributo = distribuído (arquétipos não dão modificador numérico, só vantagens/desvantagens nomeadas). */
   finalStats = computed(() => {
-    const r    = this.selectedRace();
-    const mods = r?.modifiers ?? {};
     const d    = this.distributedAttrs();
-    const poder       = d.poder       + (mods.poder       ?? 0);
-    const habilidade  = d.habilidade  + (mods.habilidade  ?? 0);
-    const resistencia = d.resistencia + (mods.resistencia ?? 0);
+    const poder       = d.poder;
+    const habilidade  = d.habilidade;
+    const resistencia = d.resistencia;
     const pontosVida = resistencia === 0 ? 1 : resistencia * 5;
     const pontosMana = habilidade === 0 ? 1 : habilidade * 5;
     return { poder, habilidade, resistencia, pontosVida, pontosMana };
@@ -260,11 +228,10 @@ export class CharacterCreationComponent {
 
   totalPoints = computed(() => {
     const tier      = this.selectedTier()?.basePoints ?? 5;
-    const raceCost  = this.selectedRace()?.pointCost  ?? 0;
-    const racebonus = this.selectedRace()?.bonusPoints ?? 0;
+    const raceCost  = this.selectedRace()?.cost ?? 0;
     const desvRef   = this.selectedDesvantagens()
       .reduce((s, id) => s + (DESVANTAGENS.find(d => d.id === id)?.refund ?? 0), 0);
-    return tier - raceCost + racebonus + desvRef;
+    return tier - raceCost + desvRef;
   });
 
   attrSpent = computed(() => {
@@ -272,6 +239,9 @@ export class CharacterCreationComponent {
     return this.totalCost(d.poder) + this.totalCost(d.habilidade)
          + this.totalCost(d.resistencia);
   });
+
+  /** Custo dos kits: 1pt o primeiro, +1pt cada adicional (2pt o segundo, 3pt o terceiro...). */
+  kitsSpent = computed(() => kitsCost(this.selectedKits().length));
 
   vantagensSpent = computed(() =>
     this.selectedVantagens()
@@ -283,30 +253,21 @@ export class CharacterCreationComponent {
   );
 
   pointsLeft = computed(() =>
-    this.totalPoints() - this.attrSpent() - this.vantagensSpent() - this.periciasSpent()
+    this.totalPoints() - this.attrSpent() - this.kitsSpent() - this.vantagensSpent() - this.periciasSpent()
   );
 
+  /** Os poderes do arquétipo (vantagens e desvantagens nomeadas, concedidas automaticamente). */
   allFreeVantagens = computed(() => {
-    const list: string[] = [];
-    this.selectedRace()?.freeVantagens.forEach(v => list.push(v.name));
-    this.selectedClass()?.freeVantagens.forEach(v => list.push(v.name));
-    return list;
+    return (this.selectedRace()?.poderes ?? []).map(p => p.name);
   });
 
   selectedVantagensNames = computed(() =>
     this.selectedVantagens().map(id => VANTAGENS.find(v => v.id === id)?.name ?? id)
   );
 
-  // ── Helpers de exibição ─────────────────────────────────────────────────────
+  selectedKitsNames = computed(() => this.selectedKits().map(id => KIT_MAP.get(id)?.name ?? id));
 
-  classStatBars(cls: ClassDef): { label: string; value: number; pct: number }[] {
-    const maxAttr = 10;
-    return [
-      { label: 'P', value: cls.baseStats.poder,       pct: Math.min(100, (cls.baseStats.poder / maxAttr) * 100) },
-      { label: 'H', value: cls.baseStats.habilidade,  pct: (cls.baseStats.habilidade / 5) * 100 },
-      { label: 'R', value: cls.baseStats.resistencia, pct: (cls.baseStats.resistencia / 5) * 100 },
-    ];
-  }
+  // ── Helpers de exibição ─────────────────────────────────────────────────────
 
   vantagensByCategory(cat: string): VantagemDef[] {
     return VANTAGENS.filter(v => v.category === cat);
@@ -328,6 +289,28 @@ export class CharacterCreationComponent {
       this.selectedPericias.update(l => l.filter(x => x !== p.id));
     } else if (this.canSelectPericia(p)) {
       this.selectedPericias.update(l => [...l, p.id]);
+    }
+  }
+
+  // ── Kits (Arcanautas) ──────────────────────────────────────────────────────
+
+  isKitSelected(id: string): boolean { return this.selectedKits().includes(id); }
+
+  kitById(id: string): KitDef | undefined { return KIT_MAP.get(id); }
+
+  /** Custo do PRÓXIMO kit, dado quantos já estão selecionados. */
+  nextKitCost(): number { return kitsCost(this.selectedKits().length + 1) - this.kitsSpent(); }
+
+  canSelectKit(k: KitDef): boolean {
+    if (this.isKitSelected(k.id)) return true;
+    return this.pointsLeft() >= this.nextKitCost();
+  }
+
+  toggleKit(k: KitDef) {
+    if (this.isKitSelected(k.id)) {
+      this.selectedKits.update(l => l.filter(x => x !== k.id));
+    } else if (this.canSelectKit(k)) {
+      this.selectedKits.update(l => [...l, k.id]);
     }
   }
 
@@ -398,9 +381,8 @@ export class CharacterCreationComponent {
     this.nextStep();
   }
 
-  selectRace(r: Race)      { this.selectedRace.set(r);  this.step.set(4); }
-  selectClass(c: ClassDef) { this.selectedClass.set(c); this.step.set(5); }
-  goToStep(n: number)      { this.step.set(n); }
+  selectRace(r: Arquetipo) { this.selectedRace.set(r); this.step.set(4); }
+  goToStep(n: number) { this.step.set(n); }
 
   incrementAttr(key: 'poder'|'habilidade'|'resistencia') {
     if (!this.canIncrement(key)) return;
@@ -444,13 +426,13 @@ export class CharacterCreationComponent {
     if (this.step() === 1) return !!this.selectedTier();
     if (this.step() === 2) return true;
     if (this.step() === 3) return !!this.selectedRace();
-    if (this.step() === 4) return !!this.selectedClass();
+    if (this.step() === 4) return this.selectedKits().length > 0;
     if (this.step() === 5) return this.pointsLeft() >= 0;
     return true;
   }
 
   canConfirm(): boolean {
-    return !!this.selectedTier() && !!this.selectedRace() && !!this.selectedClass()
+    return !!this.selectedTier() && !!this.selectedRace() && this.selectedKits().length > 0
       && this.pointsLeft() >= 0 && this.charName.trim().length > 0;
   }
 
@@ -459,12 +441,11 @@ export class CharacterCreationComponent {
 
   applyPreset(preset: PresetCharacter) {
     const tier = STARTING_TIERS.find(t => t.id === preset.tierId)!;
-    const race = ALL_RACES.find(r => r.id === preset.raceId)!;
-    const cls  = ALL_CLASSES.find(c => c.id === preset.classId)!;
+    const race = ARQUETIPO_MAP.get(preset.raceId as any)!;
 
     this.selectedTier.set(tier);
     this.selectedRace.set(race);
-    this.selectedClass.set(cls);
+    this.selectedKits.set([...preset.kitIds]);
     this.distributedAttrs.set({ ...preset.attrs });
     this.selectedVantagens.set([...preset.vantagenIds]);
     this.selectedDesvantagens.set([...preset.desvIds]);
@@ -481,11 +462,12 @@ export class CharacterCreationComponent {
   confirm() {
     if (!this.canConfirm()) return;
     const stats = this.finalStats();
+    const firstKit = KIT_MAP.get(this.selectedKits()[0]);
 
-    const character: Character = applyStartingRing({
+    const character: Character = ({
       id: crypto.randomUUID(),
       name: this.charName.trim() || 'Aventureiro',
-      class: this.selectedClass()!.id,
+      kits: this.selectedKits(),
       race:  this.selectedRace()!.id,
       level: 1, xp: 0, xpToNextLevel: 100,
       poder:       { base: stats.poder,       current: stats.poder,       max: stats.poder },
@@ -499,10 +481,9 @@ export class CharacterCreationComponent {
       gold: 20 + (this.selectedTier()?.basePoints ?? 5) * 2,
       inventory: [],
       equipment: {},
-      racialMods: this.selectedRace()!.modifiers ?? {},
       statusEffects: [],
       levelUpPoints: 0,
-      portraitIcon: this.selectedClass()!.icon,
+      portraitIcon: firstKit?.icon ?? this.selectedRace()?.icon ?? '⚔️',
       patronGod: this.selectedGod()?.id ?? undefined,
     });
 

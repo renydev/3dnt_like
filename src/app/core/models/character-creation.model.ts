@@ -1,4 +1,4 @@
-import { CharacterClass, CharacterRace } from './character.model';
+import { CharacterRace } from './character.model';
 
 export interface Race {
   id: CharacterRace;
@@ -12,7 +12,7 @@ export interface Race {
 }
 
 export interface ClassDef {
-  id: CharacterClass;
+  id: string;
   name: string;
   icon: string;
   role: string;
@@ -33,7 +33,7 @@ export interface VantagemDef {
   description: string;
   effect: string;
   incompatibleWith?: string[];
-  requiresClass?: CharacterClass[];
+  requiresClass?: string[];
 }
 
 export interface DesvantagemDef {
@@ -80,7 +80,7 @@ export const RACES: Race[] = [
     traits: ['+1 Resistência, −1 Habilidade', '+1 Armadura', 'Imune a venenos menores']
   },
   {
-    id: 'halfling',
+    id: 'hynne',
     name: 'Halfling',
     icon: '🍀',
     lore: 'Pequenos mas incrivelmente sortudos, os halflings escapam de situações impossíveis com um sorriso no rosto. A fortuna os favorece.',
@@ -90,7 +90,7 @@ export const RACES: Race[] = [
     traits: ['+1 Habilidade, −1 Força, −1 Resistência', '+1 Armadura', 'Pode rerrolar 1 teste por combate']
   },
   {
-    id: 'meio-elfo',
+    id: 'kemono',
     name: 'Meio-Elfo',
     icon: '✨',
     lore: 'Herdeiros de dois mundos, os meio-elfos possuem a graça élfica e a resiliência humana. Sua natureza híbrida os torna extraordinariamente versáteis.',

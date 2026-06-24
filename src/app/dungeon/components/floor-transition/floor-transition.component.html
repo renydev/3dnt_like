@@ -25,11 +25,11 @@
     <div class="companion-picker">
       <p class="picker-label">🤝 Escolha um novo companheiro para continuar:</p>
       <div class="picker-cards">
-        @for (c of gs.companionChoices(); track c.class) {
+        @for (c of gs.companionChoices(); track c.kits[0]) {
           <div class="picker-card" (click)="gs.selectCompanion(c)">
             <span class="picker-portrait">{{ c.portraitIcon }}</span>
             <span class="picker-name">{{ c.name }}</span>
-            <span class="picker-class">{{ c.class | titlecase }}</span>
+            <span class="picker-class">{{ kitNames(c.kits) }}</span>
           </div>
         }
       </div>
@@ -44,7 +44,7 @@
         <p class="companion-name">{{ gs.newCompanion()!.name }}</p>
         <p class="companion-desc">
           {{ gs.newCompanion()!.race | titlecase }}
-          {{ gs.newCompanion()!.class | titlecase }}
+          {{ kitNames(gs.newCompanion()!.kits) }}
           se junta à sua aventura!
         </p>
       </div>

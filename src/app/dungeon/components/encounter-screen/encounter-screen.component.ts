@@ -36,19 +36,27 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
 
     <!-- ── Barra de ações ─────────────────────────────────────────── -->
     <div class="action-bar" [class.disabled-bar]="phase() !== 'player_turn'">
-      @if (playerPA() > 0 || paSpendNext() > 0) {
+      @if (playerPA() > 0) {
         <div class="pa-bar">
-          <span class="pa-label">🔷 PA: {{ playerPA() }}</span>
-          <button class="pa-btn" [disabled]="paSpendNext() <= 0" (click)="decPaSpend()">−</button>
-          <span class="pa-spend">Gastar {{ paSpendNext() }} (+{{ paSpendNext() }}d6)</span>
-          <button class="pa-btn" [disabled]="paSpendNext() >= playerPA()" (click)="incPaSpend()">+</button>
+          <span class="pa-label">🔷 PA disponíveis: {{ playerPA() }}</span>
         </div>
       }
       @if (!showMagicMenu()) {
         <div class="action-btns">
-          <button class="act-btn atk" [disabled]="phase() !== 'player_turn'" (click)="onAttack()">
-            <span class="act-icon">⚔️</span><span class="act-lbl">Atacar</span>
-          </button>
+          <div class="atk-segmented">
+            <button class="atk-seg atk-seg-minus"
+              [disabled]="phase() !== 'player_turn' || paSpendNext() <= 0"
+              (click)="decPaSpend()">−</button>
+            <button class="atk-seg atk-seg-main"
+              [disabled]="phase() !== 'player_turn'"
+              (click)="onAttack()">
+              <span class="act-icon">⚔️</span>
+              <span class="act-lbl">Atacar{{ paSpendNext() > 0 ? ' (+' + paSpendNext() + 'd6)' : '' }}</span>
+            </button>
+            <button class="atk-seg atk-seg-plus"
+              [disabled]="phase() !== 'player_turn' || paSpendNext() >= playerPA()"
+              (click)="incPaSpend()">+</button>
+          </div>
           @if (hasAbilities()) {
             <button class="act-btn mgc" [disabled]="phase() !== 'player_turn'" (click)="showMagicMenu.set(true)">
               <span class="act-icon">✨</span><span class="act-lbl">Habilidade</span>
@@ -164,7 +172,62 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
     </div>
   }
 
+  @if (room()?.type === 'social') {
+    <div class="simple-encounter social-enc">
+      <div class="enc-icon">💬</div>
+      <h2>Encontro</h2>
+      <p class="enc-desc">{{ room()?.description }}</p>
+      <button class="btn-victory" (click)="leaveRoleplay()">Continuar</button>
+    </div>
+  }
+
+  @if (room()?.type === 'puzzle') {
+    <div class="simple-encounter puzzle-enc">
+      <div class="enc-icon">🧩</div>
+      <h2>Enigma</h2>
+      <p class="enc-desc">{{ room()?.description }}</p>
+      <p class="roll-hint">Role 1d6 + H({{ char()?.habilidade?.current }}) ≥ {{ trapDiff() }} para decifrar sem esforço.</p>
+      @if (puzzleResult() === null) {
+        <button class="btn-primary" (click)="rollPuzzle()">🎲 Testar Habilidade</button>
+      } @else {
+        <div class="roll-result" [class.success]="puzzleResult()! >= 0" [class.failure]="puzzleResult()! < 0">
+          <span class="result-num">🎲 {{ puzzleTotal() }}</span>
+          <span class="result-label">{{ puzzleResult()! >= 0 ? 'Resolvido com elegância!' : 'Resolvido na base da tentativa e erro.' }}</span>
+        </div>
+        <button class="btn-victory" (click)="leaveRoleplay()">Continuar</button>
+      }
+    </div>
+  }
+
 </div>
+
+<!-- ── Overlay de Vitória ──────────────────────────────────────────────── -->
+@if (combat.victorySummary(); as vs) {
+  <div class="victory-overlay">
+    <div class="victory-panel">
+      <div class="victory-icon">🏆</div>
+      <h2 class="victory-title">Vitória!</h2>
+
+      @if (vs.xpPerCharacter > 0) {
+        <p class="victory-xp victory-xp--gained">
+          ✨ +{{ vs.xpPerCharacter }} XP por personagem
+          @if (vs.bonusXp > 0) { <span class="victory-bonus">(+{{ vs.bonusXp }} bônus por inimigos fortes)</span> }
+        </p>
+      } @else {
+        <p class="victory-xp victory-xp--none">⚠️ Nenhum XP ganho</p>
+        <p class="victory-reason">{{ vs.reason }}</p>
+      }
+
+      @if (vs.goldAmount > 0) {
+        <p class="victory-gold">💰 +{{ vs.goldAmount }} PO para o grupo</p>
+      }
+
+      <button class="btn-victory-proceed" (click)="combat.confirmVictory()">
+        Prosseguir →
+      </button>
+    </div>
+  </div>
+}
 
 <!-- ── Overlay de Derrota ──────────────────────────────────────────────── -->
 @if (combat.pendingDefeat()) {
@@ -254,21 +317,38 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
 
     .pa-bar {
       display: flex; align-items: center; gap: 0.5rem;
-      padding: 0.2rem 0.3rem 0.5rem;
+      padding: 0.2rem 0.3rem 0.4rem;
       font-size: 0.7rem; color: #8fd0ff;
     }
     .pa-label { font-weight: 700; }
-    .pa-spend { color: #c9a84c; flex: 1; text-align: center; }
-    .pa-btn {
-      width: 22px; height: 22px; border-radius: 5px;
-      border: 1px solid #2a4a6a; background: #0d1a28; color: #8fd0ff;
-      cursor: pointer; font-weight: 700;
-      &:disabled { opacity: 0.3; cursor: not-allowed; }
-      &:not(:disabled):hover { filter: brightness(1.4); }
-    }
 
     .action-btns {
       display: flex; gap: 0.4rem; flex-wrap: wrap;
+    }
+
+    /* ── Botão de ataque segmentado: [−] [Atacar] [+] ─────────────────── */
+    .atk-segmented {
+      flex: 1; min-width: 0;
+      display: flex; border-radius: 6px; overflow: hidden;
+      border: 1px solid #c0392b;
+    }
+    .atk-seg {
+      cursor: pointer; border: none; font-family: var(--font-display, serif);
+      transition: all 0.15s; background: rgba(192,57,43,0.15); color: #e38989;
+      &:disabled { opacity: 0.35; cursor: not-allowed; }
+      &:not(:disabled):hover { filter: brightness(1.35); }
+    }
+    .atk-seg-minus, .atk-seg-plus {
+      flex: 0 0 2.1rem; font-size: 1.1rem; font-weight: 700;
+      border-right: 1px solid rgba(192,57,43,0.4);
+    }
+    .atk-seg-plus { border-right: none; border-left: 1px solid rgba(192,57,43,0.4); }
+    .atk-seg-main {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0.45rem 0.3rem; gap: 0.15rem;
+      .act-icon { font-size: 1.4rem; line-height: 1; }
+      .act-lbl  { font-size: 0.6rem; letter-spacing: 0.04em; }
     }
 
     .act-btn {
@@ -283,7 +363,6 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
       .act-icon { font-size: 1.4rem; line-height: 1; }
       .act-lbl  { font-size: 0.6rem; letter-spacing: 0.04em; }
 
-      &.atk { background: rgba(192,57,43,0.15); border-color: #c0392b; color: #e38989; }
       &.mgc { background: rgba(142,68,173,0.15); border-color: #8e44ad; color: #c39bd3; }
       &.itm { background: rgba(39,174,96,0.15);  border-color: #27ae60; color: #7ee3a0; }
       &.fle { background: rgba(127,140,141,0.15);border-color: #7f8c8d; color: #bdc3c7; }
@@ -360,6 +439,38 @@ import { CombatScene } from '../../phaser/scenes/combat.scene';
     .ab-rarity-uncommon { color: #60a5fa; }
     .ab-rarity-rare     { color: #c084fc; }
 
+    /* ── Overlay de vitória ─────────────────────────────────────────── */
+    .victory-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.82);
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.4s ease;
+    }
+    .victory-panel {
+      background: #0d1a0d; border: 1px solid #1a4a1a;
+      border-radius: 10px; padding: 1.5rem 1.75rem;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 0.6rem; max-width: 420px; width: 90%;
+      box-shadow: 0 0 40px rgba(39,174,96,0.25);
+    }
+    .victory-icon { font-size: 2.8rem; }
+    .victory-title { margin: 0; font-family: var(--font-display, serif); color: #d4aa20; font-size: 1.4rem; }
+    .victory-xp { margin: 0; font-size: 0.95rem; text-align: center; }
+    .victory-xp--gained { color: #7ee3a0; }
+    .victory-xp--none { color: #e3c389; }
+    .victory-bonus { color: #d4aa20; font-size: 0.8rem; }
+    .victory-reason { margin: 0; color: #999; font-size: 0.78rem; text-align: center; line-height: 1.5; max-width: 34ch; }
+    .victory-gold { margin: 0; color: #e0d0b0; font-size: 0.88rem; }
+    .btn-victory-proceed {
+      margin-top: 0.4rem; padding: 0.55rem 1.8rem;
+      background: linear-gradient(135deg, #1a4a1a, #27ae60);
+      color: #fff; border: 1px solid #2ecc71;
+      border-radius: 5px; cursor: pointer;
+      font-family: var(--font-display, serif); font-size: 0.9rem;
+      letter-spacing: 0.05em;
+      &:hover { filter: brightness(1.2); }
+    }
+
     /* ── Overlay de derrota ─────────────────────────────────────────── */
     .defeat-overlay {
       position: fixed; inset: 0; z-index: 100;
@@ -434,6 +545,8 @@ export class EncounterScreenComponent implements OnInit {
   trapTotal  = signal<number | null>(null);
   trapResult = signal<number | null>(null);
   trapDmg    = signal(0);
+  puzzleTotal  = signal<number | null>(null);
+  puzzleResult = signal<number | null>(null);
   treasureItem   = signal<Item | null>(null);
   treasureReward = signal('');
   restAmount = signal(0);
@@ -449,7 +562,8 @@ export class EncounterScreenComponent implements OnInit {
   hasAbilities = computed(() => this.abilities().length > 0);
   consumables  = computed(() => (this.char()?.inventory ?? []).filter(i => i.category === 'consumable' && i.usableInCombat));
   hasPotion    = computed(() => this.consumables().length > 0);
-  trapDiff     = computed(() => 3 + this.floorNum());
+  /** Dificuldade de armadilhas/enigmas: meta 9 + andar/2 (arredondado para baixo). */
+  trapDiff     = computed(() => 9 + Math.floor(this.floorNum() / 2));
 
   ngOnInit(): void {
     const pending  = this.gs.pendingEnemies();
@@ -556,6 +670,25 @@ export class EncounterScreenComponent implements OnInit {
     } else {
       this.gs.resolveEncounter('victory');
     }
+  }
+
+  // ── Enigma (puzzle) — sem dano, só flavor de sucesso/insistência ───
+
+  rollPuzzle(): void {
+    const c = this.char();
+    if (!c) return;
+    const roll = Math.ceil(Math.random() * 6);
+    const total = roll + c.habilidade.current;
+    const diff = this.trapDiff();
+    this.puzzleTotal.set(total);
+    this.puzzleResult.set(total - diff);
+    this.gs.addLog(`🧩 Enigma: ${roll}+H(${c.habilidade.current})=${total} vs ${diff}`);
+  }
+
+  // ── Encontro social / enigma resolvido — pura passagem de roleplay ──
+
+  leaveRoleplay(): void {
+    this.gs.resolveEncounter('victory');
   }
 
   victory(): void {

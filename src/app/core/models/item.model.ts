@@ -105,28 +105,6 @@ export function getEffectiveStats(char: Character): EffectiveStats {
   };
 }
 
-/**
- * Equipa o Anel de Vitalidade Dupla (PVs Extras x2, +20 PV) no slot livre de
- * anel e soma o bônus ao PV base/atual/máximo. Todo aventureiro — jogador ou
- * companheiro — recebe este anel ao entrar no Labirinto de Valkaria.
- */
-export function applyStartingRing<T extends { equipment: Equipment; pontosVida: { base: number; current: number; max: number } }>(char: T): T {
-  const ring = ITEM_CATALOG['anel-vitalidade-dupla'];
-  const bonus = ring.statBonus?.pontosVida ?? 0;
-  const eq = char.equipment ?? {};
-  const targetSlot: EquipSlot = !eq.ring_left ? 'ring_left' : !eq.ring_right ? 'ring_right' : 'ring_right';
-
-  return {
-    ...char,
-    equipment: { ...eq, [targetSlot]: eq[targetSlot] ?? ring },
-    pontosVida: {
-      base:    char.pontosVida.base    + bonus,
-      current: char.pontosVida.current + bonus,
-      max:     char.pontosVida.max     + bonus,
-    },
-  };
-}
-
 export function equipSlotLabel(slot: string): string {
   const labels: Record<string, string> = {
     weapon: 'Arma', offhand: 'Mão Sec.', armor: 'Armadura',
@@ -401,13 +379,6 @@ export const ITEM_CATALOG: Record<string, Item> = {
     category: 'equipment', slot: 'ring', rarity: 'uncommon',
     description: 'Anel que expande a reserva mágica. +3 PM.',
     statBonus: { pontosMana: 3 },
-  },
-  'anel-vitalidade-dupla': {
-    id: 'anel-vitalidade-dupla', name: 'Anel de Vitalidade Dupla', icon: '💍',
-    category: 'equipment', slot: 'ring', rarity: 'rare',
-    description: 'Anel concedido a todo aventureiro que entra no Labirinto de Valkaria. Carrega a Vantagem PVs Extras duas vezes. +20 PV.',
-    vantagemBonus: ['PVs Extras', 'PVs Extras'],
-    statBonus: { pontosVida: 20 },
   },
 
   // ── CONSUMÍVEIS ───────────────────────────────────────────────────────────────

@@ -11,12 +11,12 @@
   </div>
 
   <div class="cs-cards">
-    @for (c of gs.companionChoices(); track c.class) {
+    @for (c of gs.companionChoices(); track c.kits[0]) {
       <div class="cs-card" (click)="select(c)">
         <div class="cs-portrait">{{ c.portraitIcon }}</div>
         <div class="cs-info">
           <p class="cs-name">{{ c.name }}</p>
-          <p class="cs-class">{{ c.race | titlecase }} · {{ c.class | titlecase }}</p>
+          <p class="cs-class">{{ c.race | titlecase }} · {{ kitNames(c.kits) }}</p>
           <div class="cs-stats">
             <span class="stat" title="Poder">⚔️ {{ statLabel(c.poder) }}</span>
             <span class="stat" title="Habilidade">🎯 {{ statLabel(c.habilidade) }}</span>

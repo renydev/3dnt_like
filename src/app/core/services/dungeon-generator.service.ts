@@ -33,23 +33,32 @@ export class DungeonGeneratorService {
     };
   }
 
+  /** Resolve `RoomType | RoomType[]` para um único RoomType, sorteando quando for array (variedade entre partidas). */
+  private resolveRoomType(type: RoomType | RoomType[]): RoomType {
+    if (!Array.isArray(type)) return type;
+    return type[Math.floor(Math.random() * type.length)];
+  }
+
   private buildFromLayout(layout: FloorLayout, theme: DungeonTheme, allVisible = false, scenarios?: Record<number, RoomScenario>): DungeonRoom[] {
-    const rooms: DungeonRoom[] = layout.rooms.map(r => ({
-      id: r.id,
-      type: r.type,
-      name: r.name,
-      description: this.generateRoomDescription(r.type, theme),
-      cleared: r.type === 'entrance',
-      locked: false,
-      connections: [...r.connections],
-      secretConnections: r.secretConnections ? [...r.secretConnections] : undefined,
-      col: r.col,
-      row: r.row,
-      isVisible: allVisible || r.type === 'entrance',
-      isCurrent: r.type === 'entrance',
-      entered: r.type === 'entrance',
-      scenario: scenarios?.[r.id],
-    }));
+    const rooms: DungeonRoom[] = layout.rooms.map(r => {
+      const type = this.resolveRoomType(r.type);
+      return {
+        id: r.id,
+        type,
+        name: r.name,
+        description: this.generateRoomDescription(type, theme),
+        cleared: type === 'entrance',
+        locked: false,
+        connections: [...r.connections],
+        secretConnections: r.secretConnections ? [...r.secretConnections] : undefined,
+        col: r.col,
+        row: r.row,
+        isVisible: allVisible || type === 'entrance',
+        isCurrent: type === 'entrance',
+        entered: type === 'entrance',
+        scenario: scenarios?.[r.id],
+      };
+    });
 
     if (!allVisible) {
       const entrance = rooms.find(r => r.type === 'entrance')!;

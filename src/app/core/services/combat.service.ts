@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { GameStateService } from './game-state.service';
-import { Enemy, CombatLogEntry, CombatPhase, CombatAbility, CLASS_ABILITIES } from '../models/combat.model';
+import { GameStateService, CombatRewardSummary } from './game-state.service';
+import { Enemy, CombatLogEntry, CombatPhase, CombatAbility } from '../models/combat.model';
 import { Character } from '../models/character.model';
 import { getEffectiveStats, ITEM_CATALOG } from '../models/item.model';
 import { generateEnemy } from '../data/enemies.data';
@@ -61,6 +61,8 @@ export class CombatService {
   readonly playerRageAmount = 2;
   /** Aguardando confirmação do jogador antes de ir para game_over */
   pendingDefeat = signal(false);
+  /** Resumo de XP/ouro do combate, exibido no overlay de vitória até o jogador confirmar. */
+  victorySummary = signal<CombatRewardSummary | null>(null);
 
   // ── PA (Pontos de Ação — 3D&T Victory) ──────────────────────────────────────
   /** PA disponíveis do jogador neste combate (pool inicial = Poder; reseta a cada combate). */
@@ -150,6 +152,13 @@ export class CombatService {
     return t;
   }
 
+  /** Rola N dados via roller e retorna cada resultado individual (1 dado por PA gasto, sempre). */
+  private rollDiceListWith(n: number, roller: () => number): number[] {
+    const rolls: number[] = [];
+    for (let i = 0; i < n; i++) rolls.push(roller());
+    return rolls;
+  }
+
   private hasLuta(char: Character): boolean {
     return !!char.pericias?.includes('luta');
   }
@@ -162,10 +171,8 @@ export class CombatService {
     return spend;
   }
 
-  readonly abilities = computed<CombatAbility[]>(() => {
-    const cls = this.gs.character()?.class;
-    return cls ? (CLASS_ABILITIES[cls] ?? []) : [];
-  });
+  // Sem classes, não há habilidades de combate especiais — só Ataque/Defesa básicos.
+  readonly abilities = computed<CombatAbility[]>(() => []);
 
   canUseAbility(ab: CombatAbility): boolean {
     const char = this.gs.character();
@@ -468,16 +475,8 @@ export class CombatService {
     const alive = this.enemies().filter(e => e.hp > 0);
     if (alive.length === 0) return;
 
-    const abilities = CLASS_ABILITIES[companion.class] ?? [];
-    const playerHpPct = player.pontosVida.current / player.pontosVida.max;
+    const abilities: CombatAbility[] = [];
     const hasBoss = alive.some(e => e.isBoss);
-
-    // Prioridade 1: curar o jogador se HP < 40%
-    const healAb = abilities.find(ab => ab.effect === 'heal');
-    if (healAb && playerHpPct < 0.4 && companion.pontosMana.current >= healAb.pmCost) {
-      this._companionHeal(companion, healAb, player);
-      return;
-    }
 
     const target = this._pickTarget(alive);
     const ab = this._pickAbility(companion, abilities, target, hasBoss);
@@ -814,10 +813,15 @@ export class CombatService {
     const lutaBonus = this.hasLuta(char) ? 1 : 0;
     const totalBonusDice = bonusDice + lutaBonus;
     const dAtk = this.rollPlayerDie();
-    const dBonus = this.rollDiceWith(totalBonusDice, () => this.rollPlayerDie());
+    const bonusRolls = this.rollDiceListWith(totalBonusDice, () => this.rollPlayerDie());
+    const dBonus = bonusRolls.reduce((a, b) => a + b, 0);
     const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
-    const bonusPart = totalBonusDice > 0 ? `+🎲${dBonus}(x${totalBonusDice}${lutaBonus ? ',🥊Luta' : ''})` : '';
+    // Cada PA gasto sempre rola seu próprio d6 — mostramos cada dado em vez de um total fundido,
+    // para deixar claro que não é "1 dado vezes N", e sim N dados somados.
+    const bonusPart = bonusRolls.length > 0
+      ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${lutaBonus ? '(🥊Luta)' : ''}`
+      : '';
 
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
@@ -958,7 +962,7 @@ export class CombatService {
     const defeated = this.enemies();
     const totalGold = defeated.reduce((s, e) => s + Math.max(e.goldReward ?? 0, e.pp), 0);
     const isBossFight = defeated.some(e => e.isBoss);
-    this.gs.awardCombatXp(defeated, totalGold, isBossFight);
+    const summary = this.gs.awardCombatXp(defeated, totalGold, isBossFight);
 
     // Drop de itens: cada inimigo com itemsReward tem 50% de chance de dropar 1 item
     for (const enemy of defeated) {
@@ -974,8 +978,14 @@ export class CombatService {
       }
     }
 
-    setTimeout(() => this.gs.resolveEncounter('victory'), 1200);
+    this.victorySummary.set(summary);
     return true;
+  }
+
+  /** Chamado pelo overlay de vitória quando o jogador clica em "Prosseguir". */
+  confirmVictory(): void {
+    this.victorySummary.set(null);
+    this.gs.resolveEncounter('victory');
   }
 
   confirmDefeat(): void {

@@ -13,7 +13,7 @@ describe('EncounterScreenComponent', () => {
   const character: Character = {
     id: 'hero',
     name: 'Aventureiro',
-    class: 'guerreiro',
+    kits: ['guerreiro'],
     race: 'humano',
     level: 1,
     xp: 0,

@@ -5,7 +5,7 @@ import { GameLayoutComponent } from './dungeon/components/game-layout/game-layou
 import { CharacterCreationComponent } from './dungeon/components/character-creation/character-creation.component';
 import { CompanionSelectComponent } from './dungeon/components/companion-select/companion-select.component';
 import { DebugComponent } from './debug/debug.component';
-import { PRESET_CHARACTERS, CLASS_ICONS } from './core/models/character.model';
+import { PRESET_CHARACTERS } from './core/models/character.model';
 
 @Component({
   selector: 'app-root',

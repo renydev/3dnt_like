@@ -1,5 +1,3 @@
-import { CharacterClass } from './character.model';
-
 // ─── VANTAGENS ────────────────────────────────────────────────────────────────
 
 export type VantagemCategory =
@@ -18,7 +16,7 @@ export interface Vantagem {
   requires?: string[];     // ids de outras vantagens pré-requisito
   incompatibleWith?: string[];
   pmCost?: number;         // PM por uso, se for ativa
-  onlyClass?: CharacterClass[];
+  onlyClass?: string[];
 }
 
 // ─── DESVANTAGENS ─────────────────────────────────────────────────────────────

@@ -1,7 +1,8 @@
 import { Component, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { Character, CLASS_ICONS, CLASS_COLORS } from '../../../core/models/character.model';
+import { Character, DEFAULT_CHAR_COLOR } from '../../../core/models/character.model';
+import { KIT_MAP } from '../../../core/data/kits.data';
 
 @Component({
   selector: 'app-party-bar',
@@ -25,11 +26,15 @@ export class PartyBarComponent {
   }
 
   classIcon(char: Character): string {
-    return CLASS_ICONS[char.class] ?? '⚔️';
+    return KIT_MAP.get(char.kits[0])?.icon ?? char.portraitIcon ?? '⚔️';
   }
 
   classColor(char: Character): string {
-    return CLASS_COLORS[char.class] ?? '#888';
+    return DEFAULT_CHAR_COLOR;
+  }
+
+  kitNames(char: Character): string {
+    return char.kits.map(id => KIT_MAP.get(id)?.name ?? id).join(', ');
   }
 
   toRoman(n: number): string {

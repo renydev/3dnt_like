@@ -128,26 +128,26 @@ export const VALKARIA_FLOORS: DungeonTheme[] = [
     ]
   },
   {
-    id: 'glorienn',
+    id: 'trebuck',
     floorNumber: 3,
-    godName: 'Glórienn',
-    godDomain: 'Deusa dos Elfos e da Magia',
-    godAlignment: 'bem',
-    name: 'Labirinto Élfigo de Glórienn',
-    description: 'Arqueiros, magos e rangers élficos de elite defendem este labirinto de beleza e morte. A precisão élfica é mortal.',
-    guardianName: 'Arqueiro Arcano Élfico',
-    guardianDesc: 'Elfo de alto nível combinando magia e arco. H6 F2, conjura e atira simultaneamente.',
-    specialRule: 'Inimigos atacam de longe e fogem do combate corpo a corpo. Perseguição é difícil.',
-    icon: '🏹',
+    godName: 'Trebuck',
+    godDomain: 'Deus dos Artesãos e da Engenharia',
+    godAlignment: 'neutro',
+    name: 'Forja-Labirinto de Trebuck',
+    description: 'Autômatos e golens de elite, erguidos por mestres artesãos élficos, defendem este labirinto de engrenagens e runas. A precisão da engenharia é mortal.',
+    guardianName: 'Golem Arcano de Precisão',
+    guardianDesc: 'Construto de alto nível combinando magia e mecanismos. H6 P2, conjura e ataca simultaneamente.',
+    specialRule: 'Inimigos atacam de longe e recuam do combate corpo a corpo. Perseguição é difícil.',
+    icon: '⚙️',
     palette: 'elven',
     challengeType: 'mixed',
-    monsterTypes: ['Arqueiro Élfico de Elite', 'Mago Élfico', 'Ranger das Sombras', 'Druida Élfico', 'Centauro Guardião'],
-    trapTypes: ['Runa Élfica Explosiva', 'Rede de Vento', 'Flechas Automáticas'],
-    treasureTypes: ['Arco Longo Élfigo', 'Grimório Arcano', 'Capa de Invisibilidade'],
+    monsterTypes: ['Autômato de Elite', 'Engenheiro Arcano', 'Golem das Sombras', 'Artesão Encantado', 'Centauro Guardião'],
+    trapTypes: ['Engrenagem Explosiva', 'Rede de Vento', 'Flechas Automáticas'],
+    treasureTypes: ['Arco Longo de Precisão', 'Manual Arcano', 'Capa de Invisibilidade'],
     flavorTexts: [
-      'A masmorra exibe uma beleza perturbadora: paredes de mármore branco entalhadas com runas.',
-      'Você ouve o silvo de uma flecha antes mesmo de ver o arqueiro.',
-      'Glórienn valoriza a perfeição. Seus defensores miram dois vezes, atiram uma.'
+      'A masmorra exibe uma beleza perturbadora: paredes de metal polido entalhadas com runas.',
+      'Você ouve o ranger de engrenagens antes mesmo de ver o autômato.',
+      'Trebuck valoriza a perfeição. Seus defensores medem duas vezes, cortam uma.'
     ]
   },
   {
@@ -266,15 +266,15 @@ export const VALKARIA_FLOORS: DungeonTheme[] = [
     ]
   },
   {
-    id: 'tauron',
+    id: 'ragnar-arena',
     floorNumber: 9,
-    godName: 'Tauron',
-    godDomain: 'Deus dos Bárbaros e dos Minotauros',
+    godName: 'Ragnar',
+    godDomain: 'Deus da Guerra e das Batalhas (Arena dos Minotauros)',
     godAlignment: 'neutro',
-    name: 'Labirinto dos Minotauros de Tauron',
-    description: 'Um labirinto extremamente complexo, muito difícil de mapear. Minotauros gladiadores infestam seus corredores interminávies.',
+    name: 'Arena dos Minotauros de Ragnar',
+    description: 'Um labirinto extremamente complexo, muito difícil de mapear. Minotauros gladiadores devotos de Ragnar infestam seus corredores interminávies.',
     guardianName: 'Minotauro Gladiador Supremo',
-    guardianDesc: 'F8 R5, imune à desorientação. Conhece cada centímetro do labirinto. Nunca se perde.',
+    guardianDesc: 'P8 R5, imune à desorientação. Conhece cada centímetro do labirinto. Nunca se perde.',
     specialRule: '⚠️ ESPECIAL: Magias de orientação falham (H-4 para usar). Risco de se perder a cada sala.',
     icon: '🐂',
     palette: 'labyrinth',
@@ -285,7 +285,7 @@ export const VALKARIA_FLOORS: DungeonTheme[] = [
     flavorTexts: [
       'Os corredores parecem mudar. Você tem certeza de que passou aqui antes.',
       'O mugido ressoa de todos os lados. O minotauro está em toda parte — ou em lugar nenhum.',
-      'Tauron aprecia coragem e força. Foragidos são tratados com desprezo eterno.'
+      'Ragnar aprecia coragem e força. Foragidos são tratados com desprezo eterno.'
     ]
   },
   {
@@ -427,24 +427,24 @@ export const VALKARIA_FLOORS: DungeonTheme[] = [
     ]
   },
   {
-    id: 'keenn',
+    id: 'lin-wu-arena',
     floorNumber: 16,
-    godName: 'Keenn',
-    godDomain: 'Deus dos Guerreiros e do Combate',
+    godName: 'Lin-Wu',
+    godDomain: 'Deus Samurai das Artes Marciais (Arena de Ferro)',
     godAlignment: 'neutro',
-    name: 'Arena de Ferro de Keenn',
-    description: 'Guerreiros em armaduras pesadas e usando armas poderosas são os oponentes. A força bruta encontra a força bruta.',
-    guardianName: 'Cavaleiro de Ferro de Keenn',
-    guardianDesc: 'Guerreiro F7 H4 A6. Armadura mágica pesada, arma encantada +3. O combate mais difícil até aqui.',
+    name: 'Arena de Ferro de Lin-Wu',
+    description: 'Guerreiros em armaduras pesadas e usando armas poderosas são os oponentes. A força bruta encontra a disciplina marcial.',
+    guardianName: 'Cavaleiro de Ferro de Lin-Wu',
+    guardianDesc: 'Guerreiro P7 H4 A6. Armadura mágica pesada, arma encantada +3. O combate mais difícil até aqui.',
     specialRule: 'Inimigos têm Armadura 4+. Armas mágicas ou habilidade especial são necessárias para penetrar.',
     icon: '🛡️',
     palette: 'iron',
     challengeType: 'combat',
     monsterTypes: ['Cavaleiro de Ferro', 'Paladino Renegado', 'Guerreiro Colossal', 'Golem de Ferro', 'Campeão da Arena'],
     trapTypes: ['Prensa de Ferro', 'Arena com Plateia de Mortos', 'Canhão de Bolas de Ferro'],
-    treasureTypes: ['Armadura Mágica +2', 'Espada Rúnica de Keenn', 'Medalha de Campeão'],
+    treasureTypes: ['Armadura Mágica +2', 'Espada Rúnica de Lin-Wu', 'Medalha de Campeão'],
     flavorTexts: [
-      'O barulho de metal contra metal não para. Keenn honra guerreiros com um duelo eterno.',
+      'O barulho de metal contra metal não para. Lin-Wu honra guerreiros com um duelo eterno.',
       'Esses inimigos não fogem. Não imploram por misericórdia. Apenas lutam.',
       'A arena está manchada com sangue de mil guerreiros. O seu pode ser o próximo.'
     ]

@@ -21,7 +21,7 @@
 
         <div class="card-info">
           <span class="card-name">{{ char.name.split(',')[0] }}</span>
-          <span class="card-class">{{ char.xp }} XP · {{ char.class | titlecase }}</span>
+          <span class="card-class">{{ char.xp }} XP · {{ kitNames(char) }}</span>
 
           <div class="mini-bars">
             <div class="mini-bar hp" title="PV">

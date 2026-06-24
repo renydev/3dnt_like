@@ -142,17 +142,16 @@ export class MapScene extends Phaser.Scene {
       const circle = this.add.circle(0, 0, r, fillColor, 1).setStrokeStyle(Math.max(1, 2 * scale), 0x000000, 0.4);
       container.add(circle);
 
-      const isTypeRevealed = room.entered || room.cleared
-        || (current?.connections.includes(room.id) ?? false);
-
+      // Uma vez visível (descoberta), o tipo da sala fica conhecido permanentemente —
+      // o jogador precisa ver as opções para escolher o melhor caminho, não só a sala adjacente atual.
       const iconText = room.isVisible
-        ? (room.cleared ? '🏕️' : (isTypeRevealed ? ROOM_ICONS[room.type] : '?'))
+        ? (room.cleared ? '🏕️' : ROOM_ICONS[room.type])
         : '?';
       const icon = this.add.text(0, 0, iconText, { fontSize: `${Math.round(14 * scale)}px` }).setOrigin(0.5);
       container.add(icon);
 
       if (room.isVisible) {
-        const labelText = isTypeRevealed ? ROOM_LABELS[room.type] : '???';
+        const labelText = room.cleared ? 'Descanso' : ROOM_LABELS[room.type];
         const label = this.add.text(0, r + 10 * scale, labelText, { fontSize: `${Math.max(7, Math.round(8 * scale))}px`, color: '#aaa' }).setOrigin(0.5);
         container.add(label);
       }

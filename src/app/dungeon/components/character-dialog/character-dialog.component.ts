@@ -1,7 +1,8 @@
 import { Component, inject, input, output, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { Character, CLASS_COLORS, CLASS_ICONS } from '../../../core/models/character.model';
+import { Character, DEFAULT_CHAR_COLOR } from '../../../core/models/character.model';
+import { KIT_MAP } from '../../../core/data/kits.data';
 import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
 
 export type SpendableAttr = 'poder' | 'habilidade' | 'resistencia';
@@ -95,8 +96,9 @@ export class CharacterDialogComponent {
   showDesvantagensMenu = signal(false);
   pendingAttr = signal<SpendableAttr | null>(null);
 
-  classColor(): string { return CLASS_COLORS[this.char()!.class] ?? '#888'; }
-  classIcon(): string  { return CLASS_ICONS[this.char()!.class] ?? '⚔️'; }
+  classColor(): string { return DEFAULT_CHAR_COLOR; }
+  classIcon(): string  { return KIT_MAP.get(this.char()!.kits[0])?.icon ?? this.char()!.portraitIcon ?? '⚔️'; }
+  kitNames(kitIds: string[]): string { return kitIds.map(id => KIT_MAP.get(id)?.name ?? id).join(', '); }
 
   // ── XP / PE ─────────────────────────────────────────────────────
 

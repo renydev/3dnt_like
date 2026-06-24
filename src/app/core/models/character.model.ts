@@ -1,35 +1,12 @@
 import { Item, Equipment } from './item.model';
 export type { Item, Equipment };
 
-export type CharacterClass =
-  | 'guerreiro' | 'mago' | 'ladino' | 'clerigo' | 'ranger'
-  | 'bardo' | 'druida' | 'paladino' | 'barbaro' | 'monge';
-
+// Os 25 Arquétipos oficiais do 3DeT Victory (Manual de Arquétipos).
 export type CharacterRace =
-  | 'humano' | 'arcanauta' | 'elfo' | 'anao' | 'halfling' | 'gnomo'
-  | 'meio-elfo' | 'meio-orc' | 'lefou' | 'minotauro' | 'goblin';
-
-export type CharacterRole = 'tank' | 'dps' | 'healer' | 'mage';
-
-export const CLASS_ROLES: Record<CharacterClass, CharacterRole> = {
-  guerreiro: 'tank',
-  paladino:  'tank',
-  barbaro:   'tank',
-  ladino:    'dps',
-  ranger:    'dps',
-  monge:     'dps',
-  clerigo:   'healer',
-  druida:    'healer',
-  mago:      'mage',
-  bardo:     'mage',
-};
-
-export const ROLE_COMPLEMENTS: Record<CharacterRole, [CharacterRole, CharacterRole, CharacterRole]> = {
-  tank:   ['dps', 'healer', 'mage'],
-  dps:    ['tank', 'healer', 'mage'],
-  healer: ['tank', 'dps',   'mage'],
-  mage:   ['tank', 'dps',   'healer'],
-};
+  | 'humano' | 'aberrante' | 'abissal' | 'alien' | 'anao' | 'anfibio'
+  | 'celestial' | 'centauro' | 'ciborgue' | 'construto' | 'dahllan' | 'elfo'
+  | 'fada' | 'fantasma' | 'goblin' | 'hynne' | 'kallyanach' | 'kemono'
+  | 'medusa' | 'minotauro' | 'ogro' | 'osteon' | 'qareen' | 'sauroide' | 'vampiro';
 
 export interface Attribute {
   base: number;
@@ -48,7 +25,8 @@ export interface StatusEffect {
 export interface Character {
   id: string;
   name: string;
-  class: CharacterClass;
+  /** IDs dos kits (Arcanautas) do personagem — a profissão, não a origem. */
+  kits: string[];
   race: CharacterRace;
   level: number;
   xp: number;
@@ -88,7 +66,7 @@ export interface Character {
   patronGod?: string;    // ID do deus de devoção (ex: 'allihanna', 'khalmyr')
 }
 
-import { ITEM_CATALOG, applyStartingRing } from './item.model';
+import { ITEM_CATALOG } from './item.model';
 const I = ITEM_CATALOG;
 
 /**
@@ -100,7 +78,7 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── TANKS ────────────────────────────────────────────────────────────────
   {
     name: 'Thorvald Chifre-de-Ferro',
-    class: 'barbaro',
+    kits: ['barbaro'],
     race: 'minotauro',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 5, current: 5, max: 5 },
@@ -117,8 +95,8 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
   {
     name: 'Rael Ferrobravo',
-    class: 'guerreiro',
-    race: 'meio-orc',
+    kits: ['guerreiro'],
+    race: 'ogro',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 2, current: 2, max: 2 },
@@ -134,7 +112,7 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
   {
     name: 'Seraphina Luzéterna',
-    class: 'paladino',
+    kits: ['paladino'],
     race: 'anao',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 4, current: 4, max: 4 },
@@ -152,7 +130,7 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── DPS ──────────────────────────────────────────────────────────────────
   {
     name: 'Sable das Sete Facas',
-    class: 'ladino',
+    kits: ['ladino'],
     race: 'goblin',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 2, current: 2, max: 2 },
@@ -169,8 +147,8 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
   {
     name: 'Kael Olho-de-Falcão',
-    class: 'ranger',
-    race: 'meio-elfo',
+    kits: ['patrulheiro'],
+    race: 'kemono',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 4, current: 4, max: 4 },
     habilidade: { base: 5, current: 5, max: 5 },
@@ -186,8 +164,8 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
   {
     name: 'Tenza da Montanha',
-    class: 'monge',
-    race: 'halfling',
+    kits: ['monge'],
+    race: 'hynne',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 4, current: 4, max: 4 },
     habilidade: { base: 5, current: 5, max: 5 },
@@ -204,7 +182,7 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── HEALERS ──────────────────────────────────────────────────────────────
   {
     name: 'Brynn Coração-de-Luz',
-    class: 'clerigo',
+    kits: ['clerigo'],
     race: 'humano',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 5, current: 5, max: 5 },
@@ -221,7 +199,7 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
   {
     name: 'Zara da Floresta Profunda',
-    class: 'druida',
+    kits: ['druida'],
     race: 'elfo',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 5, current: 5, max: 5 },
@@ -239,8 +217,8 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   // ── MAGES ────────────────────────────────────────────────────────────────
   {
     name: 'Lyranth das Sombras',
-    class: 'mago',
-    race: 'lefou',
+    kits: ['mago'],
+    race: 'abissal',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 4, current: 4, max: 4 },
@@ -256,8 +234,8 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
   {
     name: 'Vesper Malandrin',
-    class: 'bardo',
-    race: 'gnomo',
+    kits: ['menestreamer'],
+    race: 'fada',
     level: 1, xp: 0, xpToNextLevel: 100,
     poder:      { base: 5, current: 5, max: 5 },
     habilidade: { base: 5, current: 5, max: 5 },
@@ -273,36 +251,12 @@ const RAW_PRESET_CHARACTERS: Omit<Character, 'id'>[] = [
   },
 ];
 
-// Todo personagem lendário entra no Labirinto com o Anel de Vitalidade Dupla (+20 PV)
-export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = RAW_PRESET_CHARACTERS.map(applyStartingRing);
+export const PRESET_CHARACTERS: Omit<Character, 'id'>[] = RAW_PRESET_CHARACTERS;
 
 export const LEGENDARY_CHARACTERS = PRESET_CHARACTERS;
 
 // Pool de companheiros = os mesmos personagens lendários marcados como isCompanion
 export const COMPANION_POOL: Omit<Character, 'id'>[] = PRESET_CHARACTERS.map(c => ({ ...c, isCompanion: true }));
 
-export const CLASS_ICONS: Record<CharacterClass, string> = {
-  guerreiro: '⚔️',
-  mago: '🔮',
-  ladino: '🗡️',
-  clerigo: '🌟',
-  ranger: '🏹',
-  bardo: '🎵',
-  druida: '🌿',
-  paladino: '🛡️',
-  barbaro: '🪓',
-  monge: '👊',
-};
-
-export const CLASS_COLORS: Record<CharacterClass, string> = {
-  guerreiro: '#c0392b',
-  mago: '#8e44ad',
-  ladino: '#2c3e50',
-  clerigo: '#f39c12',
-  ranger: '#16a085',
-  bardo: '#e67e22',
-  druida: '#27ae60',
-  paladino: '#2980b9',
-  barbaro: '#a04020',
-  monge: '#d4a017',
-};
+/** Cor de destaque padrão para a UI — sem classes, não há mais cor por classe. */
+export const DEFAULT_CHAR_COLOR = '#8888aa';

@@ -1,237 +1,156 @@
-import { Desvantagem } from '../models/game-data.model';
+// Desvantagens do 3DeT Victory — lista oficial completa do manual (cap. Personagens, "Desvantagens", pág. 64-74)
 
-export const TODAS_DESVANTAGENS: Desvantagem[] = [
+export type DesvantagemCategory = 'comportamental' | 'social' | 'fisica' | 'combate' | 'recursos' | 'especial';
 
-  // ── COMPORTAMENTAL ────────────────────────────────────────────────────────────
+export interface DesvantagemDef {
+  id: string;
+  name: string;
+  refund: string; // pontos recebidos, como exibido no manual (ex: "-1pt", "-1 ou -2pt")
+  category: DesvantagemCategory;
+  icon: string;
+  description: string;
+}
 
-  {
-    id: 'codigo_dos_herois',
-    name: 'Código dos Heróis',
-    refund: 1,
-    category: 'comportamental',
-    icon: '⚜️',
-    shortPenalty: 'Sempre protege os fracos; nunca recusa ajuda',
-    fullPenalty: 'O personagem deve cumprir sua palavra, proteger qualquer criatura mais fraca que ele e jamais recusar um pedido de ajuda, mesmo que seja perigoso ou inconveniente.',
-    flavor: 'Heroísmo não é escolha — é destino.'
-  },
-  {
-    id: 'codigo_da_honestidade',
-    name: 'Código da Honestidade',
-    refund: 1,
-    category: 'comportamental',
-    icon: '📜',
-    shortPenalty: 'Nunca mente, rouba ou trapaceia',
-    fullPenalty: 'O personagem nunca pode roubar, trapacear, mentir ou desobedecer às leis locais, nem permitir que seus companheiros o façam sem protestar.'
-  },
-  {
-    id: 'codigo_da_derrota',
-    name: 'Código da Derrota',
-    refund: 2,
-    category: 'comportamental',
-    icon: '💀',
-    shortPenalty: 'Jamais se rende; deve morrer a 0 PVs',
-    fullPenalty: 'Nunca pode aceitar captura com vida. Se reduzido a 0 PVs em combate honrado, DEVE tirar a própria vida em vez de ser capturado.',
-    flavor: 'A morte com honra vale mais que a vida sem ela.'
-  },
-  {
-    id: 'codigo_ninja',
-    name: 'Código Ninja',
-    refund: 1,
-    category: 'comportamental',
-    icon: '🥷',
-    shortPenalty: 'Cumpre a missão a qualquer custo',
-    fullPenalty: 'O personagem deve sempre cumprir sua missão designada, mesmo ao custo da própria vida. Abandonar uma missão é motivo de desonra irreparável.'
-  },
-  {
-    id: 'fobia',
-    name: 'Fobia',
-    refund: 1,
-    category: 'psicologica',
-    icon: '😱',
-    shortPenalty: '-1 em tudo quando confrontado com o objeto da fobia',
-    fullPenalty: 'O personagem tem um medo irracional intenso de algo específico (altura, escuridão, fogo, aranhas, mortos-vivos...). Quando confrontado, sofre -1 em todas as Características até sair da situação.',
-    flavor: 'Cada herói carrega seus próprios demônios.'
-  },
-  {
-    id: 'insano_raiva',
-    name: 'Insano: Ira',
-    refund: 2,
-    category: 'psicologica',
-    icon: '😡',
-    shortPenalty: 'Em falha crítica (6), perde uma ação',
-    fullPenalty: 'Crises de raiva incontroláveis surgem nos piores momentos. Quando rola resultado 6 em qualquer dado durante combate, entra em estado de fúria e perde sua próxima ação completa.',
-    incompatibleWith: ['sorte', 'insano_paranoia', 'insano_fobia_morte']
-  },
-  {
-    id: 'insano_paranoia',
-    name: 'Insano: Paranoia',
-    refund: 2,
-    category: 'psicologica',
-    icon: '🫥',
-    shortPenalty: 'Desconfia de aliados; -1 em ações cooperativas',
-    fullPenalty: 'O personagem desconfia de todos ao seu redor, incluindo aliados. Sofre -1 em todas as ações que dependam de cooperação direta. Periodicamente, o Mestre pode exigir testes para que não tome atitudes hostis contra aliados.',
-    incompatibleWith: ['insano_raiva', 'insano_fobia_morte']
-  },
-  {
-    id: 'insano_fobia_morte',
-    name: 'Insano: Fobia da Morte',
-    refund: 1,
-    category: 'psicologica',
-    icon: '💀',
-    shortPenalty: '-2 em testes ao ver mortos-vivos ou falar sobre morte',
-    fullPenalty: 'O medo da morte é tão intenso que paralisa. Em presença de mortos-vivos ou em situações que envolvam morte iminente, o personagem sofre -2 em todos os testes.',
-    incompatibleWith: ['insano_paranoia', 'insano_raiva']
-  },
-  {
-    id: 'azar',
-    name: 'Azar',
-    refund: 3,
-    category: 'magica',
-    icon: '🎲',
-    shortPenalty: 'Após cada sucesso, rola 1d: resultado 6 cancela o sucesso',
-    fullPenalty: 'O personagem está cercado de má sorte. Após cada teste bem-sucedido (exceto Esquivas), deve rolar 1d. Resultado 6 cancela o sucesso anterior. Para magias, rola antes de lançar — resultado 6 faz a magia falhar e consume os PMs.',
-    incompatibleWith: ['sorte'],
-    flavor: 'Até o universo parece trabalhar contra ele.'
-  },
-  {
-    id: 'compulsao',
-    name: 'Compulsão',
-    refund: 1,
-    category: 'psicologica',
-    icon: '🔄',
-    shortPenalty: '-1 em testes ao resistir à compulsão',
-    fullPenalty: 'O personagem tem um comportamento compulsivo que não consegue controlar (colecionar objetos, contar tudo, precisar organizar coisas, etc.). Quando a situação envolve sua compulsão, sofre -1 em testes para resistir ou pode desperdiçar ações.'
-  },
-
-  // ── SOCIAL ────────────────────────────────────────────────────────────────────
-
-  {
-    id: 'inimigo',
-    name: 'Inimigo',
-    refund: 2,
-    category: 'social',
-    icon: '⚔️',
-    shortPenalty: 'Inimigo poderoso que interfere na aventura',
-    fullPenalty: 'Alguém poderoso (um nobre, um assassino, uma guilda ou um monstro inteligente) quer o personagem morto ou destruído. Este inimigo pode aparecer a qualquer momento, enviando capangas ou agindo pessoalmente.',
-    flavor: 'Herói sem inimigos é herói sem história.'
-  },
-  {
-    id: 'obrigacao',
-    name: 'Obrigação',
-    refund: 1,
-    category: 'social',
-    icon: '🔗',
-    shortPenalty: 'Deve satisfações a uma organização',
-    fullPenalty: 'O personagem tem uma dívida ou obrigação com uma organização poderosa (uma guilda, um templo, uma ordem de cavalaria). Pode ser chamado a prestar serviços, e recusar tem consequências sérias.',
-    incompatibleWith: ['patrono']
-  },
-  {
-    id: 'ma_fama',
-    name: 'Má Fama',
-    refund: 1,
-    category: 'social',
-    icon: '💢',
-    shortPenalty: 'NPCs desconfiam; -2 em interações amigáveis',
-    fullPenalty: 'O personagem tem uma reputação terrível — seja justificada ou não. Comerciantes cobram mais, guardas o observam com suspeita, e cidadãos comuns evitam contato. Sofre -2 em testes de interação social amigável.',
-    incompatibleWith: ['ma_fama_v']
-  },
-  {
-    id: 'inculto',
-    name: 'Inculto',
-    refund: 1,
-    category: 'social',
-    icon: '📖',
-    shortPenalty: 'Não sabe ler nem escrever; -2 em testes de conhecimento',
-    fullPenalty: 'O personagem não sabe ler nem escrever. Sofre -2 em todos os testes que dependam de conhecimento livresco, documentos ou habilidades que requerem educação formal.'
-  },
-  {
-    id: 'protegido_indefeso',
-    name: 'Protegido Indefeso',
-    refund: 2,
-    category: 'social',
-    icon: '🧒',
-    shortPenalty: 'Tem uma pessoa fraca para proteger',
-    fullPenalty: 'O personagem possui alguém que depende completamente de sua proteção — uma criança, um familiar, um civil inocente. Inimigos podem usar essa pessoa como reféns, e o personagem sofre -2 em todos os testes quando o protegido está em perigo.',
-    flavor: 'Amar alguém é criar uma fraqueza que todo inimigo vai encontrar.'
-  },
-  {
-    id: 'assombrado',
-    name: 'Assombrado',
-    refund: 2,
-    category: 'psicologica',
-    icon: '👻',
-    shortPenalty: '-1 em tudo quando o fantasma aparece (4-6 em 1d)',
-    fullPenalty: 'Um espírito dedicado a atormentar o personagem. Quando entra em combate, o Mestre rola 1d: resultado 4, 5 ou 6 significa que o fantasma aparece, impondo -1 em TODAS as Características até que vá embora.',
-    flavor: 'Os mortos têm memória longa e paciência infinita.'
-  },
-
-  // ── FÍSICA ────────────────────────────────────────────────────────────────────
-
-  {
-    id: 'aparencia_monstruosa',
-    name: 'Aparência Monstruosa',
-    refund: 1,
-    category: 'fisica',
-    icon: '👹',
-    shortPenalty: 'Pessoas fogem ou ficam hostis; -2 em Lábia e Sedução',
-    fullPenalty: 'A aparência do personagem é profundamente repulsiva ou assustadora. Pessoas comuns fogem ou ficam furiosas. Sofre -2 em Lábia e Sedução, mas ganha +1 em Interrogatório e Intimidação.',
-    incompatibleWith: ['aparencia_agradavel']
-  },
-  {
-    id: 'fraqueza_fogo',
-    name: 'Vulnerabilidade: Fogo',
-    refund: 1,
-    category: 'fisica',
-    icon: '🔥',
-    shortPenalty: '+2 de dano de todas as fontes de fogo',
-    fullPenalty: 'O personagem é anormalmente suscetível ao fogo. Recebe +2 de dano de qualquer fonte de Calor/Fogo, incluindo magias de fogo, tochas e brasas.',
-    incompatibleWith: ['invulnerabilidade_fogo']
-  },
-  {
-    id: 'fraqueza_magia',
-    name: 'Vulnerabilidade: Magia',
-    refund: 1,
-    category: 'magica',
-    icon: '💜',
-    shortPenalty: '+1 de dano de todas as fontes mágicas',
-    fullPenalty: 'A resistência mágica do personagem é praticamente nula. Recebe +1 de dano de todas as fontes mágicas — magias de ataque, maldições e armas encantadas.'
-  },
-  {
-    id: 'fraqueza_prata',
-    name: 'Vulnerabilidade: Prata',
-    refund: 1,
-    category: 'fisica',
-    icon: '🥈',
-    shortPenalty: 'Dano de prata ignora metade da Armadura',
-    fullPenalty: 'Armas de prata são letais ao personagem. Ataques com armas de prata ou prata pura ignoram metade do valor de Armadura ao calcular a FD.',
-    flavor: 'Todo monstro tem sua prata.'
-  },
-  {
-    id: 'bateria',
-    name: 'Bateria',
-    refund: 2,
-    category: 'fisica',
-    icon: '🔋',
-    shortPenalty: 'Fica inativo por 1d horas após X horas de atividade',
-    fullPenalty: 'O personagem tem energia limitada: 12 horas de atividade por ponto de Resistência. Após esse limite, deve descansar em repouso absoluto por 1d horas para recarregar. Só pode ser possuída por Máquinas e Construtos.'
-  },
-  {
-    id: 'alergia',
-    name: 'Alergia',
-    refund: 1,
-    category: 'fisica',
-    icon: '🌿',
-    shortPenalty: '-1 em tudo quando em contato com a substância',
-    fullPenalty: 'O personagem tem reação severa a uma substância comum (alho, prata, água benta, flores silvestres, etc.). Em contato ou na presença próxima, sofre -1 em todas as Características.'
-  },
-  {
-    id: 'dependencia',
-    name: 'Dependência',
-    refund: 2,
-    category: 'fisica',
-    icon: '⚗️',
-    shortPenalty: '-1 em tudo sem a substância por 24 horas',
-    fullPenalty: 'O personagem depende de uma substância ou ritual para funcionar plenamente (poção específica, meditação, alimentação especial). Sem ela por 24 horas, sofre -1 em todas as Características.',
-    flavor: 'O poder nunca vem de graça.'
-  }
+export const DESVANTAGEM_CATEGORIES: { id: DesvantagemCategory; label: string }[] = [
+  { id: 'comportamental', label: 'Comportamental' },
+  { id: 'social',         label: 'Social' },
+  { id: 'fisica',         label: 'Física' },
+  { id: 'combate',        label: 'Combate' },
+  { id: 'recursos',       label: 'Recursos' },
+  { id: 'especial',       label: 'Especial' },
 ];
+
+export const ALL_DESVANTAGENS: DesvantagemDef[] = [
+  {
+    id: 'ambiente', name: 'Ambiente', refund: '-1pt', category: 'especial', icon: '🌍',
+    description: 'Você depende de um ambiente específico (água, clima, lugar). No início de cada cena, 1 em 1D significa que nada do seu ambiente existe ali, e você tem Perda em todos os testes.',
+  },
+  {
+    id: 'amnesia', name: 'Amnésia', refund: '-2pt', category: 'especial', icon: '🌀',
+    description: 'Você não conhece sua própria ficha — o mestre a mantém em segredo. Você descobre suas capacidades e limites por tentativa e erro durante o jogo.',
+  },
+  {
+    id: 'antipatico', name: 'Antipático', refund: '-1pt', category: 'social', icon: '😠',
+    description: 'Em testes de Poder envolvendo interação social, você tem Perda e nunca tem acertos críticos. Incompatível com Carismático.',
+  },
+  {
+    id: 'assombrado', name: 'Assombrado', refund: '-1 ou -2pt', category: 'comportamental', icon: '👻',
+    description: 'Você é perturbado por algo do passado. -1pt: 1 em 1D ao entrar em cena de risco, todos os testes têm Perda até o fim da cena. -2pt: acontece com qualquer resultado ímpar.',
+  },
+  {
+    id: 'atrapalhado', name: 'Atrapalhado', refund: '-1pt', category: 'fisica', icon: '🤦',
+    description: 'Em testes de Habilidade envolvendo coordenação e agilidade, você tem Perda e nunca tem acertos críticos. Incompatível com Ágil.',
+  },
+  {
+    id: 'aura', name: 'Aura', refund: '-1 ou -2pt', category: 'social', icon: '🌫️',
+    description: 'Você emana uma aura negativa perceptível. -1pt: testes de outros Perto de você têm Perda. -2pt: o efeito alcança até Longe.',
+  },
+  {
+    id: 'bateria', name: 'Bateria', refund: '-1pt', category: 'recursos', icon: '🔋',
+    description: 'Ao chegar a 0PM você desliga, ficando inconsciente. Com PM abaixo de sua Habilidade, todos os seus testes têm Perda.',
+  },
+  {
+    id: 'codigo', name: 'Código', refund: '-1pt cada', category: 'comportamental', icon: '📜',
+    description: 'Você segue um código de conduta (Leis de Asimov, Código do Caçador, do Combate, da Derrota, da Gratidão, dos Heróis, da Honestidade, da Redenção...). Violá-lo causa Perda em todos os testes até se redimir.',
+  },
+  {
+    id: 'dependencia', name: 'Dependência', refund: '-2pt', category: 'recursos', icon: '🩸',
+    description: 'Você depende de algo raro ou proibido para viver (sangue, cérebros, substância ilícita). Não satisfazê-la diariamente causa Perda em todos os testes.',
+  },
+  {
+    id: 'diferente', name: 'Diferente', refund: '-1pt', category: 'fisica', icon: '👽',
+    description: 'Seu corpo é muito diferente do humanoide comum — você tem Perda ao usar itens feitos para outros (só usa bem o que foi feito para você).',
+  },
+  {
+    id: 'elo_vital', name: 'Elo Vital', refund: '-1pt', category: 'combate', icon: '🔗',
+    description: 'Você e um aliado (que também tem esta desvantagem) compartilham dano: sempre que um sofre dano, o outro perde PV na mesma quantidade. Curar um não cura o outro.',
+  },
+  {
+    id: 'fracote', name: 'Fracote', refund: '-1pt', category: 'fisica', icon: '🪶',
+    description: 'Em testes de Poder envolvendo esforço físico, você tem Perda e nunca tem acertos críticos. Incompatível com Forte.',
+  },
+  {
+    id: 'fragil', name: 'Frágil', refund: '-1pt', category: 'fisica', icon: '🥚',
+    description: 'Em testes de Resistência envolvendo saúde física (inclui testes de morte), você tem Perda e nunca tem acertos críticos. Incompatível com Vigoroso.',
+  },
+  {
+    id: 'fraqueza', name: 'Fraqueza', refund: '-1 ou -2pt', category: 'especial', icon: '🍀',
+    description: 'Existe algo a que você é vulnerável; Perto dele, todos os seus testes têm Perda. -1pt se for incomum (1 em 1D), -2pt se comum (1-3 em 1D).',
+  },
+  {
+    id: 'furia', name: 'Fúria', refund: '-2pt', category: 'comportamental', icon: '😡',
+    description: 'Ao sofrer dano ou se irritar, teste de Resistência (9 ou o dano recebido) ou entra em frenesi: ataca o alvo mais próximo, com Perda em testes não-ataque e vantagens custando PM em dobro.',
+  },
+  {
+    id: 'inapto', name: 'Inapto', refund: '-1pt', category: 'especial', icon: '🚫',
+    description: 'Escolha uma perícia que não possui: você está sempre em Perda nela, e qualquer falha é uma falha crítica.',
+  },
+  {
+    id: 'inculto', name: 'Inculto', refund: '-1pt', category: 'social', icon: '🗣️',
+    description: 'Você não conhece a cultura/língua local: dificuldade para ler e se comunicar, e Perda em testes sociais com quem não o entende.',
+  },
+  {
+    id: 'indeciso', name: 'Indeciso', refund: '-1pt', category: 'comportamental', icon: '😟',
+    description: 'Em testes de Resistência envolvendo força de vontade, você tem Perda e nunca tem acertos críticos. Incompatível com Resoluto.',
+  },
+  {
+    id: 'infame', name: 'Infame', refund: '-1pt', category: 'social', icon: '💀',
+    description: 'Você é conhecido por má fama: testes sociais com NPCs que o reconhecem sempre têm Perda. Incompatível com Famoso.',
+  },
+  {
+    id: 'lento', name: 'Lento', refund: '-1pt', category: 'fisica', icon: '🐌',
+    description: 'Sempre em Perda em testes de iniciativa, e gasta um movimento extra para cruzar cada distância. Incompatível com Aceleração.',
+  },
+  {
+    id: 'maldicao', name: 'Maldição', refund: '-1 ou -2pt', category: 'especial', icon: '🪄',
+    description: 'Você é vítima de uma maldição (criada com aprovação do mestre). -1pt: suave, mais constrangedora que prejudicial. -2pt: grave, com efeito mecânico real (ex.: recebe de volta o dano que causa).',
+  },
+  {
+    id: 'monstruoso', name: 'Monstruoso', refund: '-1pt', category: 'social', icon: '👹',
+    description: 'Aparência grotesca: sempre em Perda na iniciativa (exceto surpreendendo) e em testes sociais sobre aparência. Incompatível com Inofensivo.',
+  },
+  {
+    id: 'municao', name: 'Munição', refund: '-1pt', category: 'combate', icon: '🔫',
+    description: 'Sua arma/técnica precisa recarregar a cada uso: atacar sem antes gastar um movimento recarregando significa não somar Poder ao ataque (nem em críticos).',
+  },
+  {
+    id: 'pacifista', name: 'Pacifista', refund: '-1 ou -2pt', category: 'comportamental', icon: '☮️',
+    description: '-1pt: não pode fazer testes de ataque, só se defender. -2pt: não pode causar dano de forma alguma, nem com palavras. Violar causa Perda até se redimir.',
+  },
+  {
+    id: 'pobreza', name: 'Pobreza', refund: '-1pt', category: 'recursos', icon: '💸',
+    description: 'Todos os seus testes de compra são feitos em Perda. Incompatível com Riqueza.',
+  },
+  {
+    id: 'ponto_fraco', name: 'Ponto Fraco', refund: '-1pt', category: 'combate', icon: '🎯',
+    description: 'Você tem uma falha explorável. Quem a conhece pode gastar 1PM para Ganho contra você num teste que a explore.',
+  },
+  {
+    id: 'protegido', name: 'Protegido', refund: '-1pt', category: 'recursos', icon: '🧒',
+    description: 'Existe alguém que você precisa proteger. Enquanto ele está desaparecido, indefeso ou ferido, todos os seus testes têm Perda. Se ele morre, você ganha Assombrado (-2pt) sem ponto extra.',
+  },
+  {
+    id: 'restricao', name: 'Restrição', refund: '-1 ou -2pt', category: 'recursos', icon: '⛓️',
+    description: 'Sob certa condição, suas vantagens custam o dobro de PM. -1pt se incomum, -2pt se comum. Exige ao menos uma vantagem que gaste PM.',
+  },
+  {
+    id: 'sem_vida', name: 'Sem Vida', refund: '-2pt', category: 'fisica', icon: '🤖',
+    description: 'Você não é um ser vivo: nunca morre de verdade (pior resultado em teste de morte é inconsciente), mas não recupera PV por descanso, itens, Cura ou Regeneração — só conserto/restauração por perícia.',
+  },
+  {
+    id: 'tapado', name: 'Tapado', refund: '-1pt', category: 'comportamental', icon: '🙃',
+    description: 'Em testes de Habilidade envolvendo inteligência e raciocínio, você tem Perda e nunca tem acertos críticos. Incompatível com Gênio.',
+  },
+  {
+    id: 'transtorno', name: 'Transtorno', refund: '-1pt cada', category: 'comportamental', icon: '🧩',
+    description: 'Escolha um transtorno mental: Cleptomania, Compulsão, Distração, Fantasia, Fobia, Megalomania, Mitomania ou Paranoia. Superá-lo em cena exige teste de Resistência (9).',
+  },
+  {
+    id: 'utensilio', name: 'Utensílio', refund: '-1 ou -2pt', category: 'combate', icon: '🔧',
+    description: 'Você depende de um item para usar bem algo. -1pt: sem ele, não tem críticos numa perícia escolhida. -2pt: sem ele, não pode usar vantagens/técnicas que gastam PM nem PA.',
+  },
+];
+
+export const DESVANTAGEM_MAP = new Map<string, DesvantagemDef>(
+  ALL_DESVANTAGENS.map(d => [d.id, d])
+);

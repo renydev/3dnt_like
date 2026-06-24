@@ -9,7 +9,7 @@
         </div>
         <div class="dialog-title-block">
           <h2 class="dialog-name">{{ char()!.name }}</h2>
-          <p class="dialog-sub">{{ char()!.race | titlecase }} · {{ char()!.class | titlecase }}</p>
+          <p class="dialog-sub">{{ char()!.race | titlecase }} · {{ kitNames(char()!.kits) }}</p>
           <div class="pe-summary">
             <span class="pe-label">XP acumulado:</span>
             <span class="pe-value">{{ totalXp() }}</span>

@@ -766,7 +766,7 @@ export class DebugComponent {
     const list: RoomState[] = config.layout.rooms.map(r => ({
       roomId: r.id,
       name: r.name,
-      type: r.type,
+      type: Array.isArray(r.type) ? r.type.join('/') : r.type,
       row: r.row,
       col: r.col,
       connections: [...r.connections],

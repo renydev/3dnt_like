@@ -1,7 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import {
   Character, PRESET_CHARACTERS,
-  CharacterClass, CLASS_ROLES,
 } from '../models/character.model';
 import { Item, ItemSlot, EquipSlot, Equipment, allEquipItems, mergeBonus, equipSlotLabel } from '../models/item.model';
 import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '../models/dungeon.model';
@@ -11,6 +10,18 @@ import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
 import { calcCharacterPP, calcCombatXp } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
+
+/** Resumo da recompensa de um combate, exibido ao jogador ao final da batalha. */
+export interface CombatRewardSummary {
+  xpPerCharacter: number;
+  bonusXp: number;
+  isBossFight: boolean;
+  totalMonsterPP: number;
+  totalPartyPP: number;
+  goldAmount: number;
+  /** Motivo de não ter ganho XP (null se ganhou). */
+  reason: string | null;
+}
 
 export type GameScreen =
   | 'menu'
@@ -119,7 +130,7 @@ export class GameStateService {
     this.newCompanion.set(null);
     this.floorNumber.set(1);
     this.generateNewFloor();
-    this.companionChoices.set(this._generateCompanionChoices(char.class));
+    this.companionChoices.set(this._generateCompanionChoices(char.kits));
     this.screen.set('companion_select');
   }
 
@@ -145,23 +156,24 @@ export class GameStateService {
     // Se estiver em floor_transition, apenas adiciona — a tela continua mostrando
   }
 
-  /** Gera 3 opções diversas de companheiros (excluindo classe do jogador) */
-  private _generateCompanionChoices(playerClass: CharacterClass): Omit<Character, 'id'>[] {
-    const pool = PRESET_CHARACTERS.filter(c => c.class !== playerClass);
+  /** Gera 3 opções diversas de companheiros (excluindo o(s) kit(s) do jogador, variando entre si). */
+  private _generateCompanionChoices(playerKits: string[]): Omit<Character, 'id'>[] {
+    const playerKit = playerKits[0];
+    const pool = PRESET_CHARACTERS.filter(c => c.kits[0] !== playerKit);
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
     const seen = new Set<string>();
     const picks: Omit<Character, 'id'>[] = [];
     for (const c of shuffled) {
-      const role = CLASS_ROLES[c.class];
-      if (!seen.has(role)) {
-        seen.add(role);
+      const kit = c.kits[0];
+      if (!seen.has(kit)) {
+        seen.add(kit);
         picks.push({ ...c, isCompanion: true });
       }
       if (picks.length === 3) break;
     }
     for (const c of shuffled) {
       if (picks.length >= 3) break;
-      if (!picks.find(p => p.class === c.class)) {
+      if (!picks.find(p => p.kits[0] === c.kits[0])) {
         picks.push({ ...c, isCompanion: true });
       }
     }
@@ -229,14 +241,22 @@ export class GameStateService {
       return;
     }
 
-    // Salas de tesouro são marcadas como limpas ao entrar — impede re-entrada duplicada
-    if (target.type === 'treasure') {
+    // Salas de tesouro, sociais e de enigma são marcadas como limpas ao entrar —
+    // impede re-entrada duplicada e não dependem de derrotar ninguém.
+    if (target.type === 'treasure' || target.type === 'social' || target.type === 'puzzle') {
       this._markRoomCleared(roomId);
     }
 
-    const config = DUNGEON_REGISTRY[this.floorNumber()];
-    const roomGroup = config?.roomEnemies?.[roomId]?.() ?? null;
-    this.pendingEnemies.set(roomGroup);
+    // Apenas salas de combate (monster/boss) buscam grupos de inimigos configurados.
+    // Outros tipos (treasure/trap/social/puzzle/rest) nunca devem invocar combate,
+    // mesmo que o mapa de roomEnemies tenha uma entrada com o mesmo id por acaso.
+    if (target.type === 'monster' || target.type === 'boss') {
+      const config = DUNGEON_REGISTRY[this.floorNumber()];
+      const roomGroup = config?.roomEnemies?.[roomId]?.() ?? null;
+      this.pendingEnemies.set(roomGroup);
+    } else {
+      this.pendingEnemies.set(null);
+    }
     this.screen.set('encounter');
   }
 
@@ -383,8 +403,8 @@ export class GameStateService {
     }
 
     // A cada boss derrotado, o jogador escolhe um novo companheiro
-    const playerClass = this.character()?.class;
-    const choices = this._generateCompanionChoices(playerClass ?? 'guerreiro');
+    const playerKits = this.character()?.kits ?? ['guerreiro'];
+    const choices = this._generateCompanionChoices(playerKits);
     this.companionChoices.set(choices);
     this.newCompanion.set(null);
 
@@ -425,9 +445,11 @@ export class GameStateService {
    *
    * Terminar a masmorra concede 1 PP extra (awardFloorCompletionPP).
    */
-  awardCombatXp(defeatedEnemies: Enemy[], goldAmount: number, isBossFight: boolean): void {
+  awardCombatXp(defeatedEnemies: Enemy[], goldAmount: number, isBossFight: boolean): CombatRewardSummary {
     const partyPPs = this.partyPPs();
-    if (partyPPs.length === 0) return;
+    if (partyPPs.length === 0) {
+      return { xpPerCharacter: 0, bonusXp: 0, isBossFight, totalMonsterPP: 0, totalPartyPP: 0, goldAmount, reason: null };
+    }
 
     const monsterPPs = defeatedEnemies.map(e => e.pp);
     const result = calcCombatXp(monsterPPs, partyPPs, isBossFight);
@@ -446,8 +468,9 @@ export class GameStateService {
     }
 
     if (xp <= 0) {
+      const reason = `Inimigos fracos demais: PP do grupo de inimigos (${result.totalMonsterPP}) é metade ou menos do PP da sua party (${result.totalPartyPP}). Pelas regras do 3DeT Victory, combates muito fáceis não rendem XP — procure oponentes mais fortes.`;
       this.addLog(`⚔️ Combate resolvido. Inimigos fracos demais para gerar XP.`);
-      return;
+      return { xpPerCharacter: 0, bonusXp: 0, isBossFight, totalMonsterPP: result.totalMonsterPP, totalPartyPP: result.totalPartyPP, goldAmount, reason };
     }
 
     // Personagem principal
@@ -473,6 +496,12 @@ export class GameStateService {
     if (goldAmount > 0) {
       this.addLog(`💰 +${goldAmount} PO`);
     }
+
+    return {
+      xpPerCharacter: xp, bonusXp: result.bonusXp, isBossFight,
+      totalMonsterPP: result.totalMonsterPP, totalPartyPP: result.totalPartyPP,
+      goldAmount, reason: null,
+    };
   }
 
   /** Concede 1 PP a todos ao completar um andar (chefe derrotado). */

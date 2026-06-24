@@ -1,568 +1,267 @@
-import { Vantagem } from '../models/game-data.model';
+// Vantagens do 3DeT Victory — lista oficial completa do manual (cap. Personagens, "Vantagens", pág. 42-63)
 
-export const TODAS_VANTAGENS: Vantagem[] = [
+export type VantagemCategory =
+  | 'combate' | 'defesa' | 'atributo' | 'mental' | 'social' | 'movimento' | 'recursos' | 'especial';
 
-  // ── COMBATE ──────────────────────────────────────────────────────────────────
+export interface VantagemDef {
+  id: string;
+  name: string;
+  cost: string;   // custo em PP, como exibido no manual (ex: "1pt", "1-2pt", "2, 4 ou 6pt")
+  category: VantagemCategory;
+  icon: string;
+  description: string;
+}
 
-  {
-    id: 'ataque_especial',
-    name: 'Ataque Especial',
-    cost: 2,
-    category: 'combate',
-    icon: '⚔️',
-    shortEffect: 'FA+2 gastando 2 PMs',
-    fullEffect: 'Ao gastar 2 Pontos de Magia, o personagem realiza um Ataque Especial, adicionando +2 à sua Força de Ataque. Pode ser combinado com outros bônus de FA.',
-    flavor: 'O golpe concentrado de um guerreiro experiente vale mais do que mil golpes apressados.',
-    pmCost: 2
-  },
-  {
-    id: 'ataque_multiplo',
-    name: 'Ataque Múltiplo',
-    cost: 2,
-    category: 'combate',
-    icon: '⚡',
-    shortEffect: 'Ataques extras sem redutor de H (2 PMs cada)',
-    fullEffect: 'O personagem pode realizar ataques extras sem sofrer o redutor normal de Habilidade, pagando 2 PMs por ataque adicional. Cada ataque além do primeiro consome 2 PMs.',
-    flavor: 'Um mestre das armas não precisa escolher entre velocidade e precisão.',
-    incompatibleWith: ['tiro_multiplo'],
-    pmCost: 2
-  },
-  {
-    id: 'tiro_multiplo',
-    name: 'Tiro Múltiplo',
-    cost: 2,
-    category: 'combate',
-    icon: '🏹',
-    shortEffect: 'Disparos extras com PdF sem redutor de H (2 PMs cada)',
-    fullEffect: 'Igual ao Ataque Múltiplo, mas para ataques à distância baseados em Poder de Fogo. Cada disparo extra custa 2 PMs e não causa redutor de Habilidade.',
-    incompatibleWith: ['ataque_multiplo'],
-    pmCost: 2
-  },
-  {
-    id: 'forca_colossal',
-    name: 'Força Colossal',
-    cost: 2,
-    category: 'combate',
-    icon: '💪',
-    shortEffect: 'F+2 permanente (máx F5)',
-    fullEffect: 'A Força do personagem aumenta permanentemente em 2 pontos, até o máximo de 5. Afeta FA em combate corpo a corpo e testes de Força.',
-    flavor: 'Poucos conseguem manter a posição diante de um golpe que pode rachar pedra.',
-    incompatibleWith: ['tiro_certeiro']
-  },
-  {
-    id: 'tiro_certeiro',
-    name: 'Tiro Certeiro',
-    cost: 2,
-    category: 'combate',
-    icon: '🎯',
-    shortEffect: 'PdF+2 permanente (máx PdF5)',
-    fullEffect: 'O Poder de Fogo do personagem aumenta permanentemente em 2 pontos, até o máximo de 5. Aumenta a FA em ataques à distância.',
-    incompatibleWith: ['forca_colossal']
-  },
-  {
-    id: 'habilidade_superior',
-    name: 'Habilidade Superior',
-    cost: 2,
-    category: 'combate',
-    icon: '🌪️',
-    shortEffect: 'H+2 permanente (máx H5)',
-    fullEffect: 'A Habilidade do personagem aumenta permanentemente em 2 pontos, até o máximo de 5. Melhora FA, FD, esquivas e múltiplos ataques.'
-  },
-  {
-    id: 'arma_especial',
-    name: 'Arma Especial',
-    cost: 2,
-    category: 'combate',
-    icon: '🗡️',
-    shortEffect: 'Arma única com propriedades mágicas',
-    fullEffect: 'O personagem possui uma arma especial com propriedades únicas — pode ser mágica, ancestral ou amaldiçoada. A arma inflige +1d de dano bônus e conta como mágica para fins de resistências.',
-    flavor: 'Toda lenda começa com uma arma que se recusa a ser esquecida.'
-  },
-  {
-    id: 'ataque_pelas_costas',
-    name: 'Ataque pelas Costas',
-    cost: 2,
-    category: 'combate',
-    icon: '🗡️',
-    shortEffect: 'Dano dobrado em ataques surpresa',
-    fullEffect: 'Quando ataca um inimigo desprevenido ou pelas costas, o personagem dobra sua Força para calcular a FA (não os dados). O alvo deve estar Indefeso ou desconhecer o ataque.',
-    onlyClass: ['ladino']
-  },
-  {
-    id: 'carga',
-    name: 'Carga',
-    cost: 1,
-    category: 'combate',
-    icon: '🐂',
-    shortEffect: 'FA+2 ao carregar, mas fica vulnerável',
-    fullEffect: 'Ao gastar uma ação completa se movendo em linha reta em direção ao inimigo, o personagem ganha FA+2 naquele ataque. Durante a carga, sofre -1 em sua FD.',
-    pmCost: 0
-  },
-  {
-    id: 'golpe_poderoso',
-    name: 'Golpe Poderoso',
-    cost: 1,
-    category: 'combate',
-    icon: '🔨',
-    shortEffect: 'Troca precisão por dano: FA+2, FD-2',
-    fullEffect: 'O personagem pode optar por um golpe mais arriscado: ganha FA+2, mas sofre -2 em sua FD naquele turno. Declarado antes da rolagem.',
-    incompatibleWith: ['combate_defensivo'],
-    pmCost: 0
-  },
-  {
-    id: 'combate_defensivo',
-    name: 'Combate Defensivo',
-    cost: 1,
-    category: 'combate',
-    icon: '🛡️',
-    shortEffect: 'Troca ataque por defesa: FD+2, FA-2',
-    fullEffect: 'O personagem adota postura defensiva: ganha FD+2 mas sofre FA-2 naquele turno. Declarado antes da rolagem.',
-    incompatibleWith: ['golpe_poderoso'],
-    pmCost: 0
-  },
-  {
-    id: 'grito_de_kiai',
-    name: 'Grito de Kiai',
-    cost: 1,
-    category: 'combate',
-    icon: '😤',
-    shortEffect: '+1 FA ao usar armas orientais; intimida',
-    fullEffect: 'Com um grito de guerra, o personagem ganha +1 à FA ao usar armas orientais (Kama, Nunchaku, Sai). Uma vez por combate, pode intimidar um inimigo com teste de Habilidade vs. Resistência.',
-    pmCost: 1
-  },
-
-  // ── DEFESA ────────────────────────────────────────────────────────────────────
-
-  {
-    id: 'armadura_extra',
-    name: 'Armadura Extra',
-    cost: 2,
-    category: 'defesa',
-    icon: '🛡️',
-    shortEffect: 'A+2 permanente',
-    fullEffect: 'O personagem possui uma proteção adicional excepcional, seja por equipamento pesado, escudo, ou resistência natural. Recebe +2 em seu valor de Armadura permanentemente.',
-    flavor: 'Aço sobre aço — um castelo ambulante.'
-  },
-  {
-    id: 'resistencia_superior',
-    name: 'Resistência Superior',
-    cost: 2,
-    category: 'defesa',
-    icon: '❤️',
-    shortEffect: 'R+2 permanente (máx R5) — +10 PVs',
-    fullEffect: 'A Resistência do personagem aumenta permanentemente em 2 pontos, até o máximo de 5. Como PV = R×5, o personagem ganha +10 PVs máximos.'
-  },
-  {
-    id: 'esquiva_aprimorada',
-    name: 'Esquiva Aprimorada',
-    cost: 1,
-    category: 'defesa',
-    icon: '💨',
-    shortEffect: 'H+1 em todos os testes de Esquiva',
-    fullEffect: 'O personagem recebe H+1 especificamente para testes de Esquiva. Nunca pode ser pego de Ataque Surpresa enquanto acordado.',
-    flavor: 'Quem nunca está onde o golpe cai nunca é atingido.'
-  },
-  {
-    id: 'pele_grossa',
-    name: 'Pele Grossa',
-    cost: 1,
-    category: 'defesa',
-    icon: '🦏',
-    shortEffect: 'Reduz 1 de dano por ataque recebido',
-    fullEffect: 'Cada ataque que cause dano ao personagem é reduzido em 1 ponto, após todos os cálculos de FD. Não se aplica a dano que ignore Armadura.'
-  },
-  {
-    id: 'regeneracao',
-    name: 'Regeneração',
-    cost: 3,
-    category: 'defesa',
-    icon: '💚',
-    shortEffect: 'Recupera 1 PV por turno, inclusive em combate',
-    fullEffect: 'O personagem regenera 1 Ponto de Vida ao final de cada turno, mesmo durante o combate. Não funciona com dano de fontes especiais (veneno divino, armas sagradas específicas, etc).',
-    flavor: 'Nenhuma ferida é permanente para quem tem a vida como aliada.'
-  },
-  {
-    id: 'invulnerabilidade_fogo',
-    name: 'Invulnerabilidade: Fogo',
-    cost: 2,
-    category: 'defesa',
-    icon: '🔥',
-    shortEffect: 'Imune a dano de Calor/Fogo',
-    fullEffect: 'O personagem é completamente imune a dano do tipo Calor/Fogo, natural ou mágico. Inclui magias de Fogo, brasas, lava e qualquer fonte de calor intenso.',
-    incompatibleWith: ['fraqueza_fogo']
-  },
-  {
-    id: 'invulnerabilidade_frio',
-    name: 'Invulnerabilidade: Frio',
-    cost: 2,
-    category: 'defesa',
-    icon: '❄️',
-    shortEffect: 'Imune a dano de Frio/Gelo',
-    fullEffect: 'O personagem é completamente imune a dano do tipo Frio/Gelo, natural ou mágico.'
-  },
-  {
-    id: 'invulnerabilidade_relampago',
-    name: 'Invulnerabilidade: Relâmpago',
-    cost: 2,
-    category: 'defesa',
-    icon: '⚡',
-    shortEffect: 'Imune a dano elétrico',
-    fullEffect: 'O personagem é completamente imune a dano do tipo Relâmpago/Eletricidade.'
-  },
-
-  // ── MOVIMENTO ─────────────────────────────────────────────────────────────────
-
-  {
-    id: 'aceleracao',
-    name: 'Aceleração',
-    cost: 1,
-    category: 'movimento',
-    icon: '💨',
-    shortEffect: 'H+1 em Esquivas; velocidade dobrada',
-    fullEffect: 'A velocidade máxima do personagem é dobrada. Além disso, recebe H+1 em testes de Esquiva. Não é cumulativo com Teleporte.',
-    incompatibleWith: ['teleporte']
-  },
-  {
-    id: 'teleporte',
-    name: 'Teleporte',
-    cost: 2,
-    category: 'movimento',
-    icon: '✨',
-    shortEffect: 'Teleporta até alcance do Focus (1 PM)',
-    fullEffect: 'O personagem pode se teletransportar instantaneamente para qualquer ponto dentro de seu alcance de combate, gastando 1 PM. Garante H+1 em Esquivas.',
-    incompatibleWith: ['aceleracao'],
-    pmCost: 1
-  },
-  {
-    id: 'levitacao',
-    name: 'Levitação',
-    cost: 2,
-    category: 'movimento',
-    icon: '🌊',
-    shortEffect: 'Flutua e voa até altura igual à R em metros',
-    fullEffect: 'O personagem pode flutuar e voar até uma altitude máxima em metros igual à sua Resistência. Enquanto levita, ataques contra ele sofrem -1 de FA e ele ignora terreno desfavorável.',
-    pmCost: 1
-  },
-  {
-    id: 'membros_elasticos',
-    name: 'Membros Elásticos',
-    cost: 1,
-    category: 'movimento',
-    icon: '🪡',
-    shortEffect: 'Alcance de combate corporal dobrado',
-    fullEffect: 'O personagem pode atacar em corpo a corpo alvos a até 3m de distância. Também pode usar habilidades de toque a essa distância.',
-    pmCost: 0
-  },
-
-  // ── MAGIA ─────────────────────────────────────────────────────────────────────
-
-  {
-    id: 'arcano',
-    name: 'Arcano',
-    cost: 3,
-    category: 'magia',
-    icon: '🔮',
-    shortEffect: '3 pontos de Focus para distribuir entre os Caminhos',
-    fullEffect: 'O personagem possui aptidão mágica natural. Recebe 3 pontos de Focus para distribuir livremente entre os seis Caminhos (Água, Ar, Fogo, Terra, Luz, Trevas) no momento da criação. Focus máximo por Caminho é 5. Pode ser comprado múltiplas vezes para obter mais Focus.',
-    flavor: 'A magia não é aprendida — é lembrada.'
-  },
-  {
-    id: 'pontos_magia_extra',
-    name: 'Pontos de Magia Extras',
-    cost: 1,
-    category: 'magia',
-    icon: '💧',
-    shortEffect: '+5 PMs permanentes',
-    fullEffect: 'O personagem possui uma reserva mágica maior. Ganha +5 Pontos de Magia permanentes ao máximo de PMs. Pode ser comprado múltiplas vezes.'
-  },
-  {
-    id: 'foco_magico_vant',
-    name: 'Foco Mágico',
-    cost: 1,
-    category: 'magia',
-    icon: '🌀',
-    shortEffect: 'Magias custam -1 PM (mín. 1)',
-    fullEffect: 'A concentração do personagem reduz o custo de todas as suas magias em 1 PM. O custo mínimo continua sendo 1 PM.',
-    flavor: 'Eficiência mágica é a diferença entre um feiticeiro e um mestre.'
-  },
-  {
-    id: 'telepatia',
-    name: 'Telepatia',
-    cost: 2,
-    category: 'magia',
-    icon: '🧠',
-    shortEffect: 'Lê mentes e usa magias psíquicas',
-    fullEffect: 'O personagem pode ler a mente de qualquer criatura dentro do alcance de combate (alvo faz teste de R para resistir). É pré-requisito para todas as magias psíquicas e de controle mental.',
-    flavor: 'Os segredos mais bem guardados sempre vivem na mente.'
-  },
-  {
-    id: 'clericato',
-    name: 'Clericato',
-    cost: 3,
-    category: 'divino',
-    icon: '✝️',
-    shortEffect: 'Acesso a magias divinas; 2 Focus nos Caminhos do deus',
-    fullEffect: 'O personagem é um sacerdote ordenado de um deus do Panteão de Arton. Recebe 2 pontos de Focus para gastar nos Caminhos determinados por sua divindade (ex: Khalmyr: Luz e Água; Thwor: Terra e Fogo). Pode lançar magias com requisito Clericato. Não requer a Vantagem Arcano — Clericato É a fonte mágica do clérigo.',
-    flavor: 'Os deuses não falam com todos — mas ouvem os que sabem rezar.'
-  },
-  {
-    id: 'paladino',
-    name: 'Paladino',
-    cost: 3,
-    category: 'divino',
-    icon: '⚜️',
-    shortEffect: 'Guerreiro sagrado — magias divinas + combate',
-    fullEffect: 'O personagem é um Paladino. Recebe 2 pontos de Focus nos Caminhos da Água, Ar e Luz. Pode lançar magias divinas e de combate. Deve seguir um Código de Honra. Versão maligna: Algoz.',
-    requires: ['clericato']
-  },
-
-  // ── SENTIDOS ──────────────────────────────────────────────────────────────────
-
-  {
-    id: 'visao_noturna',
-    name: 'Visão Noturna',
-    cost: 1,
-    category: 'sentidos',
-    icon: '👁️',
-    shortEffect: 'Enxerga no escuro total como no claro',
-    fullEffect: 'O personagem enxerga perfeitamente em escuridão total, como se houvesse luz plena. Não sofre penalidades em ambientes sem luz.'
-  },
-  {
-    id: 'audicao_aguçada',
-    name: 'Audição Aguçada',
-    cost: 1,
-    category: 'sentidos',
-    icon: '👂',
-    shortEffect: 'Reduz penalidade de cegueira de -3 para -2',
-    fullEffect: 'Os ouvidos aguçados do personagem compensam parcialmente a cegueira. Quando incapaz de ver, a penalidade de -3 em testes de Esquiva é reduzida para -2.',
-    incompatibleWith: ['radar']
-  },
-  {
-    id: 'radar',
-    name: 'Radar',
-    cost: 2,
-    category: 'sentidos',
-    icon: '📡',
-    shortEffect: 'Detecta tudo ao redor; -2 em vez de -3 cego',
-    fullEffect: 'O personagem possui sentido extra que detecta qualquer criatura ou objeto em movimento em seu alcance de combate. Quando cego, sofre apenas -2 em Esquivas.',
-    incompatibleWith: ['audicao_aguçada']
-  },
-  {
-    id: 'sentidos_especiais',
-    name: 'Sentidos Especiais',
-    cost: 1,
-    category: 'sentidos',
-    icon: '🌟',
-    shortEffect: 'Percepção sobrenatural; H-3 para perceber ameaças',
-    fullEffect: 'O personagem sempre está alerta. Recebe H+1 para Esquivas e nunca pode receber Ataques Surpresa enquanto estiver consciente.',
-    flavor: 'Sentir o perigo antes de vê-lo é o que separa os veteranos dos calouros.'
-  },
-  {
-    id: 'oraculo',
-    name: 'Oráculo',
-    cost: 2,
-    category: 'sentidos',
-    icon: '🔭',
-    shortEffect: 'Visões do futuro em momentos críticos',
-    fullEffect: 'Em momentos escolhidos pelo Mestre, o personagem recebe visões rápidas do futuro. Também pode se concentrar (ação completa) para tentar ter visões. As imagens raramente são claras.'
-  },
-
-  // ── SOCIAL ────────────────────────────────────────────────────────────────────
-
-  {
-    id: 'aparencia_agradavel',
-    name: 'Aparência Agradável',
-    cost: 1,
-    category: 'social',
-    icon: '😊',
-    shortEffect: '+1 em testes sociais; pode liderar pessoas',
-    fullEffect: 'O personagem causa boa impressão e é considerado atraente. Recebe +1 em testes de Atuação, Lábia, Sedução e outras perícias sociais. Pode liderar um número de pessoas igual à sua Habilidade.',
-    incompatibleWith: ['aparencia_monstruosa']
-  },
-  {
-    id: 'aparencia_inofensiva',
-    name: 'Aparência Inofensiva',
-    cost: 1,
-    category: 'social',
-    icon: '😇',
-    shortEffect: 'Ataque extra antes do combate; -2 em Intimidação',
-    fullEffect: 'O personagem não parece perigoso. Ganha um ataque extra antes do primeiro turno de qualquer combate, enquanto o oponente não souber de sua capacidade. Porém, sofre -2 em testes de Intimidação.'
-  },
-  {
-    id: 'aliado',
-    name: 'Aliado',
-    cost: 2,
-    category: 'social',
-    icon: '🤝',
-    shortEffect: 'Possui um NPC aliado poderoso',
-    fullEffect: 'O personagem tem um aliado fiel — um guerreiro, mago, nobre ou informante que pode ser chamado uma vez por aventura. O aliado age em benefício do personagem dentro do razoável.'
-  },
-  {
-    id: 'patrono',
-    name: 'Patrono',
-    cost: 2,
-    category: 'social',
-    icon: '👑',
-    shortEffect: 'Proteção e recursos de uma organização',
-    fullEffect: 'O personagem conta com o apoio de uma organização poderosa — uma guilda, ordem ou casa nobre. Recebe recursos, informações e proteção dessa organização, mas também tem obrigações com ela.',
-    incompatibleWith: ['obrigacao']
-  },
-  {
-    id: 'ma_fama_v',
-    name: 'Má Fama (Vantagem)',
-    cost: 1,
-    category: 'social',
-    icon: '💀',
-    shortEffect: '+2 em Intimidação; medo automático em R0',
-    fullEffect: 'Diferente da Desvantagem Má Fama, esta versão funciona a favor do personagem. Criaturas com R0 ficam com medo automaticamente. Recebe +2 em testes de Intimidação, mas -1 em interações amigáveis.',
-    incompatibleWith: ['ma_fama'],
-    flavor: 'A reputação é a melhor armadura — e a mais barata.'
-  },
-
-  // ── ESPECIAL ──────────────────────────────────────────────────────────────────
-
-  {
-    id: 'sorte',
-    name: 'Sorte',
-    cost: 3,
-    category: 'especial',
-    icon: '🍀',
-    shortEffect: 'Rerrola 1 resultado por sessão',
-    fullEffect: 'Uma vez por sessão de jogo, o personagem pode rerolar qualquer dado (FA, FD, teste) e escolher o melhor resultado. Deve ser declarado antes de ver o resultado.',
-    incompatibleWith: ['azar']
-  },
-  {
-    id: 'sede_de_batalha',
-    name: 'Sede de Batalha',
-    cost: 2,
-    category: 'especial',
-    icon: '🩸',
-    shortEffect: 'Recupera 2 PVs por inimigo derrotado',
-    fullEffect: 'A adrenalina do combate alimenta o personagem. Cada vez que derrota um inimigo (reduz a 0 PVs), recupera 2 Pontos de Vida imediatamente.',
-    flavor: 'Não é sombrio — é apenas o preço que os inimigos pagam pela sobrevivência dele.'
-  },
-  {
-    id: 'paralisia',
-    name: 'Paralisia',
-    cost: 2,
-    category: 'especial',
-    icon: '🫙',
-    shortEffect: 'Ataque paralisa oponentes (teste de R)',
-    fullEffect: 'Um ataque bem-sucedido que cause dano pode paralisar o alvo. Após sofrer dano, o alvo faz um teste de Resistência. Em caso de falha, fica Indefeso por 1d turnos.',
-    pmCost: 2
-  },
-  {
-    id: 'veneno',
-    name: 'Veneno Natural',
-    cost: 2,
-    category: 'especial',
-    icon: '☠️',
-    shortEffect: 'Ataques envenenam: -1 em todas as Características',
-    fullEffect: 'Os ataques do personagem carregam veneno natural. Alvos atingidos fazem teste de Resistência; em falha, sofrem -1 em todas as Características por 1d horas.',
-    pmCost: 0
-  },
-  {
-    id: 'reflexao',
-    name: 'Reflexão',
-    cost: 3,
-    category: 'especial',
-    icon: '🪞',
-    shortEffect: 'Reflete ataques de PdF de volta ao atacante',
-    fullEffect: 'Quando recebe um ataque baseado em Poder de Fogo, o personagem pode tentar refletir com um teste de Habilidade. Sucesso devolve o ataque ao atacante com a mesma FA original.',
-    pmCost: 2
-  },
-  {
-    id: 'forma_alternativa',
-    name: 'Forma Alternativa',
-    cost: 3,
-    category: 'especial',
-    icon: '🐺',
-    shortEffect: 'Transforma em outra forma com stats diferentes',
-    fullEffect: 'O personagem pode se transformar em outra forma (animal, monstruosa, elemental) como ação completa. A forma alternativa tem um conjunto diferente de stats e pode ter vantagens próprias.',
-    pmCost: 2
-  },
-  {
-    id: 'construto',
-    name: 'Construto',
-    cost: 2,
-    category: 'racial',
-    icon: '⚙️',
-    shortEffect: 'Não respira, não come, imune a veneno e doenças',
-    fullEffect: 'O personagem é um ser artificial — golem, autômato ou morto-vivo especial. Não precisa respirar, comer ou dormir. Imune a venenos, doenças e magias que afetam apenas criaturas vivas.'
-  },
-  {
-    id: 'modelo_especial',
-    name: 'Modelo Especial',
-    cost: 1,
-    category: 'racial',
-    icon: '📏',
-    shortEffect: 'Tamanho diferente do humano padrão',
-    fullEffect: 'O personagem é significativamente maior ou menor que um humano comum. Tamanhos maiores ganham alcance de combate maior e FA bônus; tamanhos menores recebem bônus em furtividade.'
-  },
-  {
-    id: 'devoção',
-    name: 'Devoção',
-    cost: 1,
-    category: 'divino',
-    icon: '🙏',
-    shortEffect: '+1 em testes relacionados ao deus venerado',
-    fullEffect: 'O personagem é devoto fiel de um deus de Arton (sem ser clérigo). Recebe +1 em todos os testes realizados em circunstâncias aprovadas por seu deus. A divindade pode intervir diretamente em situações extremas.',
-    flavor: 'A fé não move montanhas. Mas dá coragem para escalar.'
-  },
-  {
-    id: 'perito',
-    name: 'Perito',
-    cost: 1,
-    category: 'especial',
-    icon: '📚',
-    shortEffect: '+2 em testes de uma Especialização escolhida',
-    fullEffect: 'O personagem é excepcionalmente habilidoso em uma especialização específica (Escalada, Arrombamento, Alquimia, etc.). Recebe +2 em todos os testes dessa especialização.'
-  },
-  {
-    id: 'usar_armaduras',
-    name: 'Usar Armaduras',
-    cost: 1,
-    category: 'combate',
-    icon: '🛡️',
-    shortEffect: 'Usa armaduras pesadas sem penalidade',
-    fullEffect: 'O personagem está treinado no uso de armaduras pesadas medievais, sem sofrer as penalidades normais de Habilidade. Inclui cota de malha, placas e escudos grandes.'
-  },
-  {
-    id: 'usar_armas_exoticas',
-    name: 'Usar Armas Exóticas',
-    cost: 1,
-    category: 'combate',
-    icon: '🪃',
-    shortEffect: 'Proficiência com armas exóticas',
-    fullEffect: 'O personagem possui treinamento especial com armas exóticas medievais ou orientais (Espada Bastarda, Aji Drow, Katana, Nunchaku, etc.), sem penalidades.'
-  },
-  {
-    id: 'cura_acelerada',
-    name: 'Cura Acelerada',
-    cost: 1,
-    category: 'defesa',
-    icon: '💊',
-    shortEffect: 'Recupera o dobro de PVs em descanso',
-    fullEffect: 'O organismo do personagem se recupera com notável rapidez. Em situações de descanso, recupera o dobro dos Pontos de Vida normais. Também recupera de envenenamentos e doenças menores mais rapidamente.'
-  },
-  {
-    id: 'inquebravel',
-    name: 'Inquebrável',
-    cost: 2,
-    category: 'defesa',
-    icon: '🪨',
-    shortEffect: 'Continua lutando com 0 PVs por R turnos',
-    fullEffect: 'O personagem possui uma vontade extraordinária de sobreviver. Ao atingir 0 Pontos de Vida, ainda pode agir por um número de turnos igual à sua Resistência antes de cair. Após isso, faz teste de morte normalmente.',
-    flavor: 'Não é coragem. É recusa absoluta em aceitar o fim.'
-  },
-  {
-    id: 'arena',
-    name: 'Arena',
-    cost: 1,
-    category: 'combate',
-    icon: '🏟️',
-    shortEffect: 'H+1 em um ambiente/terreno específico',
-    fullEffect: 'O personagem tem vantagem em um tipo específico de ambiente ou situação de combate (floresta, ruínas, água, etc.). Recebe H+1 em todos os testes de combate e Esquiva naquele ambiente.',
-    flavor: 'O campo de batalha certo é metade da vitória.'
-  }
+export const VANTAGEM_CATEGORIES: { id: VantagemCategory; label: string }[] = [
+  { id: 'combate',   label: 'Combate' },
+  { id: 'defesa',    label: 'Defesa' },
+  { id: 'atributo',  label: 'Atributo Secundário' },
+  { id: 'mental',    label: 'Mental / Percepção' },
+  { id: 'social',    label: 'Social' },
+  { id: 'movimento', label: 'Movimento' },
+  { id: 'recursos',  label: 'Recursos' },
+  { id: 'especial',  label: 'Especial' },
 ];
+
+export const ALL_VANTAGENS: VantagemDef[] = [
+  {
+    id: 'aceleracao', name: 'Aceleração', cost: '1pt', category: 'movimento', icon: '💨',
+    description: 'Gaste 1PM para um movimento extra no turno, ou para Ganho na iniciativa ou em testes de Habilidade para correr, fugir ou perseguir.',
+  },
+  {
+    id: 'mais_acao', name: '+Ação', cost: '1pt cada', category: 'recursos', icon: '⚡',
+    description: 'Concede +2PA além dos oferecidos pelo Poder. Pode ser comprada várias vezes, acumulando +2PA por compra.',
+  },
+  {
+    id: 'acumulador', name: 'Acumulador', cost: '1pt', category: 'combate', icon: '📈',
+    description: 'Sempre que acerta um ataque, pode gastar 2PM para Poder +1 no próximo ataque (acumulável até P+5). Erra ou deixa de atacar e os bônus acabam.',
+  },
+  {
+    id: 'agil', name: 'Ágil', cost: '1pt', category: 'atributo', icon: '🤸',
+    description: 'H+2 em testes de agilidade, coordenação ou equilíbrio (incluso iniciativa), valendo em críticos. Por 2PM, crítico automático com 5 ou 6 nesses testes. Incompatível com Atrapalhado.',
+  },
+  {
+    id: 'ajudante', name: 'Ajudante', cost: '1pt cada', category: 'especial', icon: '🤝',
+    description: 'Você tem um aliado (pessoa, animal, objeto) que pode invocar por 2PM 1×/rodada: Curandeiro (cura 2D ou repete teste de Resistência), Especialista (Ganho em perícia escolhida), Familiar (custo reduzido), Lutador (Ganho em ataque/defesa) ou Montaria (movimento extra).',
+  },
+  {
+    id: 'alcance', name: 'Alcance', cost: '1-2pt', category: 'combate', icon: '🎯',
+    description: '1pt: ataca Longe sem penalidade e Muito Longe com Perda. 2pt: também atinge Muito Longe sem penalidade. Sem esta vantagem, vantagens de ataque só alcançam alvos Perto.',
+  },
+  {
+    id: 'anulacao', name: 'Anulação', cost: '2pt', category: 'mental', icon: '🚫',
+    description: 'Por 3PM, tenta impedir o alvo de usar uma vantagem específica; ele resiste com teste de Resistência (9 + seu Poder). Apenas uma vantagem anulada por vez.',
+  },
+  {
+    id: 'arena', name: 'Arena', cost: '1pt cada', category: 'especial', icon: '🏟️',
+    description: 'Em um tipo de terreno escolhido (água, céu, cidade, ermos, subterrâneo...), gaste 2PM para Ganho em um teste.',
+  },
+  {
+    id: 'artefato', name: 'Artefato', cost: '1pt ou mais', category: 'recursos', icon: '🗡️',
+    description: 'Você possui um item único e poderoso. Cada ponto vale 10XP para comprar qualidades de arma, armadura ou acessório (ver Recompensas).',
+  },
+  {
+    id: 'ataque_especial', name: 'Ataque Especial', cost: '1pt cada', category: 'combate', icon: '💥',
+    description: 'Compre efeitos de ataque com custo em PM: Área, Choque (usa R), Distante, Espiritual (dano em PM), Investida, Múltiplo, Penetrante, Perigoso (crítico em 5-6), Poderoso, Potente (+P2 por ponto), Preciso (usa H), Titânico (crítico automático). Pode comprar vários efeitos.',
+  },
+  {
+    id: 'base', name: 'Base', cost: '1pt', category: 'recursos', icon: '🏠',
+    description: 'Você tem um esconderijo seguro, alcançável de qualquer lugar fora de combate. Pode levar aliados (até Poder+Habilidade). Testes feitos lá têm Ganho.',
+  },
+  {
+    id: 'brutal', name: 'Brutal', cost: '1pt cada', category: 'combate', icon: '🩸',
+    description: 'Recupera recursos ao causar dano em combate real: Vida (1PV por 3 de dano causado), Mana (1PM por 3 de dano) ou Derrota (3PV+1PM ao derrotar um oponente). Versões acumulam.',
+  },
+  {
+    id: 'carismatico', name: 'Carismático', cost: '1pt', category: 'atributo', icon: '😎',
+    description: 'P+2 em testes sociais, válido em críticos. Por 2PM, crítico automático com 5 ou 6 nesses testes. Incompatível com Antipático.',
+  },
+  {
+    id: 'clone', name: 'Clone', cost: '1pt', category: 'defesa', icon: '👥',
+    description: 'Gaste 2PM e um movimento para criar uma cópia exata de si. Ao sofrer um ataque bem-sucedido, uma cópia desaparece em vez de você sofrer dano.',
+  },
+  {
+    id: 'confusao', name: 'Confusão', cost: '1pt', category: 'combate', icon: '🌀',
+    description: 'Ataque e gaste 2PM; se vencer a defesa, o alvo fica confuso (alvos de suas ações escolhidos ao acaso) até sofrer dano ou resistir (R, 9 + seu Poder).',
+  },
+  {
+    id: 'cura', name: 'Cura', cost: '1pt', category: 'especial', icon: '💚',
+    description: 'Gaste 2PM para curar 1D PV em si ou em quem tocar (até dados = sua Habilidade), ou para repetir um teste de Resistência falho contra efeito negativo.',
+  },
+  {
+    id: 'defesa_especial', name: 'Defesa Especial', cost: '1pt cada', category: 'defesa', icon: '🛡️',
+    description: 'Compre efeitos defensivos com custo em PM: Blindada (crítico em 5-6), Bloqueio (usa P), Esquiva (usa H), Proteção/Provocação (defende por um aliado), Reflexão (devolve dano), Robusta, Tenaz (+2 por ponto), Titânica (defesa perfeita garantida).',
+  },
+  {
+    id: 'desgaste', name: 'Desgaste', cost: '1pt', category: 'combate', icon: '☣️',
+    description: 'Ataque e gaste 2PM; se causar dano, o alvo sofre o mesmo dano de novo na próxima rodada, a menos que gaste a ação para tratar o efeito.',
+  },
+  {
+    id: 'devoto', name: 'Devoto', cost: '1pt', category: 'social', icon: '🙏',
+    description: 'Ao agir em nome de sua causa ou crença, gaste 2PM para Ganho. Utilizável até 2× por cena.',
+  },
+  {
+    id: 'elo_mental', name: 'Elo Mental', cost: '1pt', category: 'mental', icon: '🔗',
+    description: 'Ligação com outro personagem (que também precisa ter esta vantagem): comunicação mental à vista, compartilhar PM em perigo, e repassar Ganho entre si.',
+  },
+  {
+    id: 'estender', name: 'Estender', cost: '1pt', category: 'especial', icon: '📡',
+    description: 'Gaste 1PM por turno para que uma vantagem pessoal também funcione em um aliado Perto.',
+  },
+  {
+    id: 'famoso', name: 'Famoso', cost: '1pt', category: 'social', icon: '🌟',
+    description: 'Reconhecido por NPCs; gaste 3PM para Ganho em testes sociais com quem o reconhece. Incompatível com Infame.',
+  },
+  {
+    id: 'foco', name: 'Foco', cost: '1pt', category: 'especial', icon: '🧘',
+    description: 'Gaste 2PM e um turno se concentrando (Perda na defesa neste tempo); no turno seguinte, seu próximo teste recebe um crítico automático.',
+  },
+  {
+    id: 'forte', name: 'Forte', cost: '1pt', category: 'atributo', icon: '💪',
+    description: 'P+2 em testes de esforço físico, válido em críticos. Por 2PM, crítico automático com 5 ou 6 nesses testes. Incompatível com Fracote.',
+  },
+  {
+    id: 'genio', name: 'Gênio', cost: '1pt', category: 'atributo', icon: '🧠',
+    description: 'H+2 em testes de conhecimento e raciocínio, válido em críticos. Por 2PM, crítico automático com 5 ou 6 nesses testes. Incompatível com Tapado.',
+  },
+  {
+    id: 'golpe_final', name: 'Golpe Final', cost: '1pt', category: 'combate', icon: '⚔️',
+    description: 'Gaste 3PM e ataque um alvo perto da derrota: o ataque é tratado como uma escala acima.',
+  },
+  {
+    id: 'grimorio', name: 'Grimório', cost: '1pt ou mais', category: 'recursos', icon: '📖',
+    description: 'Fonte de conhecimento com técnicas próprias. Cada ponto vale 10XP para adquirir truques ou técnicas comuns já no início (sujeito à aprovação do mestre).',
+  },
+  {
+    id: 'ilusao', name: 'Ilusão', cost: '2pt', category: 'mental', icon: '🎭',
+    description: 'Cria imagens tridimensionais intangíveis que enganam os sentidos (1 a 8PM segundo o tamanho). Detectadas por teste de Percepção (9 + PM gastos) ou pela vantagem Sentido.',
+  },
+  {
+    id: 'imitar', name: 'Imitar', cost: '1pt', category: 'mental', icon: '🪞',
+    description: 'Ao ver alguém usar uma vantagem (ou já sabendo dela), teste de Percepção (9) e gaste 3PM para adquiri-la até o fim da cena. Apenas uma por vez.',
+  },
+  {
+    id: 'imortal', name: 'Imortal', cost: '1pt', category: 'defesa', icon: '♾️',
+    description: 'Em testes de morte, nunca tem resultado pior que inconsciente — pode ser derrotado, nunca morto de verdade.',
+  },
+  {
+    id: 'improviso', name: 'Improviso', cost: '2pt', category: 'especial', icon: '🎲',
+    description: 'Gaste 3PM para aprender, na hora, uma perícia que não tenha, usável até o fim da cena. Apenas uma perícia improvisada por vez.',
+  },
+  {
+    id: 'imune', name: 'Imune', cost: '1pt cada', category: 'defesa', icon: '🚷',
+    description: 'Imunidade a algo específico: Abiótico (sem necessidades biológicas), Anfíbio (respira embaixo d\'água), Doenças, Resiliente (sem fadiga), ou Sem Mente (imune a efeitos mentais).',
+  },
+  {
+    id: 'incorporeo', name: 'Incorpóreo', cost: '2pt', category: 'defesa', icon: '👻',
+    description: 'Por uma ação e 5PM, fica intangível: atravessa barreiras e é imune a dano de combate violento (exceto Magia ou outros Incorpóreos), mas também não pode causar dano físico.',
+  },
+  {
+    id: 'inimigo', name: 'Inimigo', cost: '1-2pt cada', category: 'combate', icon: '🗡️',
+    description: 'Especialista contra um grupo de criaturas (Humanos, Humanoides, Construtos, Espíritos ou Monstros): crítico em 5-6 contra eles. Custa 2pt se o grupo é muito comum na campanha.',
+  },
+  {
+    id: 'inofensivo', name: 'Inofensivo', cost: '1pt', category: 'social', icon: '🐰',
+    description: 'Aparência não-ameaçadora rende uma ação extra antes do primeiro turno (1ª vez contra cada oponente) e Ganho na iniciativa contra quem já o conhece. Por 3PM, Ganho para enganar ou passar despercebido.',
+  },
+  {
+    id: 'instrutor', name: 'Instrutor', cost: '1pt', category: 'social', icon: '🎓',
+    description: 'Por uma ação e 2PM, permite que um aliado teste como se tivesse uma perícia (ou vantagem) que você possui, até o turno seguinte dele.',
+  },
+  {
+    id: 'inventario', name: 'Inventário', cost: '1-3pt', category: 'recursos', icon: '🎒',
+    description: 'Define quantos itens consumíveis você carrega: 1pt Pequeno (3 comuns+1 incomum), 2pt Grande (5+2), 3pt Supremo (5 comuns+4 incomuns+1 raro). Recarrega a cada aventura.',
+  },
+  {
+    id: 'invisivel', name: 'Invisível', cost: '1-2pt', category: 'especial', icon: '🫥',
+    description: 'Por uma ação e 3PM, fica invisível (Ganho para se esconder, ataques contra você têm Perda). 1pt: cai ao atacar ou sofrer dano. 2pt: cai apenas ao sofrer dano.',
+  },
+  {
+    id: 'irresistivel', name: 'Irresistível', cost: '1pt', category: 'mental', icon: '🌀',
+    description: 'Gaste 2PM (ou mais) para aumentar a meta de resistência contra suas vantagens (Anulação, Confusão, Ilusão, Paralisia, Punição...) em +3 por cada 2PM.',
+  },
+  {
+    id: 'maestria', name: 'Maestria', cost: '1pt cada', category: 'especial', icon: '🏆',
+    description: 'Escolha uma perícia que possui: gaste 1PM para crítico em 5-6 em testes dela. Pode ser comprada novamente para outras perícias.',
+  },
+  {
+    id: 'magia', name: 'Magia', cost: '2pt', category: 'especial', icon: '✨',
+    description: 'Gaste PM para somar diretamente em qualquer teste de ataque, defesa ou perícia (até o limite de sua Habilidade). Pode usar Mística em vez de Luta para ataques/defesas mágicas.',
+  },
+  {
+    id: 'mais_mana', name: '+Mana', cost: '1pt cada', category: 'recursos', icon: '🔵',
+    description: 'Concede +10PM além dos oferecidos pela Habilidade. Pode ser comprada várias vezes.',
+  },
+  {
+    id: 'mais_membros', name: '+Membros', cost: '2pt', category: 'especial', icon: '🦾',
+    description: 'Membros extras (braços, cauda, tentáculos...) permitem gastar 3PM para uma segunda ação no turno — apenas uma ação extra por rodada.',
+  },
+  {
+    id: 'mentor', name: 'Mentor', cost: '1pt cada', category: 'especial', icon: '👴',
+    description: 'Escolha uma perícia: 1×/cena, Ganho em um teste dela; técnicas que exigem essa perícia custam −1PM (mín. 1). Compre novamente para outras perícias.',
+  },
+  {
+    id: 'obstinado', name: 'Obstinado', cost: '1pt', category: 'recursos', icon: '🔥',
+    description: 'Pode gastar 1 ponto de atributo (P, H ou R) como se fosse 1PA — reduzindo temporariamente o recurso associado. Recupera com 8h de descanso.',
+  },
+  {
+    id: 'paralisia', name: 'Paralisia', cost: '1pt', category: 'combate', icon: '🥶',
+    description: 'Ataque e gaste 2PM; se vencer a defesa, o alvo fica imobilizado em vez de sofrer dano, até sofrer dano ou resistir (R, 6 + seu Poder).',
+  },
+  {
+    id: 'patrono', name: 'Patrono', cost: '1pt', category: 'social', icon: '🏛️',
+    description: 'Serve a uma organização poderosa: gaste 1PM para Ganho em testes de compra relacionados à missão do patrono, e recebe um item extra de Inventário por raridade.',
+  },
+  {
+    id: 'punicao', name: 'Punição', cost: '1-2pt', category: 'combate', icon: '☠️',
+    description: 'Escolha uma desvantagem de valor equivalente; ataque e gaste 2PM — se vencer a defesa, o alvo sofre os efeitos dessa desvantagem em vez de dano, até sofrer dano ou resistir (R, 6 + seu Poder).',
+  },
+  {
+    id: 'regeneracao', name: 'Regeneração', cost: '1-2pt', category: 'defesa', icon: '💗',
+    description: '1pt: recupera 1PV no início do turno. 2pt: recupera 3PV. Em testes de morte nunca tem resultado pior que Inconsciente.',
+  },
+  {
+    id: 'resoluto', name: 'Resoluto', cost: '1pt', category: 'atributo', icon: '🗿',
+    description: 'R+2 em testes de força de vontade (inclui testes de morte), válido em críticos. Por 2PM, crítico automático com 5 ou 6. Incompatível com Indeciso.',
+  },
+  {
+    id: 'riqueza', name: 'Riqueza', cost: '2, 4 ou 6pt', category: 'recursos', icon: '💰',
+    description: 'Recursos financeiros de escala superior: gaste PM em testes de compra para subir de nível (2pt/2PM = 1 nível, até 4pt/4PM = 2 níveis, 6pt/6PM = 3 níveis).',
+  },
+  {
+    id: 'sentido', name: 'Sentido', cost: '1pt cada', category: 'mental', icon: '👁️',
+    description: 'Percepção especial: Aguçado (Ganho com um sentido escolhido), Infravisão, Intuição (detecta mentiras/intenções), Radar (percepção 360° e sinais), ou Raio X. Compre novamente para outro sentido.',
+  },
+  {
+    id: 'telepata', name: 'Telepata', cost: '1pt', category: 'mental', icon: '🧠',
+    description: 'Por um movimento e 1PM: Ganho em teste social com alguém na cena, descobrir algo sobre um personagem (H, 9), ou Ganho de defesa prevendo um ataque.',
+  },
+  {
+    id: 'teleporte', name: 'Teleporte', cost: '1pt', category: 'movimento', icon: '🌀',
+    description: 'Use um movimento e PM (1 por incremento de distância) para se deslocar a qualquer lugar visível. Por 3PM, ganha defesa contra um ataque.',
+  },
+  {
+    id: 'torcida', name: 'Torcida', cost: '1pt', category: 'social', icon: '📣',
+    description: 'Quando há uma torcida presente (1 em 1D no início da cena, ou sempre em locais apropriados), recebe um Ganho por rodada em qualquer teste.',
+  },
+  {
+    id: 'transformacao', name: 'Transformação', cost: '1-2pt cada', category: 'especial', icon: '🦸',
+    description: 'Tenha outra forma com os mesmos pontos, mudando perícias, vantagens e até personalidade. Restaura PM/PV ao transformar. 1× por sessão grátis, depois custa 1PA.',
+  },
+  {
+    id: 'mais_vida', name: '+Vida', cost: '1pt cada', category: 'recursos', icon: '❤️',
+    description: 'Concede +10PV além dos oferecidos pela Resistência. Pode ser comprada várias vezes.',
+  },
+  {
+    id: 'vigoroso', name: 'Vigoroso', cost: '1pt', category: 'atributo', icon: '🐂',
+    description: 'R+2 em testes de saúde física (inclui testes de morte), válido em críticos. Por 2PM, crítico automático com 5 ou 6. Incompatível com Frágil.',
+  },
+  {
+    id: 'voo', name: 'Voo', cost: '1pt', category: 'movimento', icon: '🪽',
+    description: 'Pode voar usando um movimento para ficar Longe ou mais pelo ar. Levantar voo do chão custa um movimento e 2PM; ignora certos terrenos difíceis.',
+  },
+];
+
+export const VANTAGEM_MAP = new Map<string, VantagemDef>(
+  ALL_VANTAGENS.map(v => [v.id, v])
+);
