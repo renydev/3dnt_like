@@ -120,7 +120,14 @@
 
         <div class="tags-list">
           @for (v of char()!.vantagens; track v) {
-            <span class="tag advantage">{{ v }}</span>
+            <div class="desv-row desv-row--expanded">
+              <div class="desv-info">
+                <span class="tag advantage">{{ v }}</span>
+                @if (vantagemDef(v)?.desc; as desc) {
+                  <span class="desv-inline-desc">{{ desc }}</span>
+                }
+              </div>
+            </div>
           }
           @if (!char()!.vantagens.length) {
             <span class="tag-none">Nenhuma vantagem</span>

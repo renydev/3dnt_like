@@ -12,6 +12,11 @@ function priceFor(item: Item): number {
   return item.price ?? RARITY_PRICE[item.rarity];
 }
 
+/** Por enquanto o mercador só vende consumíveis de cura (poções/elixires que restauram PV). */
+function isHealingConsumable(item: Item): boolean {
+  return item.category === 'consumable' && ((item.healPvDice ?? 0) > 0 || (item.healPvFlat ?? 0) > 0);
+}
+
 /** Estoque fixo por faixa de andar */
 const STOCK_BY_TIER: Record<number, string[]> = {
   1: ['pocao-cura', 'pocao-mana', 'espada-curta', 'gibao-couro', 'amuleto-protecao'],
@@ -40,6 +45,7 @@ export class ItemService {
     return ids
       .map(id => ITEM_CATALOG[id])
       .filter(Boolean)
+      .filter(isHealingConsumable)
       .map(i => ({ ...i, price: priceFor(i) }));
   }
 

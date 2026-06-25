@@ -61,6 +61,54 @@ export function milestoneXp(tier: PowerTier): number {
   return tier === 'veterano' ? 30 : tier === 'heroi' ? 20 : 10;
 }
 
+/**
+ * Fator de escala de dificuldade dos monstros curados, derivado do PP da party.
+ * Interpola entre âncoras conhecidas (mesmos pontos dos tiers de personagem:
+ * 10/Iniciante, 20/Herói, 35/Veterano) e satura fora desse intervalo.
+ * Determinístico: o mesmo PP de party sempre gera o mesmo scale.
+ */
+const GROWTH_ANCHORS: ReadonlyArray<readonly [pp: number, scale: number]> = [
+  [10, 1.0],
+  [20, 1.5],
+  [35, 2.2],
+];
+const GROWTH_MIN = 0.7;
+const GROWTH_MAX = 2.6;
+
+export function growthScale(partyPP: number): number {
+  const anchors = GROWTH_ANCHORS;
+  if (partyPP <= anchors[0][0]) {
+    // Extrapola para baixo do primeiro ponto até o piso.
+    const [pp0, s0] = anchors[0];
+    const [pp1, s1] = anchors[1];
+    const slope = (s1 - s0) / (pp1 - pp0);
+    return Math.max(GROWTH_MIN, s0 + slope * (partyPP - pp0));
+  }
+  for (let i = 0; i < anchors.length - 1; i++) {
+    const [pp0, s0] = anchors[i];
+    const [pp1, s1] = anchors[i + 1];
+    if (partyPP <= pp1) {
+      const t = (partyPP - pp0) / (pp1 - pp0);
+      return s0 + (s1 - s0) * t;
+    }
+  }
+  // Acima da última âncora: extrapola com a mesma inclinação até o teto.
+  const [ppN1, sN1] = anchors[anchors.length - 2];
+  const [ppN, sN] = anchors[anchors.length - 1];
+  const slope = (sN - sN1) / (ppN - ppN1);
+  return Math.min(GROWTH_MAX, sN + slope * (partyPP - ppN));
+}
+
+/**
+ * Quantas vantagens "fora da curva" um monstro curado pode manifestar,
+ * de acordo com o quão acima do esperado a party está.
+ */
+export function vantagemSlotsFor(scale: number): number {
+  if (scale < 1.3) return 0;
+  if (scale < 1.8) return 1;
+  return 2;
+}
+
 export interface CombatXpResult {
   /** XP que cada membro da party recebe */
   xpPerCharacter: number;

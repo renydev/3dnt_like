@@ -22,7 +22,8 @@ export interface DungeonConfig {
   theme: DungeonTheme;
   layout: FloorLayout;
   imageMap?: ImageMapConfig;
-  roomEnemies?: Record<number, () => Enemy[]>;
-  rollEncounter?: () => Enemy[];
+  /** `scale` = fator de crescimento do andar (ver pp-calculator.ts: growthScale), derivado do PP da party. */
+  roomEnemies?: Record<number, (scale: number) => Enemy[]>;
+  rollEncounter?: (scale: number) => Enemy[];
   roomScenarios?: Record<number, RoomScenario>;
 }

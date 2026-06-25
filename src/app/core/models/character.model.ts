@@ -48,6 +48,13 @@ export interface Character {
   desvantagens: string[];
   pericias?: string[]; // IDs das perícias compradas (cada uma custa 3 pts)
 
+  /**
+   * IDs de magias Raras/Lendárias concedidas ao personagem (grimório raro, recompensa de
+   * campanha, bênção divina etc). Magias Comuns/Incomuns não precisam estar aqui — ficam
+   * disponíveis automaticamente a quem tem a vantagem Magia e a Habilidade mínima exigida.
+   */
+  learnedSpells?: string[];
+
   // Estado
   gold: number;
   inventory: Item[];      // itens no inventário (consumíveis + não equipados)

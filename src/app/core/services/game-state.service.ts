@@ -7,7 +7,7 @@ import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '..
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
-import { calcCharacterPP, calcCombatXp } from '../utils/pp-calculator';
+import { calcCharacterPP, calcCombatXp, growthScale } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
 
@@ -45,6 +45,8 @@ export class GameStateService {
   currentFloor = signal<DungeonFloor | null>(null);
   currentRoomId = signal<number>(0);
   floorNumber = signal<number>(1);
+  /** Fator de crescimento dos monstros curados do andar atual (1.0 = curva esperada). */
+  floorGrowthScale = signal<number>(1);
   log = signal<string[]>([]);
 
   /** Companheiro que acabou de se juntar (exibido na transição) */
@@ -183,6 +185,11 @@ export class GameStateService {
   // ── Andares ────────────────────────────────────────────────────────────────
 
   generateNewFloor(): void {
+    // Fator de crescimento dos monstros curados deste andar, fixado uma vez aqui
+    // (não recalcula por combate — evita "ioiô" de dificuldade dentro do mesmo andar).
+    const partyPP = this.partyPPs().reduce((s, p) => s + p, 0);
+    this.floorGrowthScale.set(growthScale(partyPP));
+
     const floor = this.generator.generateFloor(this.floorNumber());
     this.currentFloor.set(floor);
     const entrance = floor.rooms.find(r => r.type === 'entrance')!;
@@ -252,7 +259,7 @@ export class GameStateService {
     // mesmo que o mapa de roomEnemies tenha uma entrada com o mesmo id por acaso.
     if (target.type === 'monster' || target.type === 'boss') {
       const config = DUNGEON_REGISTRY[this.floorNumber()];
-      const roomGroup = config?.roomEnemies?.[roomId]?.() ?? null;
+      const roomGroup = config?.roomEnemies?.[roomId]?.(this.floorGrowthScale()) ?? null;
       this.pendingEnemies.set(roomGroup);
     } else {
       this.pendingEnemies.set(null);
@@ -291,7 +298,7 @@ export class GameStateService {
     const roll = d6();
     if (roll !== 1) return false;
     const config = DUNGEON_REGISTRY[this.floorNumber()];
-    const enemies = config?.rollEncounter?.() ?? null;
+    const enemies = config?.rollEncounter?.(this.floorGrowthScale()) ?? null;
     if (!enemies) return false;
     this.addLog(`⚠️ Encontro aleatório! ${enemies.map(e => e.name).join(', ')} aparecem!`);
     this.pendingEnemies.set(enemies);
@@ -649,8 +656,8 @@ export class GameStateService {
       (eq as any)[targetSlot] = item;
 
       const bonus = mergeBonus(...allEquipItems(eq));
-      const pvMax = c.resistencia.base * 5 + (bonus.pontosVida ?? 0);
-      const pmMax = c.pontosMana.base     + (bonus.pontosMana ?? 0);
+      const pvMax = c.pontosVida.base  + (bonus.pontosVida ?? 0);
+      const pmMax = c.pontosMana.base  + (bonus.pontosMana ?? 0);
       return {
         ...c,
         equipment: eq,
@@ -675,8 +682,8 @@ export class GameStateService {
       if (!item) return c;
       const eq: Equipment = { ...c.equipment, [slot]: undefined };
       const bonus = mergeBonus(...allEquipItems(eq));
-      const pvMax = c.resistencia.base * 5 + (bonus.pontosVida ?? 0);
-      const pmMax = c.pontosMana.base     + (bonus.pontosMana ?? 0);
+      const pvMax = c.pontosVida.base  + (bonus.pontosVida ?? 0);
+      const pmMax = c.pontosMana.base  + (bonus.pontosMana ?? 0);
       return {
         ...c,
         equipment: eq,

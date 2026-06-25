@@ -17,6 +17,10 @@ export interface Enemy {
   itemsReward?: string[];  // IDs de itens que podem dropar (1 sorteado aleatoriamente)
   isBoss: boolean;
   isUndead?: boolean;
+  /** Vantagens "fora da curva" manifestadas por escala de dificuldade (ver monster-vantagens.data.ts). */
+  bonusVantagens?: string[];
+  /** PV recuperados no início de cada turno do inimigo (vantagem Regeneração). */
+  regenPerTurn?: number;
 }
 
 export type CombatPhase = 'player_turn' | 'companion_turn' | 'enemy_turn' | 'victory' | 'defeat';

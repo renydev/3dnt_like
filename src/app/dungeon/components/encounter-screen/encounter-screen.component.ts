@@ -4,6 +4,7 @@ import { GameStateService } from '../../../core/services/game-state.service';
 import { CombatService } from '../../../core/services/combat.service';
 import { CombatAbility, Enemy } from '../../../core/models/combat.model';
 import { Item, rollTreasureItem } from '../../../core/models/item.model';
+import { MagiaDef, MAGIA_RARITY_LABEL, MAGIA_RARITY_COLOR, magiaRequirementLabel } from '../../../core/data/magias.data';
 import { GameCanvasComponent } from '../game-canvas/game-canvas.component';
 import { CombatScene } from '../../phaser/scenes/combat.scene';
 import { d6 } from '../../../core/utils/dice';
@@ -42,7 +43,7 @@ import { d6 } from '../../../core/utils/dice';
           <span class="pa-label">🔷 PA disponíveis: {{ playerPA() }}</span>
         </div>
       }
-      @if (!showMagicMenu()) {
+      @if (!showMagicMenu() && !showInventory() && !showGrimoire()) {
         <div class="action-btns">
           <div class="atk-segmented">
             <button class="atk-seg atk-seg-minus"
@@ -61,6 +62,11 @@ import { d6 } from '../../../core/utils/dice';
           @if (hasAbilities()) {
             <button class="act-btn mgc" [disabled]="phase() !== 'player_turn'" (click)="showMagicMenu.set(true)">
               <span class="act-icon">✨</span><span class="act-lbl">Habilidade</span>
+            </button>
+          }
+          @if (hasMagia()) {
+            <button class="act-btn grm" [disabled]="phase() !== 'player_turn'" (click)="showGrimoire.set(true)">
+              <span class="act-icon">📖</span><span class="act-lbl">Grimório</span>
             </button>
           }
           <button class="act-btn itm" [disabled]="phase() !== 'player_turn' || !hasPotion()" (click)="showInventory.set(true)">
@@ -87,6 +93,35 @@ import { d6 } from '../../../core/utils/dice';
             }
             @if (consumables().length === 0) {
               <p style="color:#555;font-size:12px;text-align:center;padding:12px">Nenhum consumível disponível.</p>
+            }
+          </div>
+        </div>
+      } @else if (showGrimoire()) {
+        <!-- Sub-menu do Grimório: magias disponíveis em cima, bloqueadas embaixo -->
+        <div class="magic-menu grimoire-menu">
+          <button class="back-btn" (click)="showGrimoire.set(false)">← Voltar</button>
+          <div class="ability-list">
+            @for (m of availableMagias(); track m.id) {
+              <button class="ab-btn magia-card" [disabled]="!canCastMagia(m)" (click)="onCastMagia(m)">
+                <span class="ab-icon">{{ m.icon }}</span>
+                <span class="ab-name">{{ m.name }}</span>
+                <span class="ab-cost magia-rarity" [style.color]="magiaRarityColor[m.rarity]">{{ magiaRarityLabel[m.rarity] }} · {{ m.pmCost }}PM</span>
+                <span class="ab-desc">{{ m.description }}</span>
+              </button>
+            }
+            @if (availableMagias().length === 0) {
+              <p style="color:#555;font-size:12px;text-align:center;padding:12px">Nenhuma magia disponível ainda.</p>
+            }
+            @if (lockedMagias().length > 0) {
+              <p class="grimoire-divider">— Magias ainda não disponíveis —</p>
+              @for (m of lockedMagias(); track m.id) {
+                <div class="ab-btn magia-card locked">
+                  <span class="ab-icon">{{ m.icon }}</span>
+                  <span class="ab-name">{{ m.name }}</span>
+                  <span class="ab-cost magia-rarity" [style.color]="magiaRarityColor[m.rarity]">{{ magiaRarityLabel[m.rarity] }}</span>
+                  <span class="ab-desc">{{ magiaRequirementLabel(m) }}</span>
+                </div>
+              }
             }
           </div>
         </div>
@@ -365,6 +400,7 @@ import { d6 } from '../../../core/utils/dice';
       .act-lbl  { font-size: 0.6rem; letter-spacing: 0.04em; }
 
       &.mgc { background: rgba(142,68,173,0.15); border-color: #8e44ad; color: #c39bd3; }
+      &.grm { background: rgba(212,170,32,0.15); border-color: #d4aa20; color: #f0d585; }
       &.itm { background: rgba(39,174,96,0.15);  border-color: #27ae60; color: #7ee3a0; }
       &.fle { background: rgba(127,140,141,0.15);border-color: #7f8c8d; color: #bdc3c7; }
     }
@@ -395,6 +431,27 @@ import { d6 } from '../../../core/utils/dice';
       .ab-name { font-size: 0.68rem; font-weight: bold; text-align: center; }
       .ab-cost { font-size: 0.6rem; color: #8e44ad; }
       .ab-desc { font-size: 0.55rem; color: #666; text-align: center; line-height: 1.3; display: none; }
+    }
+
+    /* ── Grimório: cards informativos (sempre mostram descrição) ──── */
+    .grimoire-menu .ability-list { flex-direction: column; }
+    .magia-card {
+      flex-direction: row; align-items: center; min-width: 0; width: 100%;
+      text-align: left; gap: 0.5rem;
+      .ab-name { min-width: 7ch; text-align: left; }
+      .ab-cost { min-width: 6ch; }
+      .ab-desc { display: block; flex: 1; text-align: left; }
+    }
+    .magia-card.locked {
+      background: rgba(60,60,70,0.15); border-color: #333; color: #777;
+      cursor: default;
+      .ab-name { color: #999; }
+      .ab-desc { color: #888; font-style: italic; }
+    }
+    .magia-rarity { font-weight: bold; }
+    .grimoire-divider {
+      margin: 0.3rem 0 0; font-size: 0.65rem; color: #666; text-align: center;
+      font-style: italic; width: 100%;
     }
 
     /* ── Encontros simples ──────────────────────────────────────── */
@@ -530,7 +587,15 @@ export class EncounterScreenComponent implements OnInit {
   readonly combatSceneClass = CombatScene;
 
   showMagicMenu    = signal(false);
+  showGrimoire     = signal(false);
   isRandomEncounter = signal(false);
+
+  hasMagia        = this.combat.hasMagia;
+  availableMagias = this.combat.availableMagias;
+  lockedMagias    = this.combat.lockedMagias;
+  magiaRarityLabel = MAGIA_RARITY_LABEL;
+  magiaRarityColor = MAGIA_RARITY_COLOR;
+  magiaRequirementLabel = magiaRequirementLabel;
 
   /** Inimigo efetivamente alvo: selecionado no canvas (se vivo) ou primeiro vivo */
   target = computed<Enemy | null>(() => {
@@ -616,6 +681,16 @@ export class EncounterScreenComponent implements OnInit {
   onFlee(): void { this.combat.playerFlee(); }
 
   canUse(ab: CombatAbility): boolean { return this.combat.canUseAbility(ab); }
+
+  canCastMagia(m: MagiaDef): boolean { return this.combat.canCastMagia(m); }
+
+  onCastMagia(m: MagiaDef): void {
+    const t = this.target();
+    if (!t) return;
+    this.combat.castMagiaTarget(m, t.id, this.paSpendNext());
+    this.paSpendNext.set(0);
+    this.showGrimoire.set(false);
+  }
 
   usePotion(): void {
     // Legacy: show inventory menu instead

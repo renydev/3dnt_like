@@ -1,6 +1,6 @@
 // Kits ("Arcanautas") do 3DeT Victory — Manual do Arcanauta.
 // Um kit é a profissão/caminho do personagem (diferente do arquétipo, que é sua origem).
-// Custo: 1pt o primeiro kit; cada kit adicional custa +1pt (2pt o segundo, 3pt o terceiro...).
+// Custo: o primeiro kit é grátis; cada kit adicional custa +1pt (1pt o segundo, 2pt o terceiro...).
 
 export interface KitDef {
   id: string;
@@ -136,7 +136,7 @@ export const ALL_KITS: KitDef[] = [
 
 export const KIT_MAP = new Map<string, KitDef>(ALL_KITS.map(k => [k.id, k]));
 
-/** Custo de kits no 3DeT Victory: 1pt o primeiro, +1pt cada kit adicional (2, 3, 4...). */
+/** Custo de kits: o primeiro é grátis; cada kit adicional custa +1pt (1pt o segundo, 2pt o terceiro...). */
 export function kitsCost(count: number): number {
-  return count <= 0 ? 0 : (count * (count + 1)) / 2;
+  return count <= 0 ? 0 : ((count - 1) * count) / 2;
 }

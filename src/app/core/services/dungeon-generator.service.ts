@@ -3,6 +3,9 @@ import { DungeonFloor, DungeonRoom, DungeonTheme, RoomScenario, RoomType, VALKAR
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
 import { FloorLayout } from '../data/dungeons/shared/dungeon-config.types';
 
+/** Chance de uma sala de tesouro sortear um mercador errante em vez de um baú. */
+const MERCHANT_CHANCE = 0.25;
+
 @Injectable({ providedIn: 'root' })
 export class DungeonGeneratorService {
 
@@ -35,8 +38,14 @@ export class DungeonGeneratorService {
 
   /** Resolve `RoomType | RoomType[]` para um único RoomType, sorteando quando for array (variedade entre partidas). */
   private resolveRoomType(type: RoomType | RoomType[]): RoomType {
-    if (!Array.isArray(type)) return type;
-    return type[Math.floor(Math.random() * type.length)];
+    const resolved = Array.isArray(type) ? type[Math.floor(Math.random() * type.length)] : type;
+    return this.maybeMerchant(resolved);
+  }
+
+  /** Toda sala de tesouro tem uma chance de virar um ponto de mercador errante. */
+  private maybeMerchant(type: RoomType): RoomType {
+    if (type === 'treasure' && Math.random() < MERCHANT_CHANCE) return 'merchant';
+    return type;
   }
 
   private buildFromLayout(layout: FloorLayout, theme: DungeonTheme, allVisible = false, scenarios?: Record<number, RoomScenario>): DungeonRoom[] {
@@ -120,7 +129,7 @@ export class DungeonGeneratorService {
     let acc = 0;
     for (const [type, weight] of weights) {
       acc += weight;
-      if (roll < acc) return type as RoomType;
+      if (roll < acc) return this.maybeMerchant(type as RoomType);
     }
     return 'monster';
   }
@@ -203,6 +212,7 @@ export class DungeonGeneratorService {
       empty:    ['Corredor Vazio', 'Passagem Silenciosa', 'Galeria Escura'],
       puzzle:   ['Câmara dos Enigmas', 'Sala do Teste', 'Câmara do Saber'],
       social:   ['Câmara do Encontro', 'Salão das Vozes', 'Câmara da Diplomacia'],
+      merchant: ['Posto do Mercador Errante', 'Acampamento de Comércio', 'Tenda do Viajante'],
     };
     const list = names[type] ?? ['Câmara Desconhecida'];
     return list[Math.floor(Math.random() * list.length)];
@@ -220,6 +230,7 @@ export class DungeonGeneratorService {
       empty:    'Nada aqui além de silêncio e sombra.',
       puzzle:   'Um teste da mente. Pense antes de agir.',
       social:   'Uma criatura que pode conversar... ou não.',
+      merchant: 'Um mercador errante oferece seus produtos a quem tiver ouro.',
     };
     return `${typeDesc[type] ?? ''} ${flavor}`;
   }

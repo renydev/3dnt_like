@@ -107,11 +107,16 @@ describe('EncounterScreenComponent', () => {
       phase: signal('player_turn'),
       log: signal([]),
       abilities: computed(() => []),
+      hasMagia: computed(() => false),
+      availableMagias: computed(() => []),
+      lockedMagias: computed(() => []),
       initCombat: jasmine.createSpy('initCombat'),
       playerAttackTarget: jasmine.createSpy('playerAttackTarget'),
       playerUseAbilityTarget: jasmine.createSpy('playerUseAbilityTarget'),
       playerFlee: jasmine.createSpy('playerFlee'),
       canUseAbility: jasmine.createSpy('canUseAbility').and.returnValue(false),
+      canCastMagia: jasmine.createSpy('canCastMagia').and.returnValue(false),
+      castMagiaTarget: jasmine.createSpy('castMagiaTarget'),
     };
 
     await TestBed.configureTestingModule({

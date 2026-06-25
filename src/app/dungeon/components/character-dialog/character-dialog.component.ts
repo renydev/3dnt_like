@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { Character, DEFAULT_CHAR_COLOR } from '../../../core/models/character.model';
 import { KIT_MAP } from '../../../core/data/kits.data';
+import { ALL_ARQUETIPOS } from '../../../core/data/arquetipos.data';
 import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
 import { getPowerScale, powerScaleSymbol, powerScaleLabel, formatAttributeAbacus } from '../../../core/utils/power-scale';
 
@@ -58,6 +59,11 @@ export const VANTAGENS_CATALOG: VantagemDef[] = [
   { name: 'Magia Aprimorada',  cost: 2, desc: '+4 Poder de Fogo.' },
   { name: 'Foco Arcano',       cost: 1, desc: 'Concentração perfeita. Magias custam −1 PF (mínimo 1).' },
 ];
+
+/** Poderes concedidos automaticamente pelo Arquétipo (3DeT Victory) — não têm custo em PE, são apenas nomeados. */
+const ARQUETIPO_PODER_MAP = new Map<string, string>(
+  ALL_ARQUETIPOS.flatMap(a => a.poderes.map(p => [p.name, p.description] as const))
+);
 
 export const DESVANTAGENS_CATALOG: DesvantagemDef[] = [
   { name: 'Ansioso',            reward: 1, desc: 'Perde 1 ponto em testes que exigem paciência.' },
@@ -191,6 +197,16 @@ export class CharacterDialogComponent {
   availableVantagens(): VantagemDef[] {
     const owned = new Set(this.char()!.vantagens);
     return VANTAGENS_CATALOG.filter(v => !owned.has(v.name));
+  }
+
+  vantagemDef(name: string): VantagemDef | undefined {
+    const catalogMatch = VANTAGENS_CATALOG.find(v => v.name === name);
+    if (catalogMatch) return catalogMatch;
+    // Poderes do Arquétipo são concedidos automaticamente (sem custo em PE) —
+    // não estão no catálogo de compra, mas precisam mostrar a descrição
+    // assim como as desvantagens escolhidas mostram.
+    const poderDesc = ARQUETIPO_PODER_MAP.get(name);
+    return poderDesc ? { name, cost: 0, desc: poderDesc } : undefined;
   }
 
   canBuyVantagem(v: VantagemDef): boolean { return this.pe() >= v.cost; }

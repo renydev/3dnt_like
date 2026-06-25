@@ -5,13 +5,14 @@ import { Character } from '../models/character.model';
 import { getEffectiveStats, ITEM_CATALOG } from '../models/item.model';
 import { generateEnemy } from '../data/enemies.data';
 import { d6, d6n, rollPerda } from '../utils/dice';
+import { ALL_MAGIAS, MagiaDef, magiaToAbility } from '../data/magias.data';
 
 /**
  * Habilidades de combate concedidas por Vantagens oficiais (vantagens.data.ts) cujo efeito
  * no manual mapeia sem ambiguidade para um efeito de combate já resolvido por este serviço.
  * Vantagens com sub-escolha (ex.: "Ataque Especial" tem 12 variantes) ou que exigem um
- * subsistema novo (Anulação, Paralisia, Confusão, Acumulador, Golpe Final) ficam de fora
- * por ora — precisam de UI de escolha ou de status effects que ainda não existem.
+ * subsistema novo (Anulação, Acumulador, Golpe Final) ficam de fora por ora — precisam de
+ * UI de escolha ou de status effects que ainda não existem.
  */
 const VANTAGEM_ABILITIES: Record<string, CombatAbility> = {
   'Cura': {
@@ -30,6 +31,27 @@ const VANTAGEM_ABILITIES: Record<string, CombatAbility> = {
     effect: 'paralisia',
   },
 };
+
+/**
+ * Magias conjuráveis por um personagem com a vantagem Magia: Comuns/Incomuns liberam
+ * sozinhas ao atingir a Habilidade mínima; Raras/Lendárias só entram se concedidas
+ * explicitamente em `Character.learnedSpells` (ver magias.data.ts).
+ */
+function isMagiaCastable(m: MagiaDef, char: Character, learned: Set<string>): boolean {
+  if (m.rarity === 'rara' || m.rarity === 'lendaria') return learned.has(m.id);
+  return char.habilidade.current >= m.reqHabilidade;
+}
+
+function castableMagias(char: Character | null | undefined): MagiaDef[] {
+  if (!char || !char.vantagens.includes('Magia')) return [];
+  const learned = new Set(char.learnedSpells ?? []);
+  return ALL_MAGIAS.filter(m => isMagiaCastable(m, char, learned));
+}
+
+/** Usado pela IA dos companheiros, que escolhe entre Vantagens de combate e Magias igual ao jogador. */
+function castableAbilities(char: Character | null | undefined): CombatAbility[] {
+  return castableMagias(char).map(magiaToAbility);
+}
 
 /** Teto de PA ganho por 6s num combate: metade (arredondado p/ cima) de Poder+Resistência. */
 function paGainCap(poder: number, resistencia: number): number {
@@ -187,6 +209,37 @@ export class CombatService {
     return !!char.pericias?.includes('luta');
   }
 
+  // ── Vantagens "fora da curva" de monstros usadas ativamente em combate ──────
+  // (ver monster-vantagens.data.ts) — os bônus passivos de atributo já estão
+  // assados no spawn; aqui resolvemos as que mudam o COMPORTAMENTO da luta:
+  // golpe de abertura (Ataque Furtivo/Mira Perfeita/Tiro Certeiro), postura
+  // defensiva (Defesa Especial) e aura de grupo (Aura de Proteção).
+
+  private hasVantagem(e: Enemy, name: string): boolean {
+    return !!e.bonusVantagens?.includes(name);
+  }
+
+  /** Bônus de defesa de um inimigo vindo de vantagens ativas (postura defensiva + aura do grupo). */
+  private enemyDefenseBonus(enemy: Enemy): number {
+    let bonus = 0;
+    if (this.hasVantagem(enemy, 'Defesa Especial') || this.hasVantagem(enemy, 'Defesa Especial (Provocação)')) bonus += 2;
+    if (this.enemies().some(e => e.hp > 0 && e.id !== enemy.id && this.hasVantagem(e, 'Aura de Proteção'))) bonus += 1;
+    return bonus;
+  }
+
+  /** IDs de inimigos que já usaram seu golpe de abertura (Ataque Furtivo/Mira Perfeita/Tiro Certeiro) neste combate. */
+  private enemyFirstStrikeUsed = new Set<string>();
+
+  /** Bônus de ataque de abertura: só na primeira vez que o inimigo ataca no combate. */
+  private enemySurpriseBonus(enemy: Enemy): number {
+    const hasSurprise = this.hasVantagem(enemy, 'Ataque Furtivo')
+      || this.hasVantagem(enemy, 'Mira Perfeita')
+      || this.hasVantagem(enemy, 'Tiro Certeiro');
+    if (!hasSurprise || this.enemyFirstStrikeUsed.has(enemy.id)) return 0;
+    this.enemyFirstStrikeUsed.add(enemy.id);
+    return 2;
+  }
+
   /** Quantos PA o jogador pode gastar agora (clampado ao disponível). Cada PA = +1d6 em FA/FD. */
   spendPlayerPA(requested: number): number {
     const avail = this.playerPA();
@@ -200,12 +253,31 @@ export class CombatService {
    * 3D&T Victory não tem classes; Kits são só profissão narrativa). Mapeamento por nome
    * de vantagem; cobre por ora só as que têm efeito de combate inequívoco no manual.
    */
+  /** Habilidades de combate vindas de Vantagens (Cura/Confusão/Paralisia) — magias ficam no Grimório, à parte. */
   readonly abilities = computed<CombatAbility[]>(() => {
     const names = this.gs.character()?.vantagens ?? [];
     return names
       .map(name => VANTAGEM_ABILITIES[name])
       .filter((ab): ab is CombatAbility => !!ab);
   });
+
+  /** Magias que o jogador já pode conjurar agora (Comuns/Incomuns na Habilidade, ou Raras/Lendárias concedidas). */
+  readonly availableMagias = computed<MagiaDef[]>(() => castableMagias(this.gs.character()));
+
+  /** Magias que o jogador ainda não pode conjurar — mostradas no Grimório como bloqueadas. */
+  readonly lockedMagias = computed<MagiaDef[]>(() => {
+    const available = new Set(this.availableMagias().map(m => m.id));
+    return ALL_MAGIAS.filter(m => !available.has(m.id));
+  });
+
+  /** Se o personagem tem a vantagem Magia (controla se o botão Grimório aparece). */
+  readonly hasMagia = computed(() => !!this.gs.character()?.vantagens.includes('Magia'));
+
+  canCastMagia(m: MagiaDef): boolean { return this.canUseAbility(magiaToAbility(m)); }
+
+  castMagiaTarget(m: MagiaDef, targetId: string, paSpend = 0): void {
+    this.playerUseAbilityTarget(magiaToAbility(m), targetId, paSpend);
+  }
 
   canUseAbility(ab: CombatAbility): boolean {
     const char = this.gs.character();
@@ -232,6 +304,7 @@ export class CombatService {
     this.enemyWeakenedTurns.set(0);
     this.confusedEnemies.clear();
     this.paralyzedEnemies.clear();
+    this.enemyFirstStrikeUsed.clear();
     this.playerRageTurns.set(0);
     this.companionRageTurns.clear();
     this.resetPlayerRoundState();
@@ -274,15 +347,21 @@ export class CombatService {
     const bestEnemyRoll = Math.max(...enemyRolls);
     const enemiesFirst = bestPartyRoll <= bestEnemyRoll;
 
-    this.log.set([
+    const initialLog: CombatLogEntry[] = [
       { text: `${names} surgem das sombras!`, type: 'system' },
-      {
-        text: enemiesFirst
-          ? `⚡ Iniciativa: inimigos surpreendem o grupo! (🎲${bestEnemyRoll} vs 🎲${bestPartyRoll})`
-          : `▶ Iniciativa: o grupo age primeiro! (🎲${bestPartyRoll} vs 🎲${bestEnemyRoll})`,
-        type: 'system',
-      },
-    ]);
+    ];
+    for (const e of group) {
+      if (e.bonusVantagens?.length) {
+        initialLog.push({ text: `⚠️ ${e.name} manifesta: ${e.bonusVantagens.join(', ')}!`, type: 'system' });
+      }
+    }
+    initialLog.push({
+      text: enemiesFirst
+        ? `⚡ Iniciativa: inimigos surpreendem o grupo! (🎲${bestEnemyRoll} vs 🎲${bestPartyRoll})`
+        : `▶ Iniciativa: o grupo age primeiro! (🎲${bestPartyRoll} vs 🎲${bestEnemyRoll})`,
+      type: 'system',
+    });
+    this.log.set(initialLog);
 
     if (enemiesFirst) {
       this.phase.set('enemy_turn');
@@ -375,7 +454,7 @@ export class CombatService {
         }
         // Resistir com Armadura
         const armorRed = this.enemyArmorReductions.get(target.id) ?? 0;
-        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.poder.current);
+        let { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.poder.current);
         this.enemyArmorReductions.set(target.id, newReduction);
         if (resisted) {
           this.addLog(`${ab.icon} ${ab.name} | 🛡️ Armadura resiste! A${effectiveArmor} > P${char.poder.current} → 1 dano sagrado!`, 'player');
@@ -383,6 +462,7 @@ export class CombatService {
           this.afterPlayerAction();
           return;
         }
+        effectiveArmor += this.enemyDefenseBonus(target);
         const lutaBonusHS = this.hasLuta(char) ? 1 : 0;
         const dAtk = this.rollPlayerDie();
         const dBonus = this.rollDiceWith((ab.bonusDice ?? 1) + lutaBonusHS, () => this.rollPlayerDie());
@@ -471,13 +551,14 @@ export class CombatService {
           this.afterPlayerAction(); return;
         }
         const armorRed = this.enemyArmorReductions.get(target.id) ?? 0;
-        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.poder.current);
+        let { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, char.poder.current);
         this.enemyArmorReductions.set(target.id, newReduction);
         if (resisted) {
           this.addLog(`${ab.icon} ${ab.name} | 🛡️ A${effectiveArmor}>P${char.poder.current} → 1 dano sagrado!`, 'player');
           this.applyDamageToEnemy(target.id, 1);
           this.afterPlayerAction(); return;
         }
+        effectiveArmor += this.enemyDefenseBonus(target);
         const lutaBonusHS2 = this.hasLuta(char) ? 1 : 0;
         const dAtk = this.rollPlayerDie();
         const dBonus = this.rollDiceWith((ab.bonusDice ?? 1) + lutaBonusHS2 + spent, () => this.rollPlayerDie());
@@ -557,9 +638,12 @@ export class CombatService {
     const alive = this.enemies().filter(e => e.hp > 0);
     if (alive.length === 0) return;
 
-    const abilities: CombatAbility[] = (companion.vantagens ?? [])
-      .map(name => VANTAGEM_ABILITIES[name])
-      .filter((ab): ab is CombatAbility => !!ab);
+    const abilities: CombatAbility[] = [
+      ...(companion.vantagens ?? [])
+        .map(name => VANTAGEM_ABILITIES[name])
+        .filter((ab): ab is CombatAbility => !!ab),
+      ...castableAbilities(companion),
+    ];
     const hasBoss = alive.some(e => e.isBoss);
 
     const target = this._pickTarget(alive);
@@ -657,13 +741,14 @@ export class CombatService {
           break;
         }
         const armorRed = this.enemyArmorReductions.get(target.id) ?? 0;
-        const { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, companion.poder.current);
+        let { resisted, effectiveArmor, newReduction } = armorResistCheck(target.armadura, armorRed, companion.poder.current);
         this.enemyArmorReductions.set(target.id, newReduction);
         if (resisted) {
           this.addLog(`${label} | 🛡️ A${effectiveArmor}>P${companion.poder.current} → 1 dano sagrado em ${target.name}!`, 'player');
           this.applyDamageToEnemy(target.id, 1);
           break;
         }
+        effectiveArmor += this.enemyDefenseBonus(target);
         const lutaBonusC = this.hasLuta(companion) ? 1 : 0;
         const dAtk = this.rollCompanionDie(companion.id);
         const dBonus = this.rollDiceWith((ab.bonusDice ?? 1) + lutaBonusC, () => this.rollCompanionDie(companion.id));
@@ -715,7 +800,7 @@ export class CombatService {
       this.applyDamageToEnemy(enemy.id, dmg);
     } else {
       const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-      const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
+      let { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
       this.enemyArmorReductions.set(enemy.id, newReduction);
       if (resisted) {
         this.addLog(
@@ -725,6 +810,7 @@ export class CombatService {
         this.applyDamageToEnemy(enemy.id, 1);
         return;
       }
+      effectiveArmor += this.enemyDefenseBonus(enemy);
       const dDef = d6();
       const defPower = enemy.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrM } = this.fmtDmg(atkPower - defPower);
@@ -767,6 +853,15 @@ export class CombatService {
 
     // Novo turno inimigo: reseta estado de armadura e esquiva do grupo
     this.resetEnemyRoundState();
+
+    // Regeneração (vantagem "fora da curva" de monstros): cura no início do turno do inimigo.
+    for (const e of aliveEnemies) {
+      if (e.regenPerTurn && e.hp < e.maxHp) {
+        const healed = Math.min(e.regenPerTurn, e.maxHp - e.hp);
+        this.enemies.update(list => list.map(x => x.id === e.id ? { ...x, hp: x.hp + healed } : x));
+        this.addLog(`💚 ${e.name} regenera ${healed} PV.`, 'system');
+      }
+    }
 
     if (this.enemyWeakenedTurns() > 0) {
       this.enemyWeakenedTurns.update(n => n - 1);
@@ -882,17 +977,19 @@ export class CombatService {
 
       // Dano normal: FA = P+1d6, FD = R+A+1d6 (+1d6 se defensor tiver perícia Luta)
       // Enfraquecido (vantagem "weaken"): Perda no dado de ataque (2d6, pior) em vez de penalidade fixa em Poder.
+      const surpriseBonus = this.enemySurpriseBonus(enemy);
       const dAtk = weakened ? rollPerda() : d6();
       const defRoller = targetMember.isPlayer
         ? () => this.rollPlayerDie()
         : () => this.rollCompanionDie(targetMember.id!);
       const dDef = this.rollDiceWith(1 + (targetMember.hasLuta ? 1 : 0), defRoller);
-      const atkPower = effP + dAtk;
+      const atkPower = effP + dAtk + surpriseBonus;
       const defPower = targetMember.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrE } = this.fmtDmg(atkPower - defPower);
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
+      const surpriseNote = surpriseBonus > 0 ? ' 🗡️ golpe de abertura certeiro!' : '';
       this.addLog(
-        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | FA: P${effP}+🎲${dAtk}=${atkPower} vs FD: R${targetMember.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrE} dano!`,
+        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart}${surpriseNote} | FA: P${effP}+🎲${dAtk}${surpriseBonus ? `+${surpriseBonus}` : ''}=${atkPower} vs FD: R${targetMember.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrE} dano!`,
         'enemy'
       );
 
@@ -965,7 +1062,7 @@ export class CombatService {
 
     // Resistir com Armadura
     const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    const { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
+    let { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
     this.enemyArmorReductions.set(enemy.id, newReduction);
     if (resisted) {
       this.addLog(
@@ -975,6 +1072,7 @@ export class CombatService {
       this.applyDamageToEnemy(enemy.id, 1);
       return;
     }
+    effectiveArmor += this.enemyDefenseBonus(enemy);
 
     const dDef = d6();
     const defPower = enemy.resistencia + effectiveArmor + dDef;

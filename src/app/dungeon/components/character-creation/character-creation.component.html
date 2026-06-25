@@ -181,7 +181,7 @@
           </p>
 
           <div class="presets-grid">
-            @for (preset of presets; track preset.id) {
+            @for (preset of visiblePresets(); track preset.id) {
               <div class="preset-card" [style.--preset-color]="preset.color" (click)="applyPreset(preset)">
                 <div class="preset-header">
                   <span class="preset-icon">{{ preset.icon }}</span>
@@ -276,7 +276,7 @@
           <p class="step-desc">
             O kit é aquilo que seu personagem se tornou — seu caminho, sua forma de enfrentar os desafios.
             <span class="step-count">{{ kits.length }} kits disponíveis</span>.
-            1º kit custa 1pt; cada kit adicional custa mais 1pt (2pt o 2º, 3pt o 3º...).
+            O 1º kit é grátis; cada kit adicional custa mais 1pt (1pt o 2º, 2pt o 3º...).
             Custo do próximo: <strong>{{ nextKitCost() }}pt</strong>.
           </p>
 
@@ -527,7 +527,7 @@
       <div></div>
     }
 
-    @if (step() > 4 && step() < 8) {
+    @if (step() > 3 && step() < 8) {
       <button class="btn-next" [disabled]="!canAdvance()" (click)="nextStep()">
         Próximo →
       </button>
