@@ -15,6 +15,8 @@ export interface GrowableMonsterTemplate {
   goldReward: number;
   /** Categoria temática usada para sortear vantagens "fora da curva" (default: 'generico'). */
   archetype?: MonsterArchetype;
+  /** Andar (masmorra) a que este monstro pertence — ver DUNGEON_REGISTRY em dungeon-registry.ts. */
+  floor: number;
 }
 
 /**

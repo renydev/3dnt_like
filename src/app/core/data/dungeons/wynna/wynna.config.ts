@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { WYNNA_ROOM_ENEMIES, rollWynnaEncounter } from './wynna.monsters';
 
 export const WynnaConfig: DungeonConfig = {
   floorNumber: 12,
   theme: VALKARIA_FLOORS[11],
+  roomEnemies: WYNNA_ROOM_ENEMIES,
+  rollEncounter: rollWynnaEncounter,
   layout: {
     floorNumber: 12,
     rooms: [

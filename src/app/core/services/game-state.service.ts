@@ -7,7 +7,7 @@ import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '..
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
-import { calcCharacterPP, calcCombatXp, growthScale } from '../utils/pp-calculator';
+import { calcCharacterPP, calcCombatXp, growthScale, applyFloorBonus } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
 
@@ -188,7 +188,7 @@ export class GameStateService {
     // Fator de crescimento dos monstros curados deste andar, fixado uma vez aqui
     // (não recalcula por combate — evita "ioiô" de dificuldade dentro do mesmo andar).
     const partyPP = this.partyPPs().reduce((s, p) => s + p, 0);
-    this.floorGrowthScale.set(growthScale(partyPP));
+    this.floorGrowthScale.set(applyFloorBonus(growthScale(partyPP), this.floorNumber()));
 
     const floor = this.generator.generateFloor(this.floorNumber());
     this.currentFloor.set(floor);

@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { LENA_ROOM_ENEMIES, rollLenaEncounter } from './lena.monsters';
 
 export const LenaConfig: DungeonConfig = {
   floorNumber: 4,
   theme: VALKARIA_FLOORS[3],
+  roomEnemies: LENA_ROOM_ENEMIES,
+  rollEncounter: rollLenaEncounter,
   layout: {
     floorNumber: 4,
     rooms: [

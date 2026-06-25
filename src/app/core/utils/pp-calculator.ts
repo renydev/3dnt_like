@@ -100,6 +100,20 @@ export function growthScale(partyPP: number): number {
 }
 
 /**
+ * Pequeno reforço de dificuldade por profundidade do andar, aplicado por cima do
+ * growthScale (que já é 100% baseado no PP da party do confronto). Sem isso, uma
+ * party que não evolui sente a masmorra igualmente perigosa do andar 1 ao 20 —
+ * o bônus (+2%/andar) dá uma sensação de progressão sem desbalancear o teto.
+ * O resultado combinado ainda satura em GROWTH_MAX — o teto do monstro vale sempre.
+ */
+const FLOOR_BONUS_PER_LEVEL = 0.02;
+
+export function applyFloorBonus(scale: number, floor: number): number {
+  const withBonus = scale * (1 + Math.max(0, floor - 1) * FLOOR_BONUS_PER_LEVEL);
+  return Math.min(GROWTH_MAX, withBonus);
+}
+
+/**
  * Quantas vantagens "fora da curva" um monstro curado pode manifestar,
  * de acordo com o quão acima do esperado a party está.
  */

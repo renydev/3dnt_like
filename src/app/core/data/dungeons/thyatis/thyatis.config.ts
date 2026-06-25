@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { THYATIS_ROOM_ENEMIES, rollThyatisEncounter } from './thyatis.monsters';
 
 export const ThyatisConfig: DungeonConfig = {
   floorNumber: 14,
   theme: VALKARIA_FLOORS[13],
+  roomEnemies: THYATIS_ROOM_ENEMIES,
+  rollEncounter: rollThyatisEncounter,
   layout: {
     floorNumber: 14,
     rooms: [

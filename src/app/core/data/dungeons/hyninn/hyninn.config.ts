@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { HYNINN_ROOM_ENEMIES, rollHyninnEncounter } from './hyninn.monsters';
 
 export const HyninnConfig: DungeonConfig = {
   floorNumber: 5,
   theme: VALKARIA_FLOORS[4],
+  roomEnemies: HYNINN_ROOM_ENEMIES,
+  rollEncounter: rollHyninnEncounter,
   layout: {
     floorNumber: 5,
     rooms: [

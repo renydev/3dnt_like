@@ -2,6 +2,8 @@ import { Component, signal, computed, NgZone, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DUNGEON_REGISTRY } from '../core/data/dungeons/dungeon-registry';
+import { BESTIARIO } from '../core/data/bestiario.data';
+import { ITEM_CATALOG } from '../core/models/item.model';
 
 interface RoomState {
   roomId: number;
@@ -12,6 +14,11 @@ interface RoomState {
   connections: number[];
   /** Dados de cenário para salas social (RolePlay) */
   scenarioHint?: string;
+  /** Sala de monstro: ID do monstro (BESTIARIO) e quantos aparecem. */
+  monsterId?: string;
+  monsterCount?: number;
+  /** Sala de tesouro: IDs de itens do ITEM_CATALOG que podem aparecer aqui. */
+  treasureIds?: string[];
 }
 
 type RoomType = 'entrance' | 'monster' | 'treasure' | 'rest' | 'trap' | 'boss' | 'empty' | 'puzzle' | 'social';
@@ -430,6 +437,40 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
                     </details>
                   }
 
+                  <!-- Sala de monstro/chefe: qual monstro e quantos -->
+                  @if (hs.type === 'monster' || hs.type === 'boss') {
+                    <div class="section-label">Monstro (disponíveis nesta masmorra)</div>
+                    <div class="hs-fields-row">
+                      <select class="inp-type" [(ngModel)]="hs.monsterId" (ngModelChange)="refresh()">
+                        <option [ngValue]="undefined">— escolher monstro —</option>
+                        @for (m of availableMonsters(); track m.id) {
+                          <option [ngValue]="m.id">{{ m.icon }} {{ m.name }}</option>
+                        }
+                      </select>
+                      <label>qtd
+                        <input type="number" min="1" max="12" class="inp-num"
+                          [(ngModel)]="hs.monsterCount" (ngModelChange)="refresh()" placeholder="1" />
+                      </label>
+                    </div>
+                    @if (availableMonsters().length === 0) {
+                      <span class="conn-empty">Nenhum monstro cadastrado para esta masmorra no bestiário.</span>
+                    }
+                  }
+
+                  <!-- Sala de tesouro: quais itens podem aparecer -->
+                  @if (hs.type === 'treasure') {
+                    <div class="section-label">Tesouros possíveis ({{ (hs.treasureIds ?? []).length }} selecionados)</div>
+                    <div class="treasure-grid">
+                      @for (it of availableTreasures(); track it.id) {
+                        <label class="treasure-chip" [class.treasure-chip--on]="isTreasureSelected(hs, it.id)">
+                          <input type="checkbox" [checked]="isTreasureSelected(hs, it.id)"
+                            (change)="toggleTreasure(hs, it.id)" />
+                          {{ it.icon }} {{ it.name }}
+                        </label>
+                      }
+                    </div>
+                  }
+
                   <div class="section-label">Conexões</div>
                   <div class="conn-tags">
                     @for (cid of hs.connections; track cid) {
@@ -481,6 +522,19 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
     .btn-add    { background: #7c3aed; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
     .btn-copy   { background: #1e40af; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
     .btn-gen    { background: #b45309; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+
+    .treasure-grid {
+      display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;
+    }
+    .treasure-chip {
+      display: flex; align-items: center; gap: 3px;
+      background: #0a0a14; border: 1px solid #2a2a3e; color: #999;
+      padding: 2px 6px; border-radius: 10px; font-size: 9px; cursor: pointer;
+      input { display: none; }
+    }
+    .treasure-chip--on {
+      background: #422006; border-color: #d4aa14; color: #facc15;
+    }
 
     /* Gen panel */
     .gen-panel {
@@ -622,6 +676,35 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
 })
 export class DebugComponent {
   readonly ROOM_COLORS = ROOM_COLORS;
+
+  /** Monstros do bestiário cadastrados para a masmorra/andar selecionado. */
+  availableMonsters = computed(() => {
+    const floor = this.selectedFloor();
+    return Object.entries(BESTIARIO)
+      .filter(([, m]) => m.floor === floor)
+      .map(([id, m]) => ({ id, name: m.name, icon: m.icon }));
+  });
+
+  /** Itens cujo floorRange cobre o andar selecionado — evita misturar tesouro fraco
+   *  de início de masmorra com tesouro forte do fim (ver Item.floorRange). */
+  availableTreasures = computed(() => {
+    const floor = this.selectedFloor();
+    return Object.entries(ITEM_CATALOG)
+      .filter(([, it]) => !it.floorRange || (floor >= it.floorRange[0] && floor <= it.floorRange[1]))
+      .map(([id, it]) => ({ id, name: it.name, icon: it.icon }));
+  });
+
+  isTreasureSelected(hs: RoomState, itemId: string): boolean {
+    return (hs.treasureIds ?? []).includes(itemId);
+  }
+
+  toggleTreasure(hs: RoomState, itemId: string): void {
+    const current = hs.treasureIds ?? [];
+    hs.treasureIds = current.includes(itemId)
+      ? current.filter(id => id !== itemId)
+      : [...current, itemId];
+    this.refresh();
+  }
 
   readonly floorEntries = Object.entries(DUNGEON_REGISTRY).map(([k, v]) => ({
     floor: +k,
@@ -1129,4 +1212,5 @@ export class DebugComponent {
     this.copied.set(true);
     setTimeout(() => this.copied.set(false), 2500);
   }
+
 }

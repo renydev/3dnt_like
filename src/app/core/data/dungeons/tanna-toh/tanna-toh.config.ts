@@ -1,9 +1,11 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { TANNA_TOH_ROOM_ENEMIES } from './tanna-toh.monsters';
 
 export const TannaTohConfig: DungeonConfig = {
   floorNumber: 10,
   theme: VALKARIA_FLOORS[9],
+  roomEnemies: TANNA_TOH_ROOM_ENEMIES,
   layout: {
     floorNumber: 10,
     rooms: [

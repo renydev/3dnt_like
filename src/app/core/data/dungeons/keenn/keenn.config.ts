@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { KEENN_ROOM_ENEMIES, rollKeennEncounter } from './keenn.monsters';
 
 export const KeennConfig: DungeonConfig = {
   floorNumber: 16,
   theme: VALKARIA_FLOORS[15],
+  roomEnemies: KEENN_ROOM_ENEMIES,
+  rollEncounter: rollKeennEncounter,
   layout: {
     floorNumber: 16,
     rooms: [

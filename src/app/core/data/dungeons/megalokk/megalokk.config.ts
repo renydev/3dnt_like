@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { MEGALOKK_ROOM_ENEMIES, rollMegalokkEncounter } from './megalokk.monsters';
 
 export const MegalokConfig: DungeonConfig = {
   floorNumber: 17,
   theme: VALKARIA_FLOORS[16],
+  roomEnemies: MEGALOKK_ROOM_ENEMIES,
+  rollEncounter: rollMegalokkEncounter,
   layout: {
     floorNumber: 17,
     rooms: [

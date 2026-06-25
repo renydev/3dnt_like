@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { LIN_WU_ROOM_ENEMIES, rollLinWuEncounter } from './lin-wu.monsters';
 
 export const LinWuConfig: DungeonConfig = {
   floorNumber: 11,
   theme: VALKARIA_FLOORS[10],
+  roomEnemies: LIN_WU_ROOM_ENEMIES,
+  rollEncounter: rollLinWuEncounter,
   layout: {
     floorNumber: 11,
     rooms: [

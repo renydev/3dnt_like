@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { TAURON_ROOM_ENEMIES, rollTauronEncounter } from './tauron.monsters';
 
 export const TauronConfig: DungeonConfig = {
   floorNumber: 9,
   theme: VALKARIA_FLOORS[8],
+  roomEnemies: TAURON_ROOM_ENEMIES,
+  rollEncounter: rollTauronEncounter,
   layout: {
     floorNumber: 9,
     rooms: [

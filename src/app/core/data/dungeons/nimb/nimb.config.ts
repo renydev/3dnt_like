@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { NIMB_ROOM_ENEMIES, rollNimbEncounter } from './nimb.monsters';
 
 export const NimbConfig: DungeonConfig = {
   floorNumber: 18,
   theme: VALKARIA_FLOORS[17],
+  roomEnemies: NIMB_ROOM_ENEMIES,
+  rollEncounter: rollNimbEncounter,
   layout: {
     floorNumber: 18,
     rooms: [

@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { AZGHER_ROOM_ENEMIES, rollAzgherEncounter } from './azgher.monsters';
 
 export const AzgherConfig: DungeonConfig = {
   floorNumber: 8,
   theme: VALKARIA_FLOORS[7],
+  roomEnemies: AZGHER_ROOM_ENEMIES,
+  rollEncounter: rollAzgherEncounter,
   layout: {
     floorNumber: 8,
     rooms: [

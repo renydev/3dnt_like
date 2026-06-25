@@ -53,6 +53,9 @@ export interface Item {
   damageDice?:     number;
   usableInCombat?: boolean;
   usableOutside?:  boolean;
+  /** Faixa de andares [min, max] onde o item pode aparecer como tesouro — evita
+   *  item fraco de andar 20 ou item forte demais no andar 1. Sem isso, disponível em qualquer andar. */
+  floorRange?:     [number, number];
 }
 
 export interface Equipment {
@@ -140,37 +143,37 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── ARMAS (uma mão) ───────────────────────────────────────────────────────────
   'espada-curta': {
     id: 'espada-curta', name: 'Espada Curta', icon: '🗡️',
-    category: 'equipment', slot: 'weapon', rarity: 'common',
+    category: 'equipment', slot: 'weapon', rarity: 'common', floorRange: [1, 7],
     description: 'Espada leve e confiável. +1 Poder.',
     statBonus: { poder: 1 },
   },
   'espada-longa': {
     id: 'espada-longa', name: 'Espada Longa', icon: '⚔️',
-    category: 'equipment', slot: 'weapon', rarity: 'uncommon',
+    category: 'equipment', slot: 'weapon', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Espada equilibrada de dois gumes. +2 Poder.',
     statBonus: { poder: 2 },
   },
   'espada-encantada': {
     id: 'espada-encantada', name: 'Espada Encantada', icon: '✨',
-    category: 'equipment', slot: 'weapon', rarity: 'rare',
+    category: 'equipment', slot: 'weapon', rarity: 'rare', floorRange: [12, 20],
     description: 'Lâmina imbuída com magia arcana. +2 Poder e +1 Habilidade.',
     statBonus: { poder: 2, habilidade: 1 },
   },
   'martelo-sagrado': {
     id: 'martelo-sagrado', name: 'Martelo Sagrado', icon: '🔨',
-    category: 'equipment', slot: 'weapon', rarity: 'uncommon',
+    category: 'equipment', slot: 'weapon', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Maça abençoada. +2 Poder.',
     statBonus: { poder: 2 },
   },
   'cajado-arcano': {
     id: 'cajado-arcano', name: 'Cajado Arcano', icon: '🪄',
-    category: 'equipment', slot: 'weapon', rarity: 'common',
+    category: 'equipment', slot: 'weapon', rarity: 'common', floorRange: [1, 7],
     description: 'Cajado que amplifica magias. +1 Poder e +2 PM.',
     statBonus: { poder: 1, pontosMana: 2 },
   },
   'adaga': {
     id: 'adaga', name: 'Adaga', icon: '🔪',
-    category: 'equipment', slot: 'weapon', rarity: 'common',
+    category: 'equipment', slot: 'weapon', rarity: 'common', floorRange: [1, 7],
     description: 'Faca de combate veloz. +1 Habilidade.',
     statBonus: { habilidade: 1 },
   },
@@ -178,25 +181,25 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── ARMAS (duas mãos) — twoHanded bloqueia offhand ───────────────────────────
   'machado-guerra': {
     id: 'machado-guerra', name: 'Machado de Guerra', icon: '🪓',
-    category: 'equipment', slot: 'weapon', rarity: 'uncommon', twoHanded: true,
+    category: 'equipment', slot: 'weapon', rarity: 'uncommon', floorRange: [5, 15], twoHanded: true,
     description: 'Machado pesado de duas mãos. +3 Poder, −1 Habilidade.',
     statBonus: { poder: 3, habilidade: -1 },
   },
   'arco-curto': {
     id: 'arco-curto', name: 'Arco Curto', icon: '🏹',
-    category: 'equipment', slot: 'weapon', rarity: 'common', twoHanded: true,
+    category: 'equipment', slot: 'weapon', rarity: 'common', floorRange: [1, 7], twoHanded: true,
     description: 'Arco leve à distância. +1 Poder.',
     statBonus: { poder: 1 },
   },
   'arco-longo': {
     id: 'arco-longo', name: 'Arco Longo', icon: '🏹',
-    category: 'equipment', slot: 'weapon', rarity: 'uncommon', twoHanded: true,
+    category: 'equipment', slot: 'weapon', rarity: 'uncommon', floorRange: [5, 15], twoHanded: true,
     description: 'Arco de precisão para longas distâncias. +2 Poder.',
     statBonus: { poder: 2 },
   },
   'lanca': {
     id: 'lanca', name: 'Lança', icon: '🗡️',
-    category: 'equipment', slot: 'weapon', rarity: 'uncommon', twoHanded: true,
+    category: 'equipment', slot: 'weapon', rarity: 'uncommon', floorRange: [5, 15], twoHanded: true,
     description: 'Lança de haste longa. +1 Poder e +1 Habilidade.',
     statBonus: { poder: 1, habilidade: 1 },
   },
@@ -204,19 +207,19 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── MÃO SECUNDÁRIA: ESCUDOS ───────────────────────────────────────────────────
   'escudo-madeira': {
     id: 'escudo-madeira', name: 'Escudo de Madeira', icon: '🛡️',
-    category: 'equipment', slot: 'offhand', rarity: 'common',
+    category: 'equipment', slot: 'offhand', rarity: 'common', floorRange: [1, 7],
     description: 'Escudo básico de madeira. +1 Armadura.',
     statBonus: { armadura: 1 },
   },
   'escudo-aco': {
     id: 'escudo-aco', name: 'Escudo de Aço', icon: '🛡️',
-    category: 'equipment', slot: 'offhand', rarity: 'uncommon',
+    category: 'equipment', slot: 'offhand', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Escudo resistente de aço. +2 Armadura.',
     statBonus: { armadura: 2 },
   },
   'escudo-bento': {
     id: 'escudo-bento', name: 'Escudo Bento', icon: '🛡️',
-    category: 'equipment', slot: 'offhand', rarity: 'uncommon',
+    category: 'equipment', slot: 'offhand', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Escudo abençoado por clérigos. +2 Armadura e +1 Poder.',
     statBonus: { armadura: 2, poder: 1 },
   },
@@ -224,31 +227,31 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── ARMADURAS (corpo) ─────────────────────────────────────────────────────────
   'gibao-couro': {
     id: 'gibao-couro', name: 'Gibão de Couro', icon: '🥋',
-    category: 'equipment', slot: 'armor', rarity: 'common',
+    category: 'equipment', slot: 'armor', rarity: 'common', floorRange: [1, 7],
     description: 'Proteção básica de couro. +1 Armadura.',
     statBonus: { armadura: 1 },
   },
   'cota-malha': {
     id: 'cota-malha', name: 'Cota de Malha', icon: '⛓️',
-    category: 'equipment', slot: 'armor', rarity: 'uncommon',
+    category: 'equipment', slot: 'armor', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Anéis metálicos entrelaçados. +2 Armadura.',
     statBonus: { armadura: 2 },
   },
   'armadura-placas': {
     id: 'armadura-placas', name: 'Armadura de Placas', icon: '🛡️',
-    category: 'equipment', slot: 'armor', rarity: 'rare',
+    category: 'equipment', slot: 'armor', rarity: 'rare', floorRange: [12, 20],
     description: 'Proteção máxima em placas de aço. +3 Armadura, −1 Habilidade.',
     statBonus: { armadura: 3, habilidade: -1 },
   },
   'vestes-arcanas': {
     id: 'vestes-arcanas', name: 'Vestes Arcanas', icon: '👘',
-    category: 'equipment', slot: 'armor', rarity: 'common',
+    category: 'equipment', slot: 'armor', rarity: 'common', floorRange: [1, 7],
     description: 'Vestes tecidas com fios mágicos. +3 PM máximo.',
     statBonus: { pontosMana: 3 },
   },
   'manto-druida': {
     id: 'manto-druida', name: 'Manto Druida', icon: '🌿',
-    category: 'equipment', slot: 'armor', rarity: 'uncommon',
+    category: 'equipment', slot: 'armor', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Manto de fibras naturais encantadas. +2 PM e +1 Poder.',
     statBonus: { pontosMana: 2, poder: 1 },
   },
@@ -256,31 +259,31 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── CABEÇA ────────────────────────────────────────────────────────────────────
   'capacete-ferro': {
     id: 'capacete-ferro', name: 'Capacete de Ferro', icon: '⛑️',
-    category: 'equipment', slot: 'head', rarity: 'common',
+    category: 'equipment', slot: 'head', rarity: 'common', floorRange: [1, 7],
     description: 'Capacete básico de ferro. +1 Armadura.',
     statBonus: { armadura: 1 },
   },
   'elmo-aco': {
     id: 'elmo-aco', name: 'Elmo de Aço', icon: '⛑️',
-    category: 'equipment', slot: 'head', rarity: 'uncommon',
+    category: 'equipment', slot: 'head', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Elmo de aço temperado. +2 Armadura.',
     statBonus: { armadura: 2 },
   },
   'chapeu-mago': {
     id: 'chapeu-mago', name: 'Chapéu de Mago', icon: '🧙',
-    category: 'equipment', slot: 'head', rarity: 'common',
+    category: 'equipment', slot: 'head', rarity: 'common', floorRange: [1, 7],
     description: 'Chapéu pontiagudo que amplifica arcanos. +3 PM.',
     statBonus: { pontosMana: 3 },
   },
   'tiara-elfica': {
     id: 'tiara-elfica', name: 'Tiara Élfica', icon: '👑',
-    category: 'equipment', slot: 'head', rarity: 'uncommon',
+    category: 'equipment', slot: 'head', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Tiara forjada por elfos. +1 Habilidade.',
     statBonus: { habilidade: 1 },
   },
   'elmo-sagrado': {
     id: 'elmo-sagrado', name: 'Elmo Sagrado', icon: '✨',
-    category: 'equipment', slot: 'head', rarity: 'rare',
+    category: 'equipment', slot: 'head', rarity: 'rare', floorRange: [12, 20],
     description: 'Elmo abençoado pelos deuses. +1 Armadura e +1 Poder.',
     statBonus: { armadura: 1, poder: 1 },
   },
@@ -288,25 +291,25 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── LUVAS / MANOPLAS (braços) — exclui anéis ──────────────────────────────────
   'luvas-couro': {
     id: 'luvas-couro', name: 'Luvas de Couro', icon: '🧤',
-    category: 'equipment', slot: 'gloves', rarity: 'common',
+    category: 'equipment', slot: 'gloves', rarity: 'common', floorRange: [1, 7],
     description: 'Luvas de couro simples. +1 Habilidade.',
     statBonus: { habilidade: 1 },
   },
   'manoplas-ferro': {
     id: 'manoplas-ferro', name: 'Manoplas de Ferro', icon: '🥊',
-    category: 'equipment', slot: 'gloves', rarity: 'uncommon',
+    category: 'equipment', slot: 'gloves', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Manoplas de ferro. +1 Armadura e +1 Poder.',
     statBonus: { armadura: 1, poder: 1 },
   },
   'luvas-mago': {
     id: 'luvas-mago', name: 'Luvas de Mago', icon: '🧤',
-    category: 'equipment', slot: 'gloves', rarity: 'uncommon',
+    category: 'equipment', slot: 'gloves', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Luvas encantadas para conjuradores. +1 Poder e +2 PM.',
     statBonus: { poder: 1, pontosMana: 2 },
   },
   'manoplas-sagradas': {
     id: 'manoplas-sagradas', name: 'Manoplas Sagradas', icon: '🥊',
-    category: 'equipment', slot: 'gloves', rarity: 'rare',
+    category: 'equipment', slot: 'gloves', rarity: 'rare', floorRange: [12, 20],
     description: 'Manoplas abençoadas. +2 Poder e +1 Armadura.',
     statBonus: { poder: 2, armadura: 1 },
   },
@@ -314,25 +317,25 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── BOTAS (pés) ───────────────────────────────────────────────────────────────
   'botas-couro': {
     id: 'botas-couro', name: 'Botas de Couro', icon: '👢',
-    category: 'equipment', slot: 'boots', rarity: 'common',
+    category: 'equipment', slot: 'boots', rarity: 'common', floorRange: [1, 7],
     description: 'Botas de couro resistente. +1 Habilidade.',
     statBonus: { habilidade: 1 },
   },
   'botas-velocidade': {
     id: 'botas-velocidade', name: 'Botas de Velocidade', icon: '👟',
-    category: 'equipment', slot: 'boots', rarity: 'uncommon',
+    category: 'equipment', slot: 'boots', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Botas encantadas para movimentos rápidos. +2 Habilidade.',
     statBonus: { habilidade: 2 },
   },
   'botas-ferro': {
     id: 'botas-ferro', name: 'Botas de Ferro', icon: '👢',
-    category: 'equipment', slot: 'boots', rarity: 'uncommon',
+    category: 'equipment', slot: 'boots', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Botas reforçadas com placas de ferro. +1 Armadura.',
     statBonus: { armadura: 1 },
   },
   'botas-mago': {
     id: 'botas-mago', name: 'Botas de Mago', icon: '👟',
-    category: 'equipment', slot: 'boots', rarity: 'rare',
+    category: 'equipment', slot: 'boots', rarity: 'rare', floorRange: [12, 20],
     description: 'Botas para conjuradores. +2 PM e +1 Poder.',
     statBonus: { pontosMana: 2, poder: 1 },
   },
@@ -340,43 +343,43 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── ANÉIS (dedos) — um por mão, exclui luvas ──────────────────────────────────
   'anel-habilidade': {
     id: 'anel-habilidade', name: 'Anel de Habilidade', icon: '💍',
-    category: 'equipment', slot: 'ring', rarity: 'uncommon',
+    category: 'equipment', slot: 'ring', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Anel que afina os reflexos. +1 Habilidade.',
     statBonus: { habilidade: 1 },
   },
   'anel-fortuna': {
     id: 'anel-fortuna', name: 'Anel da Fortuna', icon: '🍀',
-    category: 'equipment', slot: 'ring', rarity: 'rare',
+    category: 'equipment', slot: 'ring', rarity: 'rare', floorRange: [12, 20],
     description: 'Anel lendário que aguça mente e poder. +1 Habilidade e +1 Poder.',
     statBonus: { habilidade: 1, poder: 1 },
   },
   'anel-protecao': {
     id: 'anel-protecao', name: 'Anel de Proteção', icon: '💍',
-    category: 'equipment', slot: 'ring', rarity: 'common',
+    category: 'equipment', slot: 'ring', rarity: 'common', floorRange: [1, 7],
     description: 'Anel com barreira mágica. +1 Armadura.',
     statBonus: { armadura: 1 },
   },
   'anel-forca': {
     id: 'anel-forca', name: 'Anel de Força', icon: '💍',
-    category: 'equipment', slot: 'ring', rarity: 'common',
+    category: 'equipment', slot: 'ring', rarity: 'common', floorRange: [1, 7],
     description: 'Anel encantado que amplifica o poder. +1 Poder.',
     statBonus: { poder: 1 },
   },
   'anel-poder': {
     id: 'anel-poder', name: 'Anel de Poder', icon: '🌟',
-    category: 'equipment', slot: 'ring', rarity: 'common',
+    category: 'equipment', slot: 'ring', rarity: 'common', floorRange: [1, 7],
     description: 'Anel que potencializa ataques. +1 Poder.',
     statBonus: { poder: 1 },
   },
   'anel-resistencia': {
     id: 'anel-resistencia', name: 'Anel de Resistência', icon: '💍',
-    category: 'equipment', slot: 'ring', rarity: 'uncommon',
+    category: 'equipment', slot: 'ring', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Anel que fortalece o corpo. +1 Resistência e +5 PV.',
     statBonus: { resistencia: 1, pontosVida: 5 },
   },
   'anel-sabedoria': {
     id: 'anel-sabedoria', name: 'Anel de Sabedoria', icon: '💫',
-    category: 'equipment', slot: 'ring', rarity: 'uncommon',
+    category: 'equipment', slot: 'ring', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Anel que expande a reserva mágica. +3 PM.',
     statBonus: { pontosMana: 3 },
   },
@@ -384,31 +387,31 @@ export const ITEM_CATALOG: Record<string, Item> = {
   // ── CONSUMÍVEIS ───────────────────────────────────────────────────────────────
   'pocao-cura': {
     id: 'pocao-cura', name: 'Poção de Cura', icon: '🧪',
-    category: 'consumable', rarity: 'common',
+    category: 'consumable', rarity: 'common', floorRange: [1, 7],
     description: 'Líquido vermelho que restaura vitalidade. Cura 1d6+2 PV.',
     healPvDice: 1, healPvFlat: 2, usableInCombat: true,
   },
   'pocao-cura-maior': {
     id: 'pocao-cura-maior', name: 'Poção de Cura Maior', icon: '🧪',
-    category: 'consumable', rarity: 'uncommon',
+    category: 'consumable', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Poção concentrada de alta potência. Cura 2d6+4 PV.',
     healPvDice: 2, healPvFlat: 4, usableInCombat: true,
   },
   'pocao-mana': {
     id: 'pocao-mana', name: 'Poção de Mana', icon: '🔵',
-    category: 'consumable', rarity: 'common',
+    category: 'consumable', rarity: 'common', floorRange: [1, 7],
     description: 'Elixir azulado que restaura energia mágica. Recupera 1d6+2 PM.',
     healPmDice: 1, healPmFlat: 2, usableInCombat: true,
   },
   'elixir-vigor': {
     id: 'elixir-vigor', name: 'Elixir de Vigor', icon: '💛',
-    category: 'consumable', rarity: 'rare',
+    category: 'consumable', rarity: 'rare', floorRange: [12, 20],
     description: 'Elixir lendário de recuperação total. Restaura todos os PV.',
     healPvDice: 0, healPvFlat: 999, usableInCombat: true,
   },
   'pergaminho-fogo': {
     id: 'pergaminho-fogo', name: 'Pergaminho de Fogo', icon: '📜',
-    category: 'consumable', rarity: 'uncommon',
+    category: 'consumable', rarity: 'uncommon', floorRange: [5, 15],
     description: 'Pergaminho com magia de fogo. Causa 2d6 de dano mágico (ignora armadura).',
     damageDice: 2, usableInCombat: true,
   },
@@ -449,37 +452,53 @@ const COMMON_CONSUME   = ['pocao-cura', 'pocao-cura'];
 const UNCOMMON_CONSUME = ['pocao-cura-maior', 'pocao-mana', 'pergaminho-fogo'];
 const RARE_CONSUME     = ['elixir-vigor'];
 
-function pickFrom(arr: string[]): Item {
-  return ITEM_CATALOG[arr[Math.floor(Math.random() * arr.length)]];
+/** Item está disponível no andar dado? Sem floorRange = disponível em qualquer andar. */
+function inFloorRange(item: Item, floor: number): boolean {
+  if (!item.floorRange) return true;
+  const [min, max] = item.floorRange;
+  return floor >= min && floor <= max;
 }
 
-/** Sorteia um item aleatório para recompensa de tesouro, ponderado pelo andar. */
+/** Filtra ids para os que existem no catálogo e cabem no andar; null se nenhum sobrar. */
+function pickFromIds(ids: string[], floor: number): Item | null {
+  const pool = ids
+    .map(id => ITEM_CATALOG[id])
+    .filter((it): it is Item => !!it && inFloorRange(it, floor));
+  if (pool.length === 0) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+const RARE_IDS = [
+  ...RARE_WEAPONS, ...RARE_ARMOR, ...RARE_HEAD,
+  ...RARE_GLOVES, ...RARE_BOOTS, ...RARE_RINGS, ...RARE_CONSUME,
+];
+const UNCOMMON_IDS = [
+  ...UNCOMMON_WEAPONS, ...UNCOMMON_OFFHAND, ...UNCOMMON_ARMOR,
+  ...UNCOMMON_HEAD, ...UNCOMMON_GLOVES, ...UNCOMMON_BOOTS,
+  ...UNCOMMON_RINGS, ...UNCOMMON_CONSUME,
+];
+const COMMON_IDS = [
+  ...COMMON_WEAPONS, ...COMMON_OFFHAND, ...COMMON_ARMOR,
+  ...COMMON_HEAD, ...COMMON_GLOVES, ...COMMON_BOOTS, ...COMMON_RINGS, ...COMMON_CONSUME,
+];
+
+/** Sorteia um item aleatório para recompensa de tesouro, ponderado pelo andar e
+ *  restrito pelo `floorRange` de cada item — evita item fraco demais tarde ou
+ *  forte demais cedo na masmorra. Se a faixa sorteada não tiver nada disponível
+ *  para este andar específico, cai para a faixa abaixo (sempre há algo: as faixas
+ *  de floorRange se sobrepõem o suficiente para cobrir os 20 andares). */
 export function rollTreasureItem(floor: number): Item {
   const rareChance     = Math.min(0.10 + floor * 0.02, 0.35);
   const uncommonChance = Math.min(0.30 + floor * 0.02, 0.55);
   const roll = Math.random();
 
   if (roll < rareChance) {
-    const pool = [
-      ...RARE_WEAPONS, ...RARE_ARMOR, ...RARE_HEAD,
-      ...RARE_GLOVES, ...RARE_BOOTS, ...RARE_RINGS, ...RARE_CONSUME,
-    ];
-    return pickFrom(pool);
+    return pickFromIds(RARE_IDS, floor) ?? pickFromIds(UNCOMMON_IDS, floor) ?? pickFromIds(COMMON_IDS, floor)!;
   }
   if (roll < rareChance + uncommonChance) {
-    const pool = [
-      ...UNCOMMON_WEAPONS, ...UNCOMMON_OFFHAND, ...UNCOMMON_ARMOR,
-      ...UNCOMMON_HEAD, ...UNCOMMON_GLOVES, ...UNCOMMON_BOOTS,
-      ...UNCOMMON_RINGS, ...UNCOMMON_CONSUME,
-    ];
-    return pickFrom(pool);
+    return pickFromIds(UNCOMMON_IDS, floor) ?? pickFromIds(COMMON_IDS, floor)!;
   }
-  if (Math.random() < 0.4) return pickFrom(COMMON_CONSUME);
-  const pool = [
-    ...COMMON_WEAPONS, ...COMMON_OFFHAND, ...COMMON_ARMOR,
-    ...COMMON_HEAD, ...COMMON_GLOVES, ...COMMON_BOOTS, ...COMMON_RINGS,
-  ];
-  return pickFrom(pool);
+  return pickFromIds(COMMON_IDS, floor) ?? pickFromIds(UNCOMMON_IDS, floor)!;
 }
 
 /** Itens de início por classe. */

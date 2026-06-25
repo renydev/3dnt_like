@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { TENEBRA_ROOM_ENEMIES, rollTenebraEncounter } from './tenebra.monsters';
 
 export const TenebraConfig: DungeonConfig = {
   floorNumber: 7,
   theme: VALKARIA_FLOORS[6],
+  roomEnemies: TENEBRA_ROOM_ENEMIES,
+  rollEncounter: rollTenebraEncounter,
   layout: {
     floorNumber: 7,
     rooms: [

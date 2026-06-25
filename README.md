@@ -124,6 +124,13 @@ O símbolo aparece na ficha do personagem (`character-dialog`) e na criação, e
 - **20 andares**, cada um com tema de um deus de Arton (Allihanna, Ragnar, Trebuck, Lena, Hyninn, Marah, Tenebra, Azgher, Tanna-Toh, Lin-Wu, Wynna, O Oceano, Thyatis, Sszzaas, Megalokk, Nimb, Khalmyr, Valkaria, entre outros) com layout próprio em `core/data/dungeons/<andar>/`.
 - Descanso rápido (50% PV/PM) e descanso profundo (PV/PM total) disponíveis em salas já limpas.
 
+### 5.1 Bestiário e escala de monstros
+`core/data/bestiario.data.ts` é a fonte única dos templates de monstro (atributos-base, lore, arquétipo). Cada andar (`<andar>.monsters.ts`) só decide **quais** monstros do bestiário aparecem em cada sala e em que quantidade — não redefine estatísticas.
+
+A força real do monstro em combate **não depende do número do andar** — depende do **PP da party no confronto** (`growthScale(partyPP)` em `pp-calculator.ts`), interpolado entre âncoras (10PP→1.0×, 20PP→1.5×, 35PP→2.2×) com um pequeno reforço de +2%/andar por cima (`applyFloorBonus`) só para dar sensação de progressão — tudo saturado num teto fixo (2.6×): **monstros nunca crescem indefinidamente**. Acima de 1.3× de escala o monstro pode manifestar 1-2 vantagens "fora da curva" sorteadas do seu `archetype` (`monster-vantagens.data.ts`); chefes sempre manifestam ao menos 1.
+
+Hoje só **Allihanna (andar 1) e Ragnar (andar 2)** usam esse sistema; os demais 18 andares ainda geram inimigos pelo sistema genérico antigo (`enemies.data.ts`, escala por número do andar) até serem migrados para o bestiário.
+
 ---
 
 ## 6. Combate

@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { OCEANO_ROOM_ENEMIES, rollOceanoEncounter } from './oceano.monsters';
 
 export const OceanoConfig: DungeonConfig = {
   floorNumber: 13,
   theme: VALKARIA_FLOORS[12],
+  roomEnemies: OCEANO_ROOM_ENEMIES,
+  rollEncounter: rollOceanoEncounter,
   layout: {
     floorNumber: 13,
     rooms: [

@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { MARAH_ROOM_ENEMIES, rollMarahEncounter } from './marah.monsters';
 
 export const MarahConfig: DungeonConfig = {
   floorNumber: 6,
   theme: VALKARIA_FLOORS[5],
+  roomEnemies: MARAH_ROOM_ENEMIES,
+  rollEncounter: rollMarahEncounter,
   layout: {
     floorNumber: 6,
     rooms: [

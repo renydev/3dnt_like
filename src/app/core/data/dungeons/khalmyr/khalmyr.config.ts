@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { KHALMYR_ROOM_ENEMIES, rollKhalmyrEncounter } from './khalmyr.monsters';
 
 export const KhalmyrConfig: DungeonConfig = {
   floorNumber: 19,
   theme: VALKARIA_FLOORS[18],
+  roomEnemies: KHALMYR_ROOM_ENEMIES,
+  rollEncounter: rollKhalmyrEncounter,
   layout: {
     floorNumber: 19,
     rooms: [

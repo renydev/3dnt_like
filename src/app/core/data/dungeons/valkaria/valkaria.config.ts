@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { VALKARIA_ROOM_ENEMIES, rollValkariaEncounter } from './valkaria.monsters';
 
 export const ValariaFinalConfig: DungeonConfig = {
   floorNumber: 20,
   theme: VALKARIA_FLOORS[19],
+  roomEnemies: VALKARIA_ROOM_ENEMIES,
+  rollEncounter: rollValkariaEncounter,
   layout: {
     floorNumber: 20,
     rooms: [

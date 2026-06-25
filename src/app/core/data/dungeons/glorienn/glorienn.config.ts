@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { GLORIENN_ROOM_ENEMIES, rollGloriennEncounter } from './glorienn.monsters';
 
 export const GloriennConfig: DungeonConfig = {
   floorNumber: 3,
   theme: VALKARIA_FLOORS[2],
+  roomEnemies: GLORIENN_ROOM_ENEMIES,
+  rollEncounter: rollGloriennEncounter,
   layout: {
     floorNumber: 3,
     rooms: [

@@ -1,9 +1,12 @@
 import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
+import { SSZZAAS_ROOM_ENEMIES, rollSszzaasEncounter } from './sszzaas.monsters';
 
 export const SszzaasConfig: DungeonConfig = {
   floorNumber: 15,
   theme: VALKARIA_FLOORS[14],
+  roomEnemies: SSZZAAS_ROOM_ENEMIES,
+  rollEncounter: rollSszzaasEncounter,
   layout: {
     floorNumber: 15,
     rooms: [
