@@ -4,6 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { DUNGEON_REGISTRY } from '../core/data/dungeons/dungeon-registry';
 import { BESTIARIO } from '../core/data/bestiario.data';
 import { ITEM_CATALOG } from '../core/models/item.model';
+import {
+  analyzeFloorBalance, analyzeAllFloors, defaultExpectedPartyPP, formatReportAsMarkdown,
+  FloorBalanceReport,
+} from '../core/utils/balance-analysis';
 
 interface RoomState {
   roomId: number;
@@ -175,6 +179,7 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
           <button class="btn-gen" (click)="genPanel.set(!genPanel())">🎲 Gerar</button>
           <button class="btn-add" (click)="addRoom()">＋ Sala</button>
           <button class="btn-copy" (click)="copyConfig()">📋 Copiar</button>
+          <button class="btn-balance" (click)="toggleBalancePanel()">📊 Balanceamento</button>
           <a class="btn-game" href="/">🎮 Jogo</a>
         </div>
       </header>
@@ -258,6 +263,68 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
             <button class="btn-gen-run" (click)="generateLayout()">🎲 Gerar Layout</button>
             <button class="btn-gen-cancel" (click)="genPanel.set(false)">✕ Cancelar</button>
           </div>
+        </div>
+      }
+
+      <!-- Painel de balanceamento -->
+      @if (balancePanel()) {
+        <div class="balance-panel">
+          <div class="balance-title">📊 Análise de Balanceamento — sem combate real, só estatística (FA/FD esperados com 1d6=3.5)</div>
+
+          <div class="balance-controls">
+            <label class="balance-field">
+              <span>PP da Party (andar {{ selectedFloor() }})</span>
+              <input type="number" [(ngModel)]="balancePartyPP" min="3" class="gen-input" style="width:64px" />
+            </label>
+            <label class="balance-field">
+              <span>Tamanho do grupo</span>
+              <input type="number" [(ngModel)]="balancePartySize" min="1" max="6" class="gen-input" style="width:52px" />
+            </label>
+            <label class="balance-field">
+              <span>Armadura média</span>
+              <input type="number" [(ngModel)]="balanceArmadura" min="0" max="10" class="gen-input" style="width:52px" />
+            </label>
+            <button class="btn-balance-run" (click)="runBalanceForFloor()">Analisar este andar</button>
+            <button class="btn-balance-all" (click)="runBalanceAllFloors()">Analisar os 20 andares</button>
+            @if (balanceReports().length > 0) {
+              <button class="btn-balance-copy" (click)="copyBalanceReport()">📋 Copiar relatório (Markdown)</button>
+            }
+          </div>
+
+          @if (balanceCopied()) {
+            <div class="toast" style="margin: 4px 0;">✅ Relatório copiado!</div>
+          }
+
+          @for (report of balanceReports(); track report.floor) {
+            <div class="balance-report">
+              <div class="balance-report-head">
+                Andar {{ report.floor }} — PP {{ report.partyPP }} · escala {{ report.scale.toFixed(2) }}
+              </div>
+              <table class="balance-table">
+                <thead>
+                  <tr>
+                    <th>Monstro</th><th>P</th><th>H</th><th>R</th><th>PV</th>
+                    <th>Dano→Monstro</th><th>Dano→Grupo</th><th>Risco</th><th>Veredito</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (m of report.monsters; track m.id) {
+                    <tr [class]="'verdict-' + m.verdict">
+                      <td>{{ m.name }}</td>
+                      <td>{{ m.poder }}</td><td>{{ m.habilidade }}</td><td>{{ m.resistencia }}</td><td>{{ m.hp }}</td>
+                      <td>{{ m.expectedDmgPartyToMonster.toFixed(1) }}</td>
+                      <td>{{ m.expectedDmgMonsterToParty.toFixed(1) }}</td>
+                      <td>{{ m.riskRatio === Infinity ? '∞' : m.riskRatio.toFixed(2) }}</td>
+                      <td>{{ m.verdict }}</td>
+                    </tr>
+                  }
+                  @if (report.monsters.length === 0) {
+                    <tr><td colspan="9" class="conn-empty">Nenhum monstro cadastrado para este andar no bestiário.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
         </div>
       }
 
@@ -522,6 +589,31 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
     .btn-add    { background: #7c3aed; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
     .btn-copy   { background: #1e40af; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
     .btn-gen    { background: #b45309; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+    .btn-balance { background: #0e7490; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
+
+    /* Balance panel */
+    .balance-panel {
+      background: #0c0c1a; border-bottom: 2px solid #0e7490;
+      padding: 10px 16px 12px; flex-shrink: 0; max-height: 50vh; overflow-y: auto;
+    }
+    .balance-title { font-size: 10px; color: #67e8f9; margin-bottom: 8px; }
+    .balance-controls { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 8px; }
+    .balance-field { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: #aaa; }
+    .btn-balance-run, .btn-balance-all, .btn-balance-copy {
+      background: #0e7490; color: #fff; border: none; padding: 5px 10px; border-radius: 4px;
+      cursor: pointer; font-size: 11px;
+    }
+    .btn-balance-all  { background: #155e75; }
+    .btn-balance-copy { background: #1e40af; }
+    .balance-report { margin-bottom: 14px; }
+    .balance-report-head { font-size: 11px; color: #facc15; margin-bottom: 4px; font-weight: bold; }
+    .balance-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    .balance-table th, .balance-table td { padding: 3px 6px; border-bottom: 1px solid #2a2a42; text-align: left; }
+    .balance-table th { color: #888; font-weight: normal; text-transform: uppercase; font-size: 9px; }
+    .verdict-trivial     td:last-child { color: #6b7280; }
+    .verdict-equilibrado td:last-child { color: #4ade80; font-weight: bold; }
+    .verdict-arriscado   td:last-child { color: #facc15; font-weight: bold; }
+    .verdict-mortal       td:last-child { color: #f87171; font-weight: bold; }
 
     .treasure-grid {
       display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px;
@@ -720,6 +812,15 @@ export class DebugComponent {
   dragging = signal<number | null>(null);
   genPanel = signal(false);
 
+  // Painel de balanceamento
+  readonly Infinity = Infinity;
+  balancePanel    = signal(false);
+  balanceReports  = signal<FloorBalanceReport[]>([]);
+  balanceCopied   = signal(false);
+  balancePartyPP    = defaultExpectedPartyPP(1);
+  balancePartySize  = 4;
+  balanceArmadura   = 0;
+
   // Gerador: configurações
   genMonsters     = 4;
   genTreasures    = 2;
@@ -841,6 +942,34 @@ export class DebugComponent {
     this.selectedFloor.set(n);
     this.loadFloor(n);
     this.selected.set(null);
+    this.balancePartyPP = defaultExpectedPartyPP(n);
+  }
+
+  // ── Análise de balanceamento ────────────────────────────────────────────
+
+  toggleBalancePanel(): void {
+    this.balancePanel.update(v => !v);
+  }
+
+  runBalanceForFloor(): void {
+    const report = analyzeFloorBalance(this.selectedFloor(), {
+      partyPP: this.balancePartyPP, size: this.balancePartySize, armadura: this.balanceArmadura,
+    });
+    this.balanceReports.set([report]);
+  }
+
+  runBalanceAllFloors(): void {
+    const size = this.balancePartySize;
+    const armadura = this.balanceArmadura;
+    const reports = analyzeAllFloors(floor => ({ partyPP: defaultExpectedPartyPP(floor), size, armadura }));
+    this.balanceReports.set(reports);
+  }
+
+  copyBalanceReport(): void {
+    const text = formatReportAsMarkdown(this.balanceReports());
+    navigator.clipboard.writeText(text);
+    this.balanceCopied.set(true);
+    setTimeout(() => this.balanceCopied.set(false), 2500);
   }
 
   private loadFloor(floor: number) {
