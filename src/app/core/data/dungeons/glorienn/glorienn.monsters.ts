@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Glorienn — convertido de "A Libertação de Valkaria" (pág. 38-42).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -30,7 +31,7 @@ export const GLORIENN_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — equipes élficas de patrulha (tabela 4d do livro) ──
 // Roll 4-24: 4-5=magos+guerreiros, 6=bardos+guerreiros, 7-10=rangers, 11-15=guerreiros,
 //            16=mago+guerreiros, 17-18/21-22=arqueiros, 19-20=mago+rangers, 23-24=magos+bardos
-export function rollGloriennEncounter(scale: number): Enemy[] {
+export function rollGloriennEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 5) {

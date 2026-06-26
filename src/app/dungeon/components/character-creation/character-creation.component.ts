@@ -571,9 +571,20 @@ export class CharacterCreationComponent {
     this.totalPoints() - this.attrSpent() - this.kitsSpent() - this.vantagensSpent() - this.periciasSpent()
   );
 
-  /** Os poderes do arquétipo (vantagens e desvantagens nomeadas, concedidas automaticamente). */
+  /** Poderes do arquétipo que são vantagens (todo poder cuja descrição não se anuncia como "Desvantagem"). */
   allFreeVantagens = computed(() => {
-    return (this.selectedRace()?.poderes ?? []).map(p => p.name);
+    return (this.selectedRace()?.poderes ?? [])
+      .filter(p => !/desvantagem/i.test(p.description))
+      .map(p => p.name);
+  });
+
+  /** Poderes do arquétipo que são desvantagens — a própria descrição do arquétipo os rotula
+   *  como tal (ex.: "Lento" do Anão, "Frágil" do Elfo). Sem isso, eles eram somados a
+   *  allFreeVantagens e apareciam como vantagem no personagem final, o que é errado. */
+  raceDesvantagens = computed(() => {
+    return (this.selectedRace()?.poderes ?? [])
+      .filter(p => /desvantagem/i.test(p.description))
+      .map(p => p.name);
   });
 
   selectedVantagensNames = computed(() =>
@@ -798,7 +809,7 @@ export class CharacterCreationComponent {
       pontosVida: { base: stats.pontosVida, current: stats.pontosVida, max: stats.pontosVida },
       pontosMana: { base: stats.pontosMana, current: stats.pontosMana, max: stats.pontosMana },
       vantagens:    [...this.allFreeVantagens(), ...this.selectedVantagensNames()],
-      desvantagens: this.selectedDesvantagens().map(id => this.getDesv(id)!.name),
+      desvantagens: [...this.raceDesvantagens(), ...this.selectedDesvantagens().map(id => this.getDesv(id)!.name)],
       pericias:     [...this.selectedPericias(), ...this.selectedEspecializacoes()],
       gold: 20 + (this.selectedTier()?.basePoints ?? 5) * 2,
       inventory: [],

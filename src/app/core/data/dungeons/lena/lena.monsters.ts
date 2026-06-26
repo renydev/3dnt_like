@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Lena — convertido de "A Libertação de Valkaria" (pág. 43-47).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -24,7 +25,7 @@ export const LENA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — fauna mágica enorme da masmorra (tabela 4d do livro) ──
 // Roll 4-24: 4-5=dinônicos, 6=sprites, 7-10=cães teleportadores, 11-12=formians,
 //            13=carrascos, 14=cobras, 15=lobos, 16-17=lagartos, 18-20=fadas, 22-24=unicórnios
-export function rollLenaEncounter(scale: number): Enemy[] {
+export function rollLenaEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 5) {

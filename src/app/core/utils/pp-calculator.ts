@@ -73,7 +73,7 @@ const GROWTH_ANCHORS: ReadonlyArray<readonly [pp: number, scale: number]> = [
   [35, 2.2],
 ];
 const GROWTH_MIN = 0.7;
-const GROWTH_MAX = 2.6;
+export const GROWTH_MAX = 2.6;
 
 export function growthScale(partyPP: number): number {
   const anchors = GROWTH_ANCHORS;
@@ -121,6 +121,69 @@ export function vantagemSlotsFor(scale: number): number {
   if (scale < 1.3) return 0;
   if (scale < 1.8) return 1;
   return 2;
+}
+
+/**
+ * Escala "espelhada" por atributo — em vez de um único multiplicador aplicado
+ * igualmente a Poder/Habilidade/Resistência do monstro (que ignora COMO a party
+ * gastou seu PP), cada atributo do monstro reage ao atributo OPOSTO da party real:
+ *
+ *   - Poder do monstro (seu dano) reage à Resistência média real da party — uma
+ *     party "tanque" (R alto) enfrenta golpes mais fortes; uma party "vidro"
+ *     (R baixo) enfrenta golpes mais fracos, mesmo com o mesmo PP total.
+ *   - Resistência do monstro (sua sobrevivência) reage ao Poder médio real da
+ *     party — uma party "dano" (P alto) enfrenta monstros mais resistentes; uma
+ *     party fraca em ataque enfrenta monstros mais fáceis de derrubar.
+ *
+ * Isso resolve o caso em que duas parties com o MESMO PP total, mas distribuições
+ * de atributo opostas (ex.: glass cannon vs. tanque), recebiam o monstro idêntico
+ * — o que ou esmagava a glass cannon (R baixo + monstro com P "médio" inflado)
+ * ou deixava o tanque entediado (R alto contra um monstro que não precisa acertar
+ * tão forte). Habilidade segue a escala geral, sem espelhamento (não há um par
+ * ofensivo/defensivo direto pra ela nas fórmulas de combate atuais).
+ */
+export interface GrowthScale {
+  /** Escala "geral" — usada para PV, slots de vantagem e o teto de chefes. Equivale ao antigo `growthScale` único. */
+  overall: number;
+  /** Multiplicador do Poder do monstro (seu ataque) — reage à Resistência real média da party. */
+  poder: number;
+  /** Multiplicador da Resistência do monstro (sua defesa) — reage ao Poder real médio da party. */
+  resistencia: number;
+  /** Multiplicador da Habilidade do monstro — segue a escala geral. */
+  habilidade: number;
+}
+
+/**
+ * Constrói o GrowthScale a partir do PP total da party (magnitude geral) e da
+ * distribuição REAL de atributos (não um split assumido) — ver documentação de
+ * GrowthScale. `avgAttrs` deve ser a média de Poder/Habilidade/Resistência por
+ * personagem da party (current, com equipamento e vantagens já refletidos se
+ * disponível); `size` é o número de personagens.
+ */
+export function computeGrowthScale(
+  partyPP: number,
+  avgAttrs: { poder: number; habilidade: number; resistencia: number },
+  size: number,
+  floor: number,
+): GrowthScale {
+  const overall = applyFloorBonus(growthScale(partyPP), floor);
+
+  // Baseline "equilibrado": o que cada atributo teria se o PP fosse dividido
+  // igualmente entre Poder/Habilidade/Resistência — mesma suposição usada antes
+  // de termos os atributos reais, agora só como referência de desvio.
+  const expectedAttr = Math.max(1, Math.round(partyPP / Math.max(1, size) / 3));
+
+  const clamp = (n: number) => Math.min(1.8, Math.max(0.5, n));
+  const rPoder       = clamp(avgAttrs.poder       / expectedAttr);
+  const rResistencia = clamp(avgAttrs.resistencia / expectedAttr);
+  const rHabilidade  = clamp(avgAttrs.habilidade  / expectedAttr);
+
+  return {
+    overall,
+    poder:       Math.min(GROWTH_MAX, overall * rResistencia),
+    resistencia: Math.min(GROWTH_MAX, overall * rPoder),
+    habilidade:  Math.min(GROWTH_MAX, overall * rHabilidade),
+  };
 }
 
 export interface CombatXpResult {

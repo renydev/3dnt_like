@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // central (core/data/bestiario.data.ts) — este arquivo só decide QUAIS monstros
 // aparecem em QUAL sala e em QUE quantidade, especificamente para Ragnar.
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -66,7 +67,7 @@ export const RAGNAR_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
   ],
 };
 
-export function rollRagnarEncounter(scale: number): Enemy[] {
+export function rollRagnarEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6);
   if (roll <= 2) return Array.from({ length: d(4) + 1 }, () => spawnMonster('goblin_guerreiro', scale));
   if (roll <= 4) return [spawnMonster('orc_guerreiro', scale), spawnMonster('orc_berserker', scale)];

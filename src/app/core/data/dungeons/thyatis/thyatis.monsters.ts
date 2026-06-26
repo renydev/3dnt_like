@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Thyatis — convertido de "A Libertação de Valkaria" (pág. 85-89).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -24,7 +25,7 @@ export const THYATIS_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — feras ígneas da masmorra (tabela 4d do livro) ──
 // Roll 4-24: 4-6=thoqqa, 7-9=mastins, 10-11=gigantes do fogo, 12-13=salamandras nobres,
 //            14-16=elementais do fogo anciões, 17-19=dragão adulto, 20-24=dragão experiente
-export function rollThyatisEncounter(scale: number): Enemy[] {
+export function rollThyatisEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 6) {

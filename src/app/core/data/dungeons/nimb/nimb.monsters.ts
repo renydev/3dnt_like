@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { ALL_MONSTER_IDS, spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -11,12 +12,12 @@ export { spawnMonster };
 // qualquer andar) — a tradução mais fiel possível de "criaturas ao acaso
 // pelos planos, vivas ou mortas, conhecidas ou não".
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
 /** Sorteia um monstro qualquer do bestiário inteiro — o "caos" de Nimb. */
-function spawnChaosMonster(scale: number): Enemy {
+function spawnChaosMonster(scale: GrowthScale): Enemy {
   const id = ALL_MONSTER_IDS[Math.floor(Math.random() * ALL_MONSTER_IDS.length)];
   return spawnMonster(id, scale);
 }
@@ -33,7 +34,7 @@ export const NIMB_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — o caos não segue tabela fixa ──
 // 1 em 6: uma fera-do-caos "nativa" do Reino de Nimb; 1 em 30 (raríssimo): o
 // Tarrasque; do contrário, qualquer monstro ao acaso do bestiário inteiro.
-export function rollNimbEncounter(scale: number): Enemy[] {
+export function rollNimbEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(30);
   if (roll === 1) return [spawnMonster('tarrasque', scale)];
   if (roll <= 6) return [spawnMonster('fera_caos', scale)];

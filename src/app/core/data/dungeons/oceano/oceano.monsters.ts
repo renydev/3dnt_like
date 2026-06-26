@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para o Oceano — convertido de "A Libertação de Valkaria" (pág. 80-85).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -30,7 +31,7 @@ export const OCEANO_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // Roll 4-24: 4-7=rangers elfos-do-mar, 8-11=bárbaros elfos-do-mar, 12-13=tojanidas,
 //            14-15=selakos monstruosos, 16-17=homens-selakos, 18-20=tartaruga-dragão,
 //            21-22=sereias feiticeiras, 23-24=sereias clérigas/bardas
-export function rollOceanoEncounter(scale: number): Enemy[] {
+export function rollOceanoEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 7) {

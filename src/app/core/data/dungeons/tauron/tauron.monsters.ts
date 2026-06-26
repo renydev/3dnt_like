@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Tauron — convertido de "A Libertação de Valkaria" (pág. 65-68).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -27,7 +28,7 @@ export const TAURON_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — prisioneiros de Tauron (tabela 4d do livro) ──
 // Roll 4-24: 4-8=minotauros guerreiros, 9-13=minotauros bárbaros, 14-15=bárbaros humanos,
 //            16-17=guerreiros humanos, 18-19=bárbaros anões, 20-21=guerreiros anões, 22-24=NPC genérico
-export function rollTauronEncounter(scale: number): Enemy[] {
+export function rollTauronEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 13) {
@@ -42,7 +43,7 @@ export function rollTauronEncounter(scale: number): Enemy[] {
 // ── Feras de arena (tabela 3d, salas de "Desafios da Força") ──
 // Roll 3-18: 3-4=minotauros selvagens, 5-6=leões gigantes, 7-8=mantícoras, 9-10=quimeras,
 //            11-12=gigantes do fogo, 13-14=golens de pedra, 15-16=verme púrpura, 17-18=wyverns
-export function rollTauronArenaBeast(scale: number): Enemy[] {
+export function rollTauronArenaBeast(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6);
 
   if (roll <= 4) return Array.from({ length: d(6) + 2 }, () => spawnMonster('minotauro_selvagem', scale));

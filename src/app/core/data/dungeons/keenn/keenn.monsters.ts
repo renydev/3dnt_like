@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Keenn — convertido de "A Libertação de Valkaria" (pág. 94-97).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -25,7 +26,7 @@ export const KEENN_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — campeões do torneio de Keenn (tabela 4d do livro) ──
 // O livro só varia a raça dos combatentes (todos com PP equivalente), então
 // toda a tabela 4d resolve para o mesmo monstro-base, em quantidades variadas.
-export function rollKeennEncounter(scale: number): Enemy[] {
+export function rollKeennEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
   const count = roll <= 22 ? d(6) : Math.max(1, d(6) - 4);
   return Array.from({ length: Math.min(count, 4) }, () => spawnMonster('combatente_keenn', scale));

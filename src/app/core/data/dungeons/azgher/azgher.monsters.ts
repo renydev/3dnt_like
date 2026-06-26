@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Azgher — convertido de "A Libertação de Valkaria" (pág. 61-64).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -31,7 +32,7 @@ export const AZGHER_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // Roll 4-24: 4-5=dragonnes, 6-7=andro-esfinges, 8-9=hieraco-esfinges, 10-12=gino-esfinges,
 //            13=escorpiões imensos, 14-15=lamias, 16-18=múmias, 19-20=escorpiões colossais,
 //            21-22=elemental da areia, 23-24=efreet
-export function rollAzgherEncounter(scale: number): Enemy[] {
+export function rollAzgherEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 5) {

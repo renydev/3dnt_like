@@ -1,4 +1,5 @@
 import { Enemy } from '../models/combat.model';
+import { GrowthScale } from '../utils/pp-calculator';
 import { GrowableMonsterTemplate, spawnGrowableMonster } from './dungeons/shared/monster-growth';
 
 // ── Bestiário central ─────────────────────────────────────────────────────────
@@ -1307,7 +1308,7 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
 export const ALL_MONSTER_IDS = Object.keys(BESTIARIO);
 
 /** Instancia um Enemy a partir de um template do bestiário, já escalado pelo confronto atual. */
-export function spawnMonster(key: string, scale: number, isBoss = false): Enemy {
+export function spawnMonster(key: string, scale: GrowthScale, isBoss = false): Enemy {
   return spawnGrowableMonster(BESTIARIO[key], key, isBoss, scale);
 }
 

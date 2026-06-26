@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -9,7 +10,7 @@ export { spawnMonster };
 // Marah é a masmorra menos violenta do desafio: quase nenhuma sala tem monstro
 // "hostil" de verdade (estátuas são ilusórias, dríades e a ninfa são pacíficas).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -21,7 +22,7 @@ export const MARAH_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — servos pacíficos de Marah (tabela 4d do livro) ──
 // Roll 4-24: 4-5=clérigas, 6-7=sprites bardos, 8-9=bardos, 10-12=paladinos,
 //            13-16=clérigas elfas, 17-21=bardos elfos, 22-24=sprites clérigas
-export function rollMarahEncounter(scale: number): Enemy[] {
+export function rollMarahEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 5) {

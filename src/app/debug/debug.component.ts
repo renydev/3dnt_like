@@ -5,9 +5,11 @@ import { DUNGEON_REGISTRY } from '../core/data/dungeons/dungeon-registry';
 import { BESTIARIO } from '../core/data/bestiario.data';
 import { ITEM_CATALOG } from '../core/models/item.model';
 import {
-  analyzeFloorBalance, analyzeAllFloors, defaultExpectedPartyPP, formatReportAsMarkdown,
-  FloorBalanceReport,
+  analyzeFloorBalance, analyzeAllFloors, auditVantagemCosts, auditXpPpCoherence,
+  defaultExpectedPartyPP, estimateExpectedArmor, formatReportAsMarkdown,
+  FloorBalanceReport, CostAuditIssue, XpPpCoherenceRow,
 } from '../core/utils/balance-analysis';
+import { simulateAllPaths, formatPathReportAsMarkdown, PathSimResult } from '../core/utils/dungeon-path-simulator';
 
 interface RoomState {
   roomId: number;
@@ -274,21 +276,52 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
           <div class="balance-controls">
             <label class="balance-field">
               <span>PP da Party (andar {{ selectedFloor() }})</span>
-              <input type="number" [(ngModel)]="balancePartyPP" min="3" class="gen-input" style="width:64px" />
+              <input type="number" [(ngModel)]="balancePartyPP" (ngModelChange)="reapplyAttrPreset()" min="3" class="gen-input" style="width:64px" />
             </label>
             <label class="balance-field">
               <span>Tamanho do grupo</span>
-              <input type="number" [(ngModel)]="balancePartySize" min="1" max="6" class="gen-input" style="width:52px" />
+              <input type="number" [(ngModel)]="balancePartySize" (ngModelChange)="reapplyAttrPreset()" min="1" max="6" class="gen-input" style="width:52px" />
             </label>
             <label class="balance-field">
-              <span>Armadura média</span>
-              <input type="number" [(ngModel)]="balanceArmadura" min="0" max="10" class="gen-input" style="width:52px" />
+              <span title="Sugerido automaticamente a partir dos itens do ITEM_CATALOG disponíveis neste andar (floorRange) — edite se quiser testar outro cenário.">Armadura média 🔍</span>
+              <input type="number" [(ngModel)]="balanceArmadura" min="0" max="10" step="0.1" class="gen-input" style="width:52px" />
+            </label>
+            <label class="balance-field">
+              <span title="Roda N combates simulados por monstro com dados reais (Math.random), em vez de só a média estatística. Mais lento, mais confiável.">Monte Carlo (trials)</span>
+              <input type="number" [(ngModel)]="balanceMonteCarloTrials" min="0" max="2000" step="50" class="gen-input" style="width:64px" />
             </label>
             <button class="btn-balance-run" (click)="runBalanceForFloor()">Analisar este andar</button>
             <button class="btn-balance-all" (click)="runBalanceAllFloors()">Analisar os 20 andares</button>
             @if (balanceReports().length > 0) {
               <button class="btn-balance-copy" (click)="copyBalanceReport()">📋 Copiar relatório (Markdown)</button>
             }
+          </div>
+
+          <div class="balance-controls">
+            <span class="balance-profile-label" title="Testa o item 1 do balanceamento: o monstro reage à distribuição REAL de atributos da party, não só ao PP total. Os presets redistribuem o mesmo PP/personagem com pesos diferentes.">
+              👤 Perfil de atributos da party:
+            </span>
+            <button class="btn-profile" [class.active]="balanceProfilePreset() === 'equilibrado'" (click)="applyAttrPreset('equilibrado')">Equilibrado</button>
+            <button class="btn-profile" [class.active]="balanceProfilePreset() === 'glass_cannon'" (click)="applyAttrPreset('glass_cannon')">Glass Cannon</button>
+            <button class="btn-profile" [class.active]="balanceProfilePreset() === 'tanque'" (click)="applyAttrPreset('tanque')">Tanque</button>
+            <button class="btn-profile" [class.active]="balanceProfilePreset() === 'agil'" (click)="applyAttrPreset('agil')">Ágil</button>
+            <label class="balance-field">
+              <span>Poder médio</span>
+              <input type="number" [(ngModel)]="balanceAttrPoder" (ngModelChange)="markCustomProfile()" min="1" class="gen-input" style="width:52px" />
+            </label>
+            <label class="balance-field">
+              <span>Habilidade média</span>
+              <input type="number" [(ngModel)]="balanceAttrHabilidade" (ngModelChange)="markCustomProfile()" min="1" class="gen-input" style="width:52px" />
+            </label>
+            <label class="balance-field">
+              <span>Resistência média</span>
+              <input type="number" [(ngModel)]="balanceAttrResistencia" (ngModelChange)="markCustomProfile()" min="1" class="gen-input" style="width:52px" />
+            </label>
+          </div>
+
+          <div class="balance-controls">
+            <button class="btn-balance-audit" (click)="runCostAudit()">🔎 Auditar custo de Vantagens/Desvantagens</button>
+            <button class="btn-balance-audit" (click)="runXpCoherence()">🔎 Auditar coerência XP × curva de PP</button>
           </div>
 
           @if (balanceCopied()) {
@@ -298,13 +331,17 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
           @for (report of balanceReports(); track report.floor) {
             <div class="balance-report">
               <div class="balance-report-head">
-                Andar {{ report.floor }} — PP {{ report.partyPP }} · escala {{ report.scale.toFixed(2) }}
+                Andar {{ report.floor }} — PP {{ report.partyPP }} · escala geral {{ report.scale.overall.toFixed(2) }}
+                · Poder do monstro ×{{ report.scale.poder.toFixed(2) }} · Resistência do monstro ×{{ report.scale.resistencia.toFixed(2) }}
               </div>
               <table class="balance-table">
                 <thead>
                   <tr>
                     <th>Monstro</th><th>P</th><th>H</th><th>R</th><th>PV</th>
                     <th>Dano→Monstro</th><th>Dano→Grupo</th><th>Risco</th><th>Veredito</th>
+                    @if (balanceMonteCarloTrials > 0) {
+                      <th>Vitória% (MC)</th><th>Rodadas (MC)</th><th>PV grupo% (MC)</th>
+                    }
                   </tr>
                 </thead>
                 <tbody>
@@ -316,10 +353,106 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
                       <td>{{ m.expectedDmgMonsterToParty.toFixed(1) }}</td>
                       <td>{{ m.riskRatio === Infinity ? '∞' : m.riskRatio.toFixed(2) }}</td>
                       <td>{{ m.verdict }}</td>
+                      @if (balanceMonteCarloTrials > 0) {
+                        <td>{{ m.monteCarlo ? (m.monteCarlo.winRate * 100).toFixed(0) + '%' : '—' }}</td>
+                        <td>{{ m.monteCarlo ? m.monteCarlo.avgRounds.toFixed(1) : '—' }}</td>
+                        <td>{{ m.monteCarlo ? m.monteCarlo.avgPartyHpRemainingPct.toFixed(0) + '%' : '—' }}</td>
+                      }
                     </tr>
                   }
                   @if (report.monsters.length === 0) {
-                    <tr><td colspan="9" class="conn-empty">Nenhum monstro cadastrado para este andar no bestiário.</td></tr>
+                    <tr><td colspan="12" class="conn-empty">Nenhum monstro cadastrado para este andar no bestiário.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          @if (costIssues().length > 0) {
+            <div class="balance-report">
+              <div class="balance-report-head">🔎 Auditoria de custo de Vantagens/Desvantagens — {{ costIssues().length }} problema(s)</div>
+              <table class="balance-table">
+                <thead><tr><th>Tipo</th><th>Nome</th><th>Problema</th></tr></thead>
+                <tbody>
+                  @for (i of costIssues(); track i.id) {
+                    <tr class="verdict-mortal"><td>{{ i.kind }}</td><td>{{ i.name }}</td><td>{{ i.issue }}</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+          @if (costAuditRan() && costIssues().length === 0) {
+            <div class="toast" style="margin: 4px 0;">✅ Nenhum problema de custo encontrado em ALL_VANTAGENS/ALL_DESVANTAGENS.</div>
+          }
+
+          @if (xpCoherenceRows().length > 0) {
+            <div class="balance-report">
+              <div class="balance-report-head">🔎 Coerência XP × curva de PP esperado</div>
+              <table class="balance-table">
+                <thead>
+                  <tr>
+                    <th>Andar</th><th>PP atual→próximo</th><th>PP/pers. a ganhar</th>
+                    <th>XP necessário</th><th>XP/combate comum</th><th>Combates necessários</th><th>Flag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (x of xpCoherenceRows(); track x.floor) {
+                    <tr [class]="x.flag !== 'ok' ? 'verdict-arriscado' : ''">
+                      <td>{{ x.floor }}</td>
+                      <td>{{ x.partyPP }}→{{ x.partyPPNext }}</td>
+                      <td>{{ x.ppGapPerCharacter.toFixed(1) }}</td>
+                      <td>{{ x.xpNeededPerCharacter.toFixed(0) }}</td>
+                      <td>{{ x.xpPerCommonCombat.toFixed(2) }}</td>
+                      <td>{{ x.combatsNeeded === Infinity ? '∞' : x.combatsNeeded.toFixed(1) }}</td>
+                      <td>{{ x.flag }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <div class="balance-controls">
+            <span class="balance-profile-label" title="Percorre TODAS as rotas possíveis (entrada → chefe) deste andar, carregando o PV entre salas (sem cura mágica, exceto em salas de descanso) — usa o mesmo perfil de party e o mesmo spawn real do jogo (com vantagens sorteadas de verdade, não a média estatística).">
+              🧭 Testar grupo na masmorra:
+            </span>
+            <label class="balance-field">
+              <span>Trials por rota</span>
+              <input type="number" [(ngModel)]="pathSimTrials" min="10" max="1000" step="10" class="gen-input" style="width:60px" />
+            </label>
+            <button class="btn-balance-run" (click)="runPathSimulation()">🧭 Testar todas as rotas deste andar</button>
+            @if (pathSimResults().length > 0) {
+              <button class="btn-balance-copy" (click)="copyPathReport()">📋 Copiar relatório (Markdown)</button>
+            }
+          </div>
+
+          @if (pathSimCopied()) {
+            <div class="toast" style="margin: 4px 0;">✅ Relatório copiado!</div>
+          }
+
+          @if (pathSimRan() && pathSimResults().length === 0) {
+            <div class="toast" style="margin: 4px 0; background:#7c2d12; color:#fca5a5;">
+              ⚠️ Nenhuma rota entrada→chefe encontrada para este andar (verifique as conexões no layout).
+            </div>
+          }
+
+          @if (pathSimResults().length > 0) {
+            <div class="balance-report">
+              <div class="balance-report-head">
+                🧭 Rotas do andar {{ selectedFloor() }} — {{ pathSimResults().length }} rota(s), ordenadas da mais arriscada pra mais segura
+              </div>
+              <table class="balance-table">
+                <thead>
+                  <tr><th>Rota</th><th>Sobrevivência</th><th>PV líder % (médio)</th><th>Sala mais letal</th></tr>
+                </thead>
+                <tbody>
+                  @for (p of pathSimResults(); track p.roomIds.join('-')) {
+                    <tr [class]="p.survivalRate < 0.5 ? 'verdict-mortal' : p.survivalRate < 0.8 ? 'verdict-arriscado' : 'verdict-equilibrado'">
+                      <td>{{ p.roomNames.join(' → ') }}</td>
+                      <td>{{ (p.survivalRate * 100).toFixed(0) }}%</td>
+                      <td>{{ p.avgLeaderHpPct.toFixed(0) }}%</td>
+                      <td>{{ p.deadliestRoomId !== null ? p.roomNames[p.roomIds.indexOf(p.deadliestRoomId)] : '—' }}</td>
+                    </tr>
                   }
                 </tbody>
               </table>
@@ -605,6 +738,16 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
     }
     .btn-balance-all  { background: #155e75; }
     .btn-balance-copy { background: #1e40af; }
+    .btn-balance-audit {
+      background: #7c2d12; color: #fff; border: none; padding: 5px 10px; border-radius: 4px;
+      cursor: pointer; font-size: 11px;
+    }
+    .balance-profile-label { font-size: 10px; color: #888; align-self: center; }
+    .btn-profile {
+      background: #1f2937; color: #9ca3af; border: 1px solid #374151; padding: 5px 10px;
+      border-radius: 4px; cursor: pointer; font-size: 11px;
+    }
+    .btn-profile.active { background: #0e7490; color: #fff; border-color: #0e7490; }
     .balance-report { margin-bottom: 14px; }
     .balance-report-head { font-size: 11px; color: #facc15; margin-bottom: 4px; font-weight: bold; }
     .balance-table { width: 100%; border-collapse: collapse; font-size: 10px; }
@@ -819,7 +962,25 @@ export class DebugComponent {
   balanceCopied   = signal(false);
   balancePartyPP    = defaultExpectedPartyPP(1);
   balancePartySize  = 4;
-  balanceArmadura   = 0;
+  balanceArmadura   = estimateExpectedArmor(1);
+  balanceMonteCarloTrials = 0;
+
+  // Perfil de distribuição de atributos da party (ver computeGrowthScale em pp-calculator.ts —
+  // testa se o monstro reage à distribuição REAL de P/H/R, não só ao PP total).
+  balanceProfilePreset    = signal<'equilibrado' | 'glass_cannon' | 'tanque' | 'agil' | 'custom'>('equilibrado');
+  balanceAttrPoder        = 1;
+  balanceAttrHabilidade   = 1;
+  balanceAttrResistencia  = 1;
+
+  costIssues      = signal<CostAuditIssue[]>([]);
+  costAuditRan    = signal(false);
+  xpCoherenceRows = signal<XpPpCoherenceRow[]>([]);
+
+  // Teste de rotas da masmorra (ver dungeon-path-simulator.ts)
+  pathSimTrials  = 200;
+  pathSimResults = signal<PathSimResult[]>([]);
+  pathSimRan     = signal(false);
+  pathSimCopied  = signal(false);
 
   // Gerador: configurações
   genMonsters     = 4;
@@ -935,14 +1096,16 @@ export class DebugComponent {
     return result;
   });
 
-  constructor() { this.loadFloor(1); }
+  constructor() { this.loadFloor(1); this.applyAttrPreset('equilibrado'); }
 
   onFloorChange(val: string) {
     const n = +val;
     this.selectedFloor.set(n);
     this.loadFloor(n);
     this.selected.set(null);
-    this.balancePartyPP = defaultExpectedPartyPP(n);
+    this.balancePartyPP  = defaultExpectedPartyPP(n);
+    this.balanceArmadura = estimateExpectedArmor(n);
+    this.reapplyAttrPreset();
   }
 
   // ── Análise de balanceamento ────────────────────────────────────────────
@@ -954,22 +1117,97 @@ export class DebugComponent {
   runBalanceForFloor(): void {
     const report = analyzeFloorBalance(this.selectedFloor(), {
       partyPP: this.balancePartyPP, size: this.balancePartySize, armadura: this.balanceArmadura,
-    });
+      avgAttrs: { poder: this.balanceAttrPoder, habilidade: this.balanceAttrHabilidade, resistencia: this.balanceAttrResistencia },
+    }, this.balanceMonteCarloTrials);
     this.balanceReports.set([report]);
   }
 
+  /** "Analisar os 20 andares" usa a Armadura estimada PARA CADA ANDAR (não o valor
+   *  manual do campo, que reflete só o andar selecionado) e re-aplica a MESMA
+   *  proporção P/H/R escolhida no perfil, redistribuída pelo PP esperado de cada andar. */
   runBalanceAllFloors(): void {
     const size = this.balancePartySize;
-    const armadura = this.balanceArmadura;
-    const reports = analyzeAllFloors(floor => ({ partyPP: defaultExpectedPartyPP(floor), size, armadura }));
+    const ratio = { poder: this.balanceAttrPoder, habilidade: this.balanceAttrHabilidade, resistencia: this.balanceAttrResistencia };
+    const reports = analyzeAllFloors(floor => {
+      const partyPP = defaultExpectedPartyPP(floor);
+      return {
+        partyPP, size, armadura: estimateExpectedArmor(floor),
+        avgAttrs: this.attrsFromWeights(ratio, partyPP / size),
+      };
+    }, this.balanceMonteCarloTrials);
     this.balanceReports.set(reports);
   }
 
+  // ── Perfil de distribuição de atributos (testa o item 1 do balanceamento) ──
+
+  private readonly PRESET_WEIGHTS: Record<'equilibrado' | 'glass_cannon' | 'tanque' | 'agil', { poder: number; habilidade: number; resistencia: number }> = {
+    equilibrado:  { poder: 1,   habilidade: 1, resistencia: 1 },
+    glass_cannon: { poder: 2,   habilidade: 1, resistencia: 0.5 },
+    tanque:       { poder: 0.5, habilidade: 1, resistencia: 2 },
+    agil:         { poder: 1,   habilidade: 2, resistencia: 1 },
+  };
+
+  /** Distribui perCharacterPP entre P/H/R seguindo a proporção dos pesos (não muda o "orçamento" total). */
+  private attrsFromWeights(w: { poder: number; habilidade: number; resistencia: number }, perCharacterPP: number) {
+    const sum = w.poder + w.habilidade + w.resistencia;
+    return {
+      poder: Math.max(1, Math.round(perCharacterPP * w.poder / sum)),
+      habilidade: Math.max(1, Math.round(perCharacterPP * w.habilidade / sum)),
+      resistencia: Math.max(1, Math.round(perCharacterPP * w.resistencia / sum)),
+    };
+  }
+
+  applyAttrPreset(preset: 'equilibrado' | 'glass_cannon' | 'tanque' | 'agil'): void {
+    this.balanceProfilePreset.set(preset);
+    const perCharacterPP = this.balancePartyPP / Math.max(1, this.balancePartySize);
+    const attrs = this.attrsFromWeights(this.PRESET_WEIGHTS[preset], perCharacterPP);
+    this.balanceAttrPoder = attrs.poder;
+    this.balanceAttrHabilidade = attrs.habilidade;
+    this.balanceAttrResistencia = attrs.resistencia;
+  }
+
+  /** Chamado quando PP/tamanho mudam — recalcula os 3 campos com o preset atual
+   *  (não faz nada em modo 'custom', onde o usuário já está no controle manual). */
+  reapplyAttrPreset(): void {
+    const preset = this.balanceProfilePreset();
+    if (preset === 'custom') return;
+    this.applyAttrPreset(preset);
+  }
+
+  markCustomProfile(): void {
+    this.balanceProfilePreset.set('custom');
+  }
+
+  runCostAudit(): void {
+    this.costIssues.set(auditVantagemCosts());
+    this.costAuditRan.set(true);
+  }
+
+  runXpCoherence(): void {
+    this.xpCoherenceRows.set(auditXpPpCoherence(this.balancePartySize));
+  }
+
   copyBalanceReport(): void {
-    const text = formatReportAsMarkdown(this.balanceReports());
+    const text = formatReportAsMarkdown(this.balanceReports(), this.costIssues(), this.xpCoherenceRows());
     navigator.clipboard.writeText(text);
     this.balanceCopied.set(true);
     setTimeout(() => this.balanceCopied.set(false), 2500);
+  }
+
+  runPathSimulation(): void {
+    const results = simulateAllPaths(this.selectedFloor(), {
+      partyPP: this.balancePartyPP, size: this.balancePartySize, armadura: this.balanceArmadura,
+      avgAttrs: { poder: this.balanceAttrPoder, habilidade: this.balanceAttrHabilidade, resistencia: this.balanceAttrResistencia },
+    }, this.pathSimTrials);
+    this.pathSimResults.set(results);
+    this.pathSimRan.set(true);
+  }
+
+  copyPathReport(): void {
+    const text = formatPathReportAsMarkdown(this.selectedFloor(), this.pathSimResults());
+    navigator.clipboard.writeText(text);
+    this.pathSimCopied.set(true);
+    setTimeout(() => this.pathSimCopied.set(false), 2500);
   }
 
   private loadFloor(floor: number) {

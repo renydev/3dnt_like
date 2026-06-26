@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -9,7 +10,7 @@ export { spawnMonster };
 // A masmorra é "quase desabitada" no livro — sem tabela de encontros aleatórios,
 // só os NPCs/encontros únicos abaixo.
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 // IDs de sala conforme tanna-toh.config.ts layout:
 //  5 = Guardião de Biblioteca (monster) — Thwor Ironfist, fugido de um livro por instantes

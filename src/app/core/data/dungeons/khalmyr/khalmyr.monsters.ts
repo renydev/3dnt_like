@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -9,7 +10,7 @@ export { spawnMonster };
 // é obra do acaso" — são cinco testes estruturados (bondade, percepção,
 // expulsão do mal, coragem, destruição do mal) mapeados nas salas de combate.
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -35,6 +36,6 @@ export const KHALMYR_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 };
 
 // Khalmyr não possui tabela de Encontros Aleatórios — "nada aqui é obra do acaso".
-export function rollKhalmyrEncounter(_scale: number): Enemy[] {
+export function rollKhalmyrEncounter(_scale: GrowthScale): Enemy[] {
   return [];
 }

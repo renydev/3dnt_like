@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Tenebra — convertido de "A Libertação de Valkaria" (pág. 55-60).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -32,7 +33,7 @@ export const TENEBRA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — mortos-vivos e servos das trevas (tabela 4d do livro) ──
 // Roll 4-24: 4-5=vultos alados, 6-7=trogloditas, 8-10=zumbis, 11-12=esqueletos,
 //            13-14=anões guerreiros, 15-18=devoradores, 19-20=bodaks, 21-22=aparições, 23-24=andarilhos
-export function rollTenebraEncounter(scale: number): Enemy[] {
+export function rollTenebraEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 5) {

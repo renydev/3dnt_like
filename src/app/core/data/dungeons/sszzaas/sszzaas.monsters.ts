@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -13,7 +14,7 @@ export { spawnMonster };
 // como um template estático do bestiário (exigiria clonar dinamicamente um
 // Character em Enemy); por isso a sala 8 (boss) fica sem spawn fixo aqui.
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -30,7 +31,7 @@ export const SSZZAAS_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — serpentes e cultistas de Sszzaaz (tabela 4d do livro) ──
 // Roll 4-24: 4-6=hidra negra, 7-9=nagas espirituais, 10-14=cultistas, 15-16=medusas,
 //            17-20=nagas negras, 21-24=dragão negro disfarçado
-export function rollSszzaasEncounter(scale: number): Enemy[] {
+export function rollSszzaasEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 6) return [spawnMonster('hidra_negra', scale)];

@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Megalokk — convertido de "A Libertação de Valkaria" (pág. 98-101).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -29,7 +30,7 @@ export const MEGALOKK_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // Roll 4-24: 4-6=otyugh, 7-8=behir, 9-10=bulette, 11-12=cubo gelatinoso, 13-14=tendrículo,
 //            15-16=umber hulk, 17-18=trolls gigantes, 19-20=monstros da ferrugem,
 //            21-22=formians guerreiros, 23-24=T-rex colossal
-export function rollMegalokkEncounter(scale: number): Enemy[] {
+export function rollMegalokkEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 6) return [spawnMonster('otyugh_enorme', scale)];

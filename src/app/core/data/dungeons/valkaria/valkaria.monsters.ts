@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -9,7 +10,7 @@ export { spawnMonster };
 // (ressuscitados, recriados ou réplicas mágicas), e o desafio final é contra o
 // próprio avatar de Valkaria.
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -23,7 +24,7 @@ const RETURNING_GUARDIANS = [
   'thomar_steelwill', 'karlya',
 ];
 
-function spawnReturningGuardian(scale: number): Enemy {
+function spawnReturningGuardian(scale: GrowthScale): Enemy {
   const id = RETURNING_GUARDIANS[Math.floor(Math.random() * RETURNING_GUARDIANS.length)];
   return spawnMonster(id, scale);
 }
@@ -39,7 +40,7 @@ export const VALKARIA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 };
 
 // ── Encontros aleatórios — os Guardiões de toda a aventura retornam ──
-export function rollValkariaEncounter(scale: number): Enemy[] {
+export function rollValkariaEncounter(scale: GrowthScale): Enemy[] {
   if (d(6) <= 2) return [spawnReturningGuardian(scale)];
   return [];
 }

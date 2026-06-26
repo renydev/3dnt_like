@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Hyninn — convertido de "A Libertação de Valkaria" (pág. 48-50).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -21,7 +22,7 @@ export const HYNINN_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 
 // ── Encontros aleatórios — armadilhas e construtos traiçoeiros (tabela 4d do livro) ──
 // Roll 4-24: 4-6=mímicos, 7-11=golens de pedra, 12-15=gárgulas, 16-22=phasm, 23-24=tigres
-export function rollHyninnEncounter(scale: number): Enemy[] {
+export function rollHyninnEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 6) {

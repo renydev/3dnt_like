@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Wynna — convertido de "A Libertação de Valkaria" (pág. 76-79).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -21,7 +22,7 @@ export const WYNNA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — fadas, gênios e magos de Wynna (tabela 4d do livro) ──
 // Roll 4-24: 4-6=djinns, 7=sprites feiticeiros, 8-9=elementais, 10-13=feiticeiros,
 //            14-16=hidra branca, 17=ninfa, 18-19=mago, 20-21=feiticeiros, 22-24=aasimar feiticeiros
-export function rollWynnaEncounter(scale: number): Enemy[] {
+export function rollWynnaEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 6) {

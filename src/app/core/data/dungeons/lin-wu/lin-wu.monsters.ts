@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -7,7 +8,7 @@ export { spawnMonster };
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Lin-Wu — convertido de "A Libertação de Valkaria" (pág. 73-75).
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -23,7 +24,7 @@ export const LIN_WU_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — artistas marciais da Ordem dos Defensores do Sonho ──
 // O livro só dá o custo em PP por grupo (não há "tipos" mecanicamente distintos
 // além da quantidade), então toda a tabela 4d resolve para o mesmo monstro-base.
-export function rollLinWuEncounter(scale: number): Enemy[] {
+export function rollLinWuEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
   const count = roll <= 6 ? d(6) + 2 : roll <= 17 ? d(6) + 3 : Math.max(1, d(6) - 3);
   return Array.from({ length: Math.min(count, 4) }, () => spawnMonster('artista_marcial', scale));

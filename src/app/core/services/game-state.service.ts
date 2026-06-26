@@ -7,7 +7,7 @@ import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '..
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
-import { calcCharacterPP, calcCombatXp, growthScale, applyFloorBonus } from '../utils/pp-calculator';
+import { calcCharacterPP, calcCombatXp, computeGrowthScale, GrowthScale } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
 
@@ -45,8 +45,25 @@ export class GameStateService {
   currentFloor = signal<DungeonFloor | null>(null);
   currentRoomId = signal<number>(0);
   floorNumber = signal<number>(1);
-  /** Fator de crescimento dos monstros curados do andar atual (1.0 = curva esperada). */
-  floorGrowthScale = signal<number>(1);
+  /**
+   * Fator de crescimento dos monstros curados do andar atual (1.0 = curva esperada
+   * em todos os eixos). `computed()`, não `signal()` — recalcula automaticamente
+   * sempre que a party muda (subiu de PP/atributo no meio do andar), em vez de
+   * ficar "congelado" no valor de quando o andar foi gerado. Como o PP só sobe
+   * durante uma run normal, a escala só pode subir ou ficar igual dentro do mesmo
+   * andar — sem o "ioiô" de dificuldade que uma recalculação bidirecional teria.
+   */
+  floorGrowthScale = computed<GrowthScale>(() => {
+    const party = this.party();
+    const size = party.length || 1;
+    const partyPP = this.partyPPs().reduce((s, p) => s + p, 0);
+    const avgAttrs = {
+      poder:       party.reduce((s, c) => s + c.poder.current, 0)       / size,
+      habilidade:  party.reduce((s, c) => s + c.habilidade.current, 0)  / size,
+      resistencia: party.reduce((s, c) => s + c.resistencia.current, 0) / size,
+    };
+    return computeGrowthScale(partyPP, avgAttrs, size, this.floorNumber());
+  });
   log = signal<string[]>([]);
 
   /** Companheiro que acabou de se juntar (exibido na transição) */
@@ -185,11 +202,8 @@ export class GameStateService {
   // ── Andares ────────────────────────────────────────────────────────────────
 
   generateNewFloor(): void {
-    // Fator de crescimento dos monstros curados deste andar, fixado uma vez aqui
-    // (não recalcula por combate — evita "ioiô" de dificuldade dentro do mesmo andar).
-    const partyPP = this.partyPPs().reduce((s, p) => s + p, 0);
-    this.floorGrowthScale.set(applyFloorBonus(growthScale(partyPP), this.floorNumber()));
-
+    // floorGrowthScale é computed() — já reflete a party atual automaticamente,
+    // não precisa ser recalculado aqui (ver declaração do signal, no topo da classe).
     const floor = this.generator.generateFloor(this.floorNumber());
     this.currentFloor.set(floor);
     const entrance = floor.rooms.find(r => r.type === 'entrance')!;

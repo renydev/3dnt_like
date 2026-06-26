@@ -1,4 +1,5 @@
 import { Enemy } from '../../../models/combat.model';
+import { GrowthScale } from '../../../utils/pp-calculator';
 import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
@@ -8,7 +9,7 @@ export { spawnMonster };
 // central (core/data/bestiario.data.ts) — este arquivo só decide QUAIS monstros
 // aparecem em QUAL sala e em QUE quantidade, especificamente para Allihanna.
 
-export type RoomEnemyGroup = (scale: number) => Enemy[];
+export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
@@ -54,7 +55,7 @@ export const ALLIHANNA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
 // ── Encontros aleatórios — trilhas vazias (tabela 4d6 do livro) ──────────────
 // Roll 4-24: 4=druidas, 5=rangers, 6-7=centauros, 8-10=lobos, 11-13=grifos,
 //            14-16=gorilas, 17-18=dríade, 19-20=tigres, 21-22=crocodilos, 23-24=ursos
-export function rollAllihannaEncounter(scale: number): Enemy[] {
+export function rollAllihannaEncounter(scale: GrowthScale): Enemy[] {
   const roll = d(6) + d(6) + d(6) + d(6);
 
   if (roll <= 4) {
