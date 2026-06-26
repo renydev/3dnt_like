@@ -156,6 +156,12 @@ export class MapScene extends Phaser.Scene {
         container.add(label);
       }
 
+      // Sala com exigência (perícia/atributo/item) ainda não satisfeita pela party — cadeado visível.
+      if (room.isVisible && room.requirement && !this.gs.meetsRoomRequirement(room.requirement)) {
+        const lock = this.add.text(r * 0.65, -r * 0.65, '🔒', { fontSize: `${Math.round(11 * scale)}px` }).setOrigin(0.5);
+        container.add(lock);
+      }
+
       if (room.isVisible || room.isCurrent) {
         circle.setInteractive({ useHandCursor: true });
         circle.on('pointerdown', () => this.onRoomClick(room));

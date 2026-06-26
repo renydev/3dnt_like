@@ -3,7 +3,7 @@ import {
   Character, PRESET_CHARACTERS,
 } from '../models/character.model';
 import { Item, ItemSlot, EquipSlot, Equipment, allEquipItems, mergeBonus, equipSlotLabel } from '../models/item.model';
-import { DungeonFloor, DungeonRoom, RoomChoiceAction, VALKARIA_FLOORS } from '../models/dungeon.model';
+import { DungeonFloor, DungeonRoom, RoomChoiceAction, RoomRequirement, VALKARIA_FLOORS } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
@@ -113,6 +113,22 @@ export class GameStateService {
     );
   });
 
+  /** True se algum membro do grupo satisfaz a exigência de acesso de uma sala (perícia/atributo/item). */
+  meetsRoomRequirement(requirement: RoomRequirement): boolean {
+    const party = [this.character(), ...this.companions()].filter(Boolean) as Character[];
+    return party.some(c => {
+      switch (requirement.type) {
+        case 'pericia':
+          return !!c.pericias?.includes(requirement.pericia!);
+        case 'atributo':
+          return c[requirement.atributo!].current >= (requirement.minValue ?? 0);
+        case 'item':
+          return c.inventory.some(i => i.id === requirement.itemId)
+            || Object.values(c.equipment).some(i => i?.id === requirement.itemId);
+      }
+    });
+  }
+
   currentTheme = computed(() => {
     const n = this.floorNumber();
     return VALKARIA_FLOORS[Math.min(n - 1, VALKARIA_FLOORS.length - 1)];
@@ -216,6 +232,11 @@ export class GameStateService {
 
     const target = floor.rooms.find(r => r.id === roomId);
     if (!target || !target.isVisible) return;
+
+    if (target.requirement && !this.meetsRoomRequirement(target.requirement)) {
+      this.addLog(`🔒 ${target.name} está trancada — requer ${target.requirement.label}.`);
+      return;
+    }
 
     // Câmaras não triviais não limpas abrem o dialog de cenário
     if (target.type !== 'entrance' && target.type !== 'empty' && !target.cleared) {

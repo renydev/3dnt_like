@@ -1,4 +1,4 @@
-import { DungeonTheme, ImageMapConfig, RoomScenario, RoomType } from '../../../models/dungeon.model';
+import { DungeonTheme, ImageMapConfig, RoomRequirement, RoomScenario, RoomType } from '../../../models/dungeon.model';
 import { Enemy } from '../../../models/combat.model';
 import { GrowthScale } from '../../../utils/pp-calculator';
 
@@ -11,6 +11,8 @@ export type RoomLayout = {
   name: string;
   connections: number[];
   secretConnections?: number[]; // conexões via porta secreta
+  /** Se definido, a sala só pode ser acessada por uma party que satisfaça esta exigência (perícia/atributo/item). */
+  requirement?: RoomRequirement;
 };
 
 export interface FloorLayout {

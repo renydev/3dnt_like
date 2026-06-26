@@ -14,6 +14,23 @@ export interface RoomScenario {
   choices: RoomChoice[];
 }
 
+/** Tipo de exigência de acesso a uma sala — perícia específica, atributo mínimo ou item no inventário. */
+export type RoomRequirementType = 'pericia' | 'atributo' | 'item';
+
+export interface RoomRequirement {
+  type: RoomRequirementType;
+  /** ID da perícia exigida (quando type === 'pericia'). */
+  pericia?: string;
+  /** Atributo exigido (quando type === 'atributo'). */
+  atributo?: 'poder' | 'habilidade' | 'resistencia';
+  /** Valor mínimo do atributo (quando type === 'atributo'). */
+  minValue?: number;
+  /** ID do item exigido no inventário ou equipamento (quando type === 'item'). */
+  itemId?: string;
+  /** Nome legível da exigência, exibido ao jogador (ex.: "Perícia Investigação", "Resistência 4+", "Chave Élfica"). */
+  label: string;
+}
+
 export interface DungeonRoom {
   id: number;
   type: RoomType;
@@ -31,6 +48,8 @@ export interface DungeonRoom {
   entered?: boolean;
   rested?: boolean;
   scenario?: RoomScenario;
+  /** Se definido, a sala só pode ser acessada por uma party que satisfaça esta exigência (ver meetsRoomRequirement em game-state.service). */
+  requirement?: RoomRequirement;
 }
 
 export interface MapHotspot {

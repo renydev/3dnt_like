@@ -210,7 +210,11 @@ export const AllihannaConfig: DungeonConfig = {
       { id:  9, row: 2, col: 4, type: 'monster', name: 'Passagem Perigosa', connections: [4, 13, 14] },
       { id: 10, row: 3, col: 0, type: 'monster', name: 'Câmara dos Guardas', connections: [5, 16] },
       { id: 11, row: 3, col: 1, type: 'trap', name: 'Sala das Armadilhas', connections: [6, 15] },
-      { id: 12, row: 3, col: 2, type: 'monster', name: 'Salão das Bestas', connections: [7, 8, 15] },
+      // Gruta isolada e escondida (ver ALLIHANNA_SCENARIOS[12]) — só é encontrada por quem sabe procurar.
+      {
+        id: 12, row: 3, col: 2, type: 'monster', name: 'Salão das Bestas', connections: [7, 8, 15],
+        requirement: { type: 'pericia', pericia: 'investigacao', label: 'Perícia Investigação' },
+      },
       { id: 13, row: 3, col: 3, type: 'puzzle', name: 'Câmara dos Mistérios', connections: [9, 15] },
       { id: 14, row: 3, col: 4, type: 'trap', name: 'Sala das Armadilhas', connections: [8, 9, 16] },
       { id: 15, row: 4, col: 1, type: 'social', name: 'Os Sobreviventes', connections: [11, 12, 13, 18, 17] },

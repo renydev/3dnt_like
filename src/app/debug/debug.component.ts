@@ -753,6 +753,7 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
     .balance-table { width: 100%; border-collapse: collapse; font-size: 10px; }
     .balance-table th, .balance-table td { padding: 3px 6px; border-bottom: 1px solid #2a2a42; text-align: left; }
     .balance-table th { color: #888; font-weight: normal; text-transform: uppercase; font-size: 9px; }
+    .balance-table tbody tr:hover { background: #ffffff1a; }
     .verdict-trivial     td:last-child { color: #6b7280; }
     .verdict-equilibrado td:last-child { color: #4ade80; font-weight: bold; }
     .verdict-arriscado   td:last-child { color: #facc15; font-weight: bold; }

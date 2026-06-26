@@ -94,7 +94,12 @@ function expectedVantagemBonus(archetype: MonsterArchetype | undefined, slots: n
 }
 
 export interface PartyProfile {
-  /** PP total do grupo (soma de todos os personagens). */
+  /**
+   * PP médio POR PERSONAGEM do grupo (mesmas âncoras de tierForPP/growthScale —
+   * 10/20/35 = Iniciante/Herói/Veterano). NÃO é a soma da party: growthScale() é
+   * calibrado por personagem, somar aqui satura a escala no teto pra qualquer
+   * grupo com mais de 1 membro (era um bug real, já corrigido em game-state.service).
+   */
   partyPP: number;
   /** Quantos personagens compõem o grupo (default 4). */
   size: number;
@@ -330,14 +335,13 @@ function verdictFor(ratio: number): MonsterBalanceRow['verdict'] {
 }
 
 /**
- * Estima os atributos de UM personagem "médio" do grupo a partir do PP total da
- * party, distribuindo igualmente entre Poder/Habilidade/Resistência (aproximação
+ * Estima os atributos de UM personagem "médio" do grupo a partir do PP médio por
+ * personagem, distribuindo igualmente entre Poder/Habilidade/Resistência (aproximação
  * razoável — a criação real pode desviar disso, mas serve como linha de base
  * para detectar andares fora da curva sem precisar simular escolhas reais).
  */
-function representativePartyMember(partyPP: number, size: number) {
-  const perCharacterPP = partyPP / Math.max(1, size);
-  const perAttr = Math.max(1, Math.round(perCharacterPP / 3));
+function representativePartyMember(partyPP: number) {
+  const perAttr = Math.max(1, Math.round(partyPP / 3));
   return { poder: perAttr, habilidade: perAttr, resistencia: perAttr };
 }
 
@@ -388,8 +392,6 @@ export function analyzeFloorBalance(floor: number, profile: PartyProfile, monteC
   const member = profile.avgAttrs ?? representativePartyMember(profile.partyPP, profile.size);
   const scale = computeGrowthScale(profile.partyPP, member, profile.size, floor);
 
-  const playerFA = member.poder + D6_AVG;
-  const playerFD = member.resistencia + profile.armadura + D6_AVG;
   const playerHp = member.resistencia * 5;
 
   const bossIds = bossIdsForFloor(floor);
@@ -400,8 +402,9 @@ export function analyzeFloorBalance(floor: number, profile: PartyProfile, monteC
       const isBoss = bossIds.has(id);
       const attrs = scaledAttrs(tpl, scale, isBoss);
 
-      const monsterFA = attrs.poder + D6_AVG;
-      const monsterFD = attrs.resistencia + D6_AVG; // monstros não têm armadura própria no bestiário (armadura: 0 em spawnGrowableMonster)
+      // monstros não têm armadura própria no bestiário (armadura: 0 em spawnGrowableMonster)
+      const expectedDmgPartyToMonster = expectedDamage(member.poder - attrs.resistencia);
+      const expectedDmgMonsterToParty = expectedDamage(attrs.poder - (member.resistencia + profile.armadura));
 
       const expectedDmgPartyToMonster = Math.max(0, playerFA - monsterFD);
       const expectedDmgMonsterToParty = Math.max(0, monsterFA - playerFD);
@@ -414,7 +417,9 @@ export function analyzeFloorBalance(floor: number, profile: PartyProfile, monteC
         ? playerHp / expectedDmgMonsterToParty
         : Infinity;
 
-      const riskRatio = roundsToKillMonster === 0 ? Infinity : roundsToKillPartyMember / roundsToKillMonster;
+      // Grupo nunca causa dano médio no monstro → combate nunca termina nesse modelo (softlock).
+      // Pior caso possível, mesmo que o monstro também não consiga ferir o grupo (Infinity/Infinity = NaN).
+      const riskRatio = expectedDmgPartyToMonster === 0 ? 0 : roundsToKillPartyMember / roundsToKillMonster;
 
       const monteCarlo = monteCarloTrials > 0
         ? simulateCombat(member, profile.armadura, profile.size, attrs, attrs.hp, attrs.regenPerTurn, monteCarloTrials)
@@ -452,7 +457,7 @@ export function analyzeAllFloors(
   return reports;
 }
 
-/** PP de party "esperado" num andar — curva simples de 10 (andar 1) a 31 (andar 20), igual à citada no livro para Khalmyr/Valkaria. */
+/** PP médio por personagem "esperado" num andar — curva simples de 10 (andar 1) a 31 (andar 20), igual à citada no livro para Khalmyr/Valkaria. */
 export function defaultExpectedPartyPP(floor: number): number {
   return Math.round(10 + (floor - 1) * (21 / 19));
 }

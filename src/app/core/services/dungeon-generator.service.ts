@@ -66,6 +66,7 @@ export class DungeonGeneratorService {
         isCurrent: type === 'entrance',
         entered: type === 'entrance',
         scenario: scenarios?.[r.id],
+        requirement: r.requirement,
       };
     });
 
