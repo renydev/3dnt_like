@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
 
 @Component({
   selector: 'app-floor-transition',
@@ -13,7 +12,7 @@ import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
 export class FloorTransitionComponent implements OnInit {
   gs = inject(GameStateService);
 
-  floors = Array.from({ length: 20 }, (_, i) => i + 1);
+  floors = Array.from({ length: this.gs.TOTAL_FLOORS }, (_, i) => i + 1);
   ready = signal(false);
 
   ngOnInit(): void {
@@ -21,8 +20,7 @@ export class FloorTransitionComponent implements OnInit {
   }
 
   prevTheme() {
-    const idx = Math.max(0, this.gs.floorNumber() - 2);
-    return VALKARIA_FLOORS[idx] ?? null;
+    return this.gs.campaign.getTheme(Math.max(1, this.gs.floorNumber() - 1)) ?? null;
   }
 
   isSimpleRule(): boolean {

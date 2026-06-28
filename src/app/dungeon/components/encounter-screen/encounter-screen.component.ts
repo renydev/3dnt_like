@@ -18,7 +18,7 @@ import { d6 } from '../../../core/utils/dice';
 
   <!-- ── Topo ──────────────────────────────────────────────────────── -->
   <div class="floor-bar">
-    <span class="floor-info">{{ floor()?.theme?.icon }} Andar {{ floorNum() }}/20 — {{ floor()?.theme?.name }}</span>
+    <span class="floor-info">{{ floor()?.theme?.icon }} Andar {{ floorNum() }}/{{ totalFloors() }} — {{ floor()?.theme?.name }}</span>
     @if (isBossRoom()) { <span class="boss-label">👑 CHEFÃO</span> }
     @if (room()?.type === 'hostage') { <span class="hostage-label">🎗️ RESGATE — vencer liberta um companheiro</span> }
     <div class="phase-badge">
@@ -118,6 +118,14 @@ import { d6 } from '../../../core/utils/dice';
         <!-- Sub-menu do Grimório: magias disponíveis em cima, bloqueadas embaixo -->
         <div class="magic-menu grimoire-menu">
           <button class="back-btn" (click)="showGrimoire.set(false)">← Voltar</button>
+          @if (playerPA() > 0) {
+            <div class="pa-stepper">
+              <span class="pa-stepper-label">🔷 PA no dano da magia:</span>
+              <button class="pa-stepper-btn" [disabled]="paSpendNext() <= 0" (click)="decPaSpend()">−</button>
+              <span class="pa-stepper-val">{{ paSpendNext() }}</span>
+              <button class="pa-stepper-btn" [disabled]="paSpendNext() >= playerPA()" (click)="incPaSpend()">+</button>
+            </div>
+          }
           <div class="ability-list">
             @for (m of availableMagias(); track m.id) {
               <button class="ab-btn magia-card" [disabled]="!canCastMagia(m)" (click)="onCastMagia(m)">
@@ -147,6 +155,14 @@ import { d6 } from '../../../core/utils/dice';
         <!-- Sub-menu de habilidades -->
         <div class="magic-menu">
           <button class="back-btn" (click)="showMagicMenu.set(false)">← Voltar</button>
+          @if (playerPA() > 0) {
+            <div class="pa-stepper">
+              <span class="pa-stepper-label">🔷 PA no dano:</span>
+              <button class="pa-stepper-btn" [disabled]="paSpendNext() <= 0" (click)="decPaSpend()">−</button>
+              <span class="pa-stepper-val">{{ paSpendNext() }}</span>
+              <button class="pa-stepper-btn" [disabled]="paSpendNext() >= playerPA()" (click)="incPaSpend()">+</button>
+            </div>
+          }
           <div class="ability-list">
             @for (ab of abilities(); track ab.id) {
               <button class="ab-btn" [disabled]="!canUse(ab)" (click)="onAbility(ab)">
@@ -273,7 +289,7 @@ import { d6 } from '../../../core/utils/dice';
       }
 
       @if (vs.goldAmount > 0) {
-        <p class="victory-gold">💰 +{{ vs.goldAmount }} PO para o grupo</p>
+        <p class="victory-gold">💰 +{{ vs.goldAmount }} {{ currency() }} para o grupo</p>
       }
 
       <button class="btn-victory-proceed" (click)="combat.confirmVictory()">
@@ -289,7 +305,7 @@ import { d6 } from '../../../core/utils/dice';
     <div class="defeat-panel">
       <div class="defeat-icon">💀</div>
       <h2 class="defeat-title">Você Caiu</h2>
-      <p class="defeat-sub">As sombras de Valkaria reclamaram mais uma alma...</p>
+      <p class="defeat-sub">{{ gs.campaign.activeCampaign().texts.defeatMessage }}</p>
 
       <div class="defeat-log">
         @for (entry of combat.log(); track $index) {
@@ -441,6 +457,8 @@ import { d6 } from '../../../core/utils/dice';
     /* ── Sub-menu de habilidades ────────────────────────────────── */
     .magic-menu {
       display: flex; flex-direction: column; gap: 0.3rem;
+      max-height: 9rem; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #2a2a3a transparent;
     }
     .back-btn {
       align-self: flex-start; background: none; border: 1px solid #2a2a3a;
@@ -448,6 +466,19 @@ import { d6 } from '../../../core/utils/dice';
       cursor: pointer; font-size: 0.72rem;
       &:hover { color: #e0d0b0; border-color: #444; }
     }
+    .pa-stepper {
+      display: flex; align-items: center; gap: 0.4rem;
+      padding: 0.2rem 0.1rem; font-size: 0.7rem; color: #8fd0ff;
+    }
+    .pa-stepper-label { font-weight: 700; }
+    .pa-stepper-btn {
+      width: 1.4rem; height: 1.4rem; border-radius: 4px; cursor: pointer;
+      border: 1px solid #3a6a8a; background: rgba(143,208,255,0.12); color: #8fd0ff;
+      font-weight: 700; line-height: 1;
+      &:disabled { opacity: 0.35; cursor: not-allowed; }
+      &:not(:disabled):hover { filter: brightness(1.3); }
+    }
+    .pa-stepper-val { min-width: 1.2rem; text-align: center; font-weight: 700; }
     .ability-list {
       display: flex; gap: 0.3rem; flex-wrap: wrap;
     }
@@ -604,13 +635,15 @@ import { d6 } from '../../../core/utils/dice';
   `]
 })
 export class EncounterScreenComponent implements OnInit {
-  private gs = inject(GameStateService);
+  gs = inject(GameStateService);
   readonly combat = inject(CombatService);
 
   room      = this.gs.currentRoom;
   char      = this.gs.character;
   floor     = this.gs.currentFloor;
   floorNum  = this.gs.floorNumber;
+  totalFloors = computed(() => this.gs.TOTAL_FLOORS);
+  currency = computed(() => this.gs.campaign.activeCampaign().texts.currency);
 
   enemies   = this.combat.enemies;
   phase     = this.combat.phase;

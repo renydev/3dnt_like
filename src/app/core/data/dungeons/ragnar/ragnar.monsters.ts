@@ -4,7 +4,7 @@ import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
 
-// Os templates dos monstros vivem no bestiário central (core/data/bestiario.data.ts).
+// Os templates dos monstros vem do bestiario da campanha Valkaria via JSON.
 // Losango compacto (1-2-3-4-3-2-1) — ver ragnar.config.ts e o relatório de
 // balanceamento (debug panel) para o veredito de cada monstro.
 export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];

@@ -3,15 +3,17 @@ import {
   Character, PRESET_CHARACTERS,
 } from '../models/character.model';
 import { Item, ItemSlot, EquipSlot, Equipment, allEquipItems, mergeBonus, equipSlotLabel } from '../models/item.model';
-import { DungeonFloor, DungeonRoom, RoomChoiceAction, RoomRequirement, VALKARIA_FLOORS } from '../models/dungeon.model';
+import { DungeonFloor, DungeonRoom, RoomChoice, RoomChoiceAction, RoomRequirement, StoryEffect } from '../models/dungeon.model';
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
-import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
+import { CampaignService } from './campaign.service';
+import type { SaveGameData } from '../models/save-game.model';
 import {
   calcCharacterPP, classifyCombatRisk, CombatVerdict, computeGrowthScale, GrowthScale, VERDICT_XP,
 } from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
+const SAVE_KEY = '3dnt_like.currentRun.v1';
 
 /** Resumo da recompensa de um combate, exibido ao jogador ao final da batalha. */
 export interface CombatRewardSummary {
@@ -39,6 +41,7 @@ export type GameScreen =
 @Injectable({ providedIn: 'root' })
 export class GameStateService {
   screen = signal<GameScreen>('menu');
+  hasSavedRun = signal<boolean>(this._hasSavedRun());
   character = signal<Character | null>(null);
   companions = signal<Character[]>([]);
   currentFloor = signal<DungeonFloor | null>(null);
@@ -91,6 +94,7 @@ export class GameStateService {
 
   /** ID da câmara aguardando confirmação do dialog de cenário */
   pendingRoomEntry = signal<number | null>(null);
+  narrativeFlags = signal<Record<string, string | number | boolean>>({});
 
   /** Diário de combate acumulado durante a run */
   combatJournal = signal<Array<{ ts: string; floor: number; text: string; type: string }>>([]);
@@ -111,7 +115,9 @@ export class GameStateService {
     URL.revokeObjectURL(url);
   }
 
-  readonly TOTAL_FLOORS = 20;
+  get TOTAL_FLOORS(): number {
+    return this.campaign.totalFloors();
+  }
 
   currentRoom = computed(() => {
     const floor = this.currentFloor();
@@ -148,13 +154,12 @@ export class GameStateService {
 
   currentTheme = computed(() => {
     const n = this.floorNumber();
-    return VALKARIA_FLOORS[Math.min(n - 1, VALKARIA_FLOORS.length - 1)];
+    return this.campaign.getTheme(n);
   });
 
   nextTheme = computed(() => {
     const n = this.floorNumber();
-    const next = n; // floorNumber já foi incrementado ao entrar em floor_transition
-    return VALKARIA_FLOORS[Math.min(next, VALKARIA_FLOORS.length - 1)] ?? null;
+    return this.campaign.getNextTheme(n);
   });
 
   progressPercent = computed(() =>
@@ -167,7 +172,7 @@ export class GameStateService {
     return char ? [char, ...this.companions()] : [];
   });
 
-  constructor(private generator: DungeonGeneratorService) {}
+  constructor(private generator: DungeonGeneratorService, public campaign: CampaignService) {}
 
   // ── Início de jogo ─────────────────────────────────────────────────────────
 
@@ -180,17 +185,20 @@ export class GameStateService {
     this.character.set(char);
     this.companions.set([]);
     this.newCompanion.set(null);
+    this.narrativeFlags.set({});
     this.floorNumber.set(1);
     this.generateNewFloor();
 
     const floor = this.currentFloor()!;
-    this.addLog(`⚔️ ${char.name} adentra o Labirinto de Valkaria!`);
-    this.addLog(`📍 Andar 1/20 — ${floor.theme.name}`);
-    this.addLog(`🏛️ Desafio de ${floor.theme.godName}, ${floor.theme.godDomain}`);
+    const texts = this.campaign.activeCampaign().texts;
+    this.addLog(this.campaign.format(texts.runStart, { hero: char.name }));
+    this.addLog(this.campaign.floorText(texts.floorLog, 1));
+    this.addLog(this.campaign.floorText(texts.challengeLog, 1));
     if (!floor.theme.specialRule.includes('Masmorra mais simples')) {
-      this.addLog(`⚠️ REGRA ESPECIAL: ${floor.theme.specialRule}`);
+      this.addLog(`${texts.specialRulePrefix} ${floor.theme.specialRule}`);
     }
     this.screen.set('dungeon');
+    this.saveRun();
   }
 
   /**
@@ -292,7 +300,11 @@ export class GameStateService {
     this._doMoveToRoom(roomId, target, floor);
   }
 
-  confirmRoomEntry(action: RoomChoiceAction): void {
+  confirmRoomEntry(choiceOrAction: RoomChoice | RoomChoiceAction): void {
+    const choice = typeof choiceOrAction === 'string'
+      ? { label: choiceOrAction, action: choiceOrAction }
+      : choiceOrAction;
+    const action = choice.action;
     const roomId = this.pendingRoomEntry();
     this.pendingRoomEntry.set(null);
     if (roomId === null) return;
@@ -303,6 +315,7 @@ export class GameStateService {
     const target = floor?.rooms.find(r => r.id === roomId);
     if (!target || !floor) return;
 
+    this._applyStoryEffects(choice.effects ?? [], roomId);
     this._doMoveToRoom(roomId, target, floor);
 
     if (action === 'safe_enter') {
@@ -351,10 +364,12 @@ export class GameStateService {
     // Outros tipos (treasure/trap/social/puzzle/rest) nunca devem invocar combate,
     // mesmo que o mapa de roomEnemies tenha uma entrada com o mesmo id por acaso.
     if (type === 'monster' || type === 'boss' || type === 'hostage') {
-      const config = DUNGEON_REGISTRY[this.floorNumber()];
+      const config = this.campaign.getDungeonConfig(this.floorNumber());
       const roomGroup = config?.roomEnemies?.[roomId]?.(this.floorGrowthScale()) ?? null;
       this.pendingEnemies.set(roomGroup);
-      this._maybeRecruitCompanion();
+      // Salas 'hostage' já garantem um companheiro na vitória (_rescueHostage) — rolar a
+      // chance aleatória aqui também daria 2 resgates na mesma sala em caso de acerto duplo.
+      if (type !== 'hostage') this._maybeRecruitCompanion();
     } else {
       this.pendingEnemies.set(null);
     }
@@ -391,7 +406,7 @@ export class GameStateService {
   private _rollRandomEncounter(): boolean {
     const roll = d6();
     if (roll !== 1) return false;
-    const config = DUNGEON_REGISTRY[this.floorNumber()];
+    const config = this.campaign.getDungeonConfig(this.floorNumber());
     const enemies = config?.rollEncounter?.(this.floorGrowthScale()) ?? null;
     if (!enemies) return false;
     this.addLog(`⚠️ Encontro aleatório! ${enemies.map(e => e.name).join(', ')} aparecem!`);
@@ -469,8 +484,10 @@ export class GameStateService {
 
     if (result === 'defeat') {
       this.screen.set('game_over');
-      this.addLog('💀 O herói caiu nas profundezas do Labirinto de Valkaria...');
-      this.addLog(`📊 Chegou ao Andar ${this.floorNumber()}/20 — Desafio de ${floor.theme.godName}`);
+      const texts = this.campaign.activeCampaign().texts;
+      this.addLog(texts.defeatLog);
+      this.addLog(`${texts.floorReachedLabel} ${this.floorNumber()}/${this.TOTAL_FLOORS} — ${floor.theme.godName}`);
+      this.clearSavedRun();
       return;
     }
 
@@ -492,6 +509,7 @@ export class GameStateService {
         this._rescueHostage();
       }
     }
+    this.saveRun();
   }
 
   /** Derrotar os captores de uma sala 'hostage' liberta o refém — recrutado direto na party. */
@@ -514,24 +532,59 @@ export class GameStateService {
 
     if (next > this.TOTAL_FLOORS) {
       this.screen.set('victory');
-      this.addLog('🏆 VALKARIA ESTÁ LIVRE! Os aventureiros são os Libertadores de Valkaria!');
+      this.addLog(this.campaign.activeCampaign().texts.victoryLog);
+      this.clearSavedRun();
       return;
     }
 
     this.newCompanion.set(null);
     this.floorNumber.set(next);
     this.screen.set('floor_transition');
+    this.saveRun();
   }
 
   proceedToNextFloor(): void {
     this.generateNewFloor();
     const theme = this.currentFloor()!.theme;
-    this.addLog(`📍 Andar ${this.floorNumber()}/20 — ${theme.name}`);
-    this.addLog(`🏛️ Desafio de ${theme.godName}, ${theme.godDomain}`);
+    const texts = this.campaign.activeCampaign().texts;
+    this.addLog(this.campaign.floorText(texts.floorLog, this.floorNumber()));
+    this.addLog(this.campaign.floorText(texts.challengeLog, this.floorNumber()));
     if (!theme.specialRule.includes('Masmorra mais simples')) {
-      this.addLog(`⚠️ ${theme.specialRule}`);
+      this.addLog(`${texts.specialRulePrefix} ${theme.specialRule}`);
     }
     this.screen.set('dungeon');
+    this.saveRun();
+  }
+
+  private _applyStoryEffects(effects: StoryEffect[], roomId: number): void {
+    for (const effect of effects) {
+      switch (effect.type) {
+        case 'set_flag':
+          this.narrativeFlags.update(flags => ({ ...flags, [effect.flag]: effect.value }));
+          break;
+        case 'increment_flag':
+          this.narrativeFlags.update(flags => {
+            const current = Number(flags[effect.flag] ?? 0);
+            return { ...flags, [effect.flag]: current + (effect.amount ?? 1) };
+          });
+          break;
+        case 'add_log':
+          this.addLog(effect.text);
+          break;
+        case 'grant_gold':
+          this.character.update(c => c ? { ...c, gold: c.gold + effect.amount } : c);
+          this.addLog(`+${effect.amount} ${this.campaign.activeCampaign().texts.currency}`);
+          break;
+        case 'grant_xp':
+          this.character.update(c => c ? { ...c, xp: c.xp + effect.amount } : c);
+          this.companions.update(list => list.map(c => ({ ...c, xp: c.xp + effect.amount })));
+          this.addLog(`+${effect.amount} XP`);
+          break;
+        case 'clear_room':
+          this._markRoomCleared(roomId);
+          break;
+      }
+    }
   }
 
   // ── PE / PP / Level-up ────────────────────────────────────────────────────
@@ -600,7 +653,7 @@ export class GameStateService {
     this.addLog(`✨ +${xp} XP por personagem (combate ${verdict})`);
 
     if (goldAmount > 0) {
-      this.addLog(`💰 +${goldAmount} PO`);
+      this.addLog(`💰 +${goldAmount} ${this.campaign.activeCampaign().texts.currency}`);
     }
 
     return { xpPerCharacter: xp, isBossFight, verdict, goldAmount, reason: null };
@@ -616,7 +669,7 @@ export class GameStateService {
   /** @deprecated use awardCombatPE */
   addXp(xpAmount: number, goldAmount: number): void {
     this.character.update(c => c ? { ...c, gold: c.gold + goldAmount } : c);
-    this.addLog(`💰 +${goldAmount} PO`);
+    this.addLog(`💰 +${goldAmount} ${this.campaign.activeCampaign().texts.currency}`);
   }
 
   /**
@@ -835,7 +888,7 @@ export class GameStateService {
     const price = item.price ?? 0;
     if (c.gold < price) return false;
     this.character.update(ch => ch ? { ...ch, gold: ch.gold - price, inventory: [...ch.inventory, { ...item }] } : ch);
-    this.addLog(`🛒 Comprou ${item.icon} ${item.name} por ${price} PO`);
+    this.addLog(`🛒 Comprou ${item.icon} ${item.name} por ${price} ${this.campaign.activeCampaign().texts.currency}`);
     return true;
   }
 
@@ -849,7 +902,7 @@ export class GameStateService {
       newInv.splice(idx, 1);
       return { ...c, inventory: newInv, gold: c.gold + sellPrice };
     });
-    this.addLog(`💸 Vendeu ${item.icon} ${item.name} por ${sellPrice} PO`);
+    this.addLog(`💸 Vendeu ${item.icon} ${item.name} por ${sellPrice} ${this.campaign.activeCampaign().texts.currency}`);
   }
 
   closeMerchant(): void {
@@ -869,6 +922,7 @@ export class GameStateService {
     const theme = this.currentFloor()!.theme;
     this.screen.set('dungeon');
     this.addLog(`🛠️ [DEBUG] Teleportado para Andar ${floorNumber} — ${theme.name}`);
+    this.saveRun();
   }
 
   /** Restaura HP e PF máximos do personagem e companheiros. */
@@ -896,6 +950,77 @@ export class GameStateService {
     this.companions.set([]);
     this.newCompanion.set(null);
     this.currentFloor.set(null);
+    this.narrativeFlags.set({});
     this.log.set([]);
+  }
+
+  saveRun(): void {
+    const character = this.character();
+    const currentFloor = this.currentFloor();
+    if (!character || !currentFloor) return;
+    if (!['dungeon', 'encounter', 'merchant', 'floor_transition'].includes(this.screen())) return;
+
+    const data: SaveGameData = {
+      version: 1,
+      savedAt: new Date().toISOString(),
+      campaignId: this.campaign.activeCampaignId(),
+      adventureId: this.campaign.activeAdventureId(),
+      screen: this.screen() as SaveGameData['screen'],
+      character,
+      companions: this.companions(),
+      floorNumber: this.floorNumber(),
+      currentFloor,
+      currentRoomId: this.currentRoomId(),
+      narrativeFlags: this.narrativeFlags(),
+    };
+
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      this.hasSavedRun.set(true);
+    } catch {
+      this.addLog('Não foi possível salvar a run atual.');
+    }
+  }
+
+  loadSavedRun(): boolean {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return false;
+      const data = JSON.parse(raw) as SaveGameData;
+      if (data.version !== 1 || !data.character || !data.currentFloor) return false;
+
+      this.campaign.setCampaign(data.campaignId, data.adventureId ?? undefined);
+      this.character.set(data.character);
+      this.companions.set(data.companions ?? []);
+      this.floorNumber.set(data.floorNumber);
+      this.currentFloor.set(data.currentFloor);
+      this.currentRoomId.set(data.currentRoomId);
+      this.narrativeFlags.set(data.narrativeFlags ?? {});
+      this.newCompanion.set(null);
+      this.pendingEnemies.set(null);
+      this.pendingRoomEntry.set(null);
+      this.screen.set(data.screen === 'encounter' ? 'dungeon' : data.screen);
+      this.addLog(`Run carregada: ${this.campaign.activeCampaign().title}, andar ${data.floorNumber}.`);
+      return true;
+    } catch {
+      this.clearSavedRun();
+      return false;
+    }
+  }
+
+  clearSavedRun(): void {
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } finally {
+      this.hasSavedRun.set(false);
+    }
+  }
+
+  private _hasSavedRun(): boolean {
+    try {
+      return !!localStorage.getItem(SAVE_KEY);
+    } catch {
+      return false;
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { Component, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { RoomChoice, RoomChoiceAction } from '../../../core/models/dungeon.model';
+import { RoomChoice } from '../../../core/models/dungeon.model';
 
 @Component({
   selector: 'app-chamber-dialog',
@@ -27,7 +27,7 @@ import { RoomChoice, RoomChoiceAction } from '../../../core/models/dungeon.model
                 [class.choice-safe]="choice.action === 'safe_enter'"
                 [class.choice-rest]="choice.action === 'rest_wait'"
                 [title]="choice.description ?? ''"
-                (click)="choose(choice.action)"
+                (click)="choose(choice)"
               >
                 {{ choice.label }}
               </button>
@@ -171,8 +171,8 @@ export class ChamberDialogComponent {
     );
   });
 
-  choose(action: RoomChoiceAction): void {
-    this.gs.confirmRoomEntry(action);
+  choose(choice: RoomChoice): void {
+    this.gs.confirmRoomEntry(choice);
   }
 
   onOverlayClick(event: MouseEvent): void {

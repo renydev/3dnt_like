@@ -1,0 +1,286 @@
+{
+  "id": "unipotencia",
+  "title": "Unipotência",
+  "settingName": "3DeT Unipotência",
+  "systemName": "3D&T Victory",
+  "defaultAdventureId": "eixo-da-historia-unica",
+  "texts": {
+    "menuKicker": "3DeT",
+    "menuTitle": "UNIPOTÊNCIA",
+    "menuEdition": "Roguelike · Sistema 3D&T",
+    "menuCredit": "Campanha modular de teste para adaptar qualquer história ao motor roguelike.",
+    "newAdventureLabel": "Nova História",
+    "continueLabel": "Continuar (em breve)",
+    "recordsLabel": "Crônicas (em breve)",
+    "debugLabel": "Debug",
+    "characterCreationCta": "Entrar na Unipotência",
+    "runStart": "{hero} atravessa o primeiro limiar da Unipotência.",
+    "floorLog": "Camada {floor}/{totalFloors} — {floorName}",
+    "challengeLog": "Domínio de {patron}, {domain}",
+    "specialRulePrefix": "REGRA DE CAMPANHA:",
+    "defeatTitle": "A História Foi Absorvida",
+    "defeatMessage": "A Unipotência reduziu mais uma rota ao silêncio.",
+    "defeatLog": "A run terminou antes que a história encontrasse sua própria forma.",
+    "victoryTitle": "História Preservada",
+    "victoryMessage": "A Unipotência foi atravessada sem apagar as diferenças da jornada.",
+    "victoryLog": "A campanha termina com a história ainda aberta a novas adaptações.",
+    "retryLabel": "Tentar Outra Rota",
+    "replayLabel": "Recontar História",
+    "mainMenuLabel": "Menu Principal",
+    "floorProgressTitle": "Rota da Unipotência",
+    "floorReachedLabel": "Chegou a Camada",
+    "currency": "Créditos"
+  },
+  "adventures": {
+    "eixo-da-historia-unica": {
+      "id": "eixo-da-historia-unica",
+      "title": "Eixo da História Única",
+      "description": "Uma campanha curta para validar campanhas plugáveis antes do conteúdo final.",
+      "totalFloors": 5,
+      "floors": [
+        {
+          "id": "nucleo-zero",
+          "floorNumber": 1,
+          "godName": "Nucleo Zero",
+          "godDomain": "Origem da Unipotencia",
+          "godAlignment": "neutro",
+          "name": "Vestibulo da Potencia Unica",
+          "description": "A primeira camada do dominio onde toda possibilidade parece convergir para uma so vontade.",
+          "guardianName": "Sentinela do Primeiro Vetor",
+          "guardianDesc": "Uma entidade de prova que mede a capacidade dos aventureiros de resistir a um mundo com regras instaveis.",
+          "specialRule": "Toda decisao narrativa pode marcar uma flag de afinidade com ordem, ruptura ou sintese.",
+          "icon": "◇",
+          "palette": "arcane",
+          "challengeType": "mixed",
+          "monsterTypes": [
+            "Eco Vetorial",
+            "Guardiao Fragmentado",
+            "Forma Incompleta"
+          ],
+          "trapTypes": [
+            "Dobra de Causalidade",
+            "Pulso de Contradicao",
+            "Selo de Inercia"
+          ],
+          "treasureTypes": [
+            "Cristal de Sintese",
+            "Fragmento de Vontade",
+            "Chave de Potencia"
+          ],
+          "flavorTexts": [
+            "O ar vibra como se o mundo estivesse escolhendo uma forma definitiva.",
+            "Cada passo deixa um rastro luminoso que desaparece antes de tocar o chao.",
+            "Uma voz distante repete: toda historia pode caber em uma unica forca."
+          ]
+        },
+        {
+          "id": "arquivo-das-versoes",
+          "floorNumber": 2,
+          "godName": "Arquivo das Versoes",
+          "godDomain": "Memoria das Realidades Possiveis",
+          "godAlignment": "neutro",
+          "name": "Biblioteca das Linhas Canceladas",
+          "description": "Corredores de memoria guardam historias que quase aconteceram e personagens que ainda buscam lugar no enredo.",
+          "guardianName": "Curador das Versoes",
+          "guardianDesc": "Um guardiao que convoca copias imperfeitas de escolhas passadas.",
+          "specialRule": "Salas de enigma e social devem priorizar escolhas com consequencias persistentes.",
+          "icon": "▣",
+          "palette": "arcane",
+          "challengeType": "puzzle",
+          "monsterTypes": [
+            "Copia Inacabada",
+            "Escriba Hostil",
+            "Memoria Armada"
+          ],
+          "trapTypes": [
+            "Pagina Recursiva",
+            "Indice Falso",
+            "Contrato Apagado"
+          ],
+          "treasureTypes": [
+            "Tomo de Reescrita",
+            "Mapa de Versoes",
+            "Selo de Arquivo"
+          ],
+          "flavorTexts": [
+            "Livros abrem sozinhos em paginas que descrevem o que voce quase fez.",
+            "Nomes surgem nas lombadas, inclusive o seu.",
+            "Algumas prateleiras parecem continuar em outras campanhas."
+          ]
+        },
+        {
+          "id": "cidade-convergente",
+          "floorNumber": 3,
+          "godName": "Cidade Convergente",
+          "godDomain": "Faccoes em Disputa",
+          "godAlignment": "caos",
+          "name": "Distrito das Tres Teses",
+          "description": "Tres faccoes disputam qual sentido a Unipotencia deve assumir: controle, liberdade ou fusao.",
+          "guardianName": "Emissario da Tese Dominante",
+          "guardianDesc": "Um campeao politico e marcial que se adapta a reputacao do grupo.",
+          "specialRule": "Eventos sociais podem alterar reputacao de faccoes e abrir ou fechar rotas.",
+          "icon": "△",
+          "palette": "battle",
+          "challengeType": "social",
+          "monsterTypes": [
+            "Agente de Controle",
+            "Insurgente Vetorial",
+            "Mediador Corrompido"
+          ],
+          "trapTypes": [
+            "Emboscada Diplomatica",
+            "Protocolo de Bloqueio",
+            "Multidao Manipulada"
+          ],
+          "treasureTypes": [
+            "Insignia de Faccao",
+            "Passe de Distrito",
+            "Relatorio Secreto"
+          ],
+          "flavorTexts": [
+            "A cidade muda de bandeira conforme quem esta olhando.",
+            "Ninguem pergunta de onde voce veio; todos perguntam qual tese voce serve.",
+            "A rua inteira prende a respiracao antes da proxima palavra."
+          ]
+        },
+        {
+          "id": "forja-do-absoluto",
+          "floorNumber": 4,
+          "godName": "Forja do Absoluto",
+          "godDomain": "Poder em Estado Bruto",
+          "godAlignment": "mal",
+          "name": "Camara das Formas Finais",
+          "description": "A Unipotencia tenta reduzir toda diversidade a uma unica forma perfeita e perigosa.",
+          "guardianName": "Artifice do Absoluto",
+          "guardianDesc": "Um criador de corpos e armas que sacrifica variacao em nome de eficiencia total.",
+          "specialRule": "Inimigos recebem descricoes e recompensas ligadas a transformacao, perda de identidade e poder bruto.",
+          "icon": "⬢",
+          "palette": "iron",
+          "challengeType": "combat",
+          "monsterTypes": [
+            "Prototipo Absoluto",
+            "Arma Viva",
+            "Forma Final Falha"
+          ],
+          "trapTypes": [
+            "Prensa de Identidade",
+            "Molde Compulsorio",
+            "Fornalha de Essencia"
+          ],
+          "treasureTypes": [
+            "Nucleo de Forma",
+            "Liga Impossivel",
+            "Mascara Sem Rosto"
+          ],
+          "flavorTexts": [
+            "Martelos invisiveis batem no ritmo de um coracao enorme.",
+            "Nada aqui nasce; tudo e refeito.",
+            "A perfeicao prometida soa muito parecida com silencio."
+          ]
+        },
+        {
+          "id": "trono-unipotente",
+          "floorNumber": 5,
+          "godName": "Trono Unipotente",
+          "godDomain": "Sintese Final",
+          "godAlignment": "neutro",
+          "name": "Eixo da Historia Unica",
+          "description": "O centro da campanha, onde a historia decide se aceita uma so verdade ou preserva suas variacoes.",
+          "guardianName": "Avatar da Unipotencia",
+          "guardianDesc": "A manifestacao final da forca que tenta adaptar qualquer historia ao proprio eixo.",
+          "specialRule": "A vitoria deve avaliar flags narrativas acumuladas para determinar o final da campanha.",
+          "icon": "◆",
+          "palette": "final",
+          "challengeType": "mixed",
+          "monsterTypes": [
+            "Avatar da Unipotencia",
+            "Tese Encarnada",
+            "Eco de Todas as Rotas"
+          ],
+          "trapTypes": [
+            "Escolha Irreversivel",
+            "Colapso de Versoes",
+            "Silencio Canonico"
+          ],
+          "treasureTypes": [
+            "Chave da Adaptacao",
+            "Titulo de Autor Vivo",
+            "Fragmento da Historia Livre"
+          ],
+          "flavorTexts": [
+            "Todas as rotas apontam para o mesmo lugar. Isso deveria confortar, mas nao conforta.",
+            "O trono nao esta vazio; ele esta esperando uma interpretacao.",
+            "A ultima porta pergunta qual historia merece continuar."
+          ]
+        }
+      ]
+    }
+  },
+  "bestiary": {
+    "eco_vetorial": {
+      "name": "Eco Vetorial",
+      "icon": "E",
+      "archetype": "dps",
+      "floor": 1,
+      "flavorText": "Um reflexo instavel de decisao, armado com linhas de possibilidade endurecida.",
+      "poder": 2,
+      "habilidade": 2,
+      "resistencia": 1,
+      "hp": 8,
+      "xpReward": 8,
+      "goldReward": 1
+    },
+    "guardiao_fragmentado": {
+      "name": "Guardiao Fragmentado",
+      "icon": "G",
+      "archetype": "defensor",
+      "floor": 1,
+      "flavorText": "Uma sentinela feita de regras quebradas, resistente enquanto a narrativa tenta se recompor.",
+      "poder": 2,
+      "habilidade": 1,
+      "resistencia": 3,
+      "hp": 14,
+      "xpReward": 12,
+      "goldReward": 2
+    },
+    "arquivista_dissonante": {
+      "name": "Arquivista Dissonante",
+      "icon": "A",
+      "archetype": "conjurador",
+      "floor": 2,
+      "flavorText": "Catalogador de versoes impossiveis que ataca com notas de rodape apagadas.",
+      "poder": 3,
+      "habilidade": 3,
+      "resistencia": 2,
+      "hp": 12,
+      "xpReward": 14,
+      "goldReward": 3
+    },
+    "predador_de_paradoxo": {
+      "name": "Predador de Paradoxo",
+      "icon": "P",
+      "archetype": "felino",
+      "floor": 3,
+      "flavorText": "Caca contradicoes narrativas e morde o instante antes que ele aconteca.",
+      "poder": 4,
+      "habilidade": 4,
+      "resistencia": 2,
+      "hp": 16,
+      "xpReward": 18,
+      "goldReward": 4
+    },
+    "avatar_da_sintese": {
+      "name": "Avatar da Sintese",
+      "icon": "S",
+      "archetype": "conjurador",
+      "floor": 5,
+      "flavorText": "Manifestacao temporaria da tese de que toda historia pode ser condensada em uma so forma.",
+      "poder": 7,
+      "habilidade": 5,
+      "resistencia": 7,
+      "hp": 42,
+      "xpReward": 55,
+      "goldReward": 12
+    }
+  }
+}

@@ -49,13 +49,13 @@
       <div class="next-tags">
         <div class="tag-group">
           <span class="tag-label">Monstros</span>
-          @for (m of theme.monsterTypes.slice(0, 3) ?? []; track m) {
+          @for (m of theme.monsterTypes.slice(0, 3); track m) {
             <span class="tag-item">{{ m }}</span>
           }
         </div>
         <div class="tag-group">
           <span class="tag-label">Tesouros</span>
-          @for (t of theme.treasureTypes.slice(0, 2) ?? []; track t) {
+          @for (t of theme.treasureTypes.slice(0, 2); track t) {
             <span class="tag-item gold">{{ t }}</span>
           }
         </div>

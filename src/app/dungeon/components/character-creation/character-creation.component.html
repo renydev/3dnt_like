@@ -502,7 +502,7 @@
               }
             </div>
 
-            @for (god of gods; track god.id) {
+            @for (god of gods(); track god.id) {
               <div class="god-card"
                 [class.selected]="selectedGod()?.id === god.id"
                 [class.alignment-bem]="god.godAlignment === 'bem'"
@@ -541,7 +541,7 @@
       </button>
     } @else if (step() === 8) {
       <button class="btn-confirm" [disabled]="!canConfirm()" (click)="confirm()">
-        ⚔️ Entrar no Labirinto
+        {{ gameState.campaign.activeCampaign().texts.characterCreationCta }}
       </button>
     } @else if (step() === 2) {
       <button class="btn-next" (click)="skipPreset()">

@@ -18,7 +18,7 @@ import { MapScene } from '../../phaser/scenes/map.scene';
         <div class="floor-header">
           <span class="floor-theme-icon">{{ floor()?.theme?.icon }}</span>
           <div class="floor-info">
-            <h2 class="floor-title">Andar {{ floor()?.floorNumber }}/20</h2>
+            <h2 class="floor-title">Andar {{ floor()?.floorNumber }}/{{ gameState.TOTAL_FLOORS }}</h2>
             <p class="floor-theme">{{ floor()?.theme?.name }}</p>
             <p class="floor-domain">{{ floor()?.theme?.godDomain }}</p>
           </div>

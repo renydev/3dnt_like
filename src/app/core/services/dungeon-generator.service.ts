@@ -1,19 +1,24 @@
 import { Injectable } from '@angular/core';
-import { DungeonFloor, DungeonRoom, DungeonTheme, RoomScenario, RoomType, VALKARIA_FLOORS } from '../models/dungeon.model';
-import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
+import { DungeonFloor, DungeonRoom, DungeonTheme, RoomScenario, RoomType } from '../models/dungeon.model';
 import { FloorLayout } from '../data/dungeons/shared/dungeon-config.types';
+import { CampaignService } from './campaign.service';
 
 /** Chance de uma sala de tesouro sortear um mercador errante em vez de um baú. */
 const MERCHANT_CHANCE = 0.25;
+const MAX_PREVIOUS_CONNECTIONS = 2;
+const MAX_NEXT_CONNECTIONS = 2;
 
 @Injectable({ providedIn: 'root' })
 export class DungeonGeneratorService {
+  constructor(private campaign: CampaignService) {}
 
   generateFloor(floorNumber: number): DungeonFloor {
-    const config = DUNGEON_REGISTRY[floorNumber];
+    const config = this.campaign.getDungeonConfig(floorNumber);
 
     if (config) {
-      const rooms = this.buildFromLayout(config.layout, config.theme, config.roomScenarios);
+      const rooms = this.normalizeLayeredConnections(
+        this.buildFromLayout(config.layout, config.theme, config.roomScenarios),
+      );
       return {
         floorNumber,
         theme: config.theme,
@@ -24,9 +29,8 @@ export class DungeonGeneratorService {
     }
 
     // Andares sem config definida: geração procedural
-    const idx = Math.min(floorNumber - 1, VALKARIA_FLOORS.length - 1);
-    const theme = VALKARIA_FLOORS[idx];
-    const rooms = this.generateRooms(floorNumber, theme);
+    const theme = this.campaign.getTheme(floorNumber);
+    const rooms = this.normalizeLayeredConnections(this.generateRooms(floorNumber, theme));
     return {
       floorNumber,
       theme,
@@ -77,18 +81,24 @@ export class DungeonGeneratorService {
   }
 
   private generateRooms(floor: number, theme: DungeonTheme): DungeonRoom[] {
-    const COLS = 5;
-    const ROWS = 4;
+    const rowShape = [
+      [0],
+      [-1, 1],
+      [-2, 0, 2],
+      [-3, -1, 1, 3],
+      [-2, 0, 2],
+      [-1, 1],
+      [0],
+    ];
+    const ROWS = rowShape.length;
     const rooms: DungeonRoom[] = [];
     let id = 0;
 
     for (let row = 0; row < ROWS; row++) {
       const isEntrance = row === 0;
       const isBoss = row === ROWS - 1;
-      const colsThisRow = (isEntrance || isBoss) ? 1 : COLS;
-      const startCol = (isEntrance || isBoss) ? Math.floor(COLS / 2) : 0;
 
-      for (let col = startCol; col < startCol + colsThisRow; col++) {
+      for (const col of rowShape[row]) {
         const type = this.pickRoomType(row, ROWS, theme);
         const room: DungeonRoom = {
           id: id++,
@@ -102,13 +112,13 @@ export class DungeonGeneratorService {
           row,
           // Todas as salas visíveis desde o início — ver comentário em generateFloor().
           isVisible: true,
-          isCurrent: isEntrance && col === Math.floor(COLS / 2),
+          isCurrent: isEntrance,
         };
         rooms.push(room);
       }
     }
 
-    this.buildConnections(rooms, COLS, ROWS);
+    this.buildConnections(rooms);
 
     return rooms;
   }
@@ -139,59 +149,69 @@ export class DungeonGeneratorService {
     }
   }
 
-  private buildConnections(rooms: DungeonRoom[], cols: number, totalRows: number): void {
+  private buildConnections(rooms: DungeonRoom[]): void {
+    this.normalizeLayeredConnections(rooms);
+  }
+
+  private normalizeLayeredConnections(rooms: DungeonRoom[]): DungeonRoom[] {
+    const originalConnections = new Map(rooms.map(r => [r.id, [...r.connections]]));
     const byRow: DungeonRoom[][] = [];
     rooms.forEach(r => {
       if (!byRow[r.row]) byRow[r.row] = [];
-      byRow[r.row].push(r);
+      byRow[r.row].push({ ...r, connections: [] });
     });
+    byRow.forEach(row => row?.sort((a, b) => a.col - b.col));
 
     for (let row = 0; row < byRow.length - 1; row++) {
       const current = byRow[row];
       const next = byRow[row + 1];
+      if (!current?.length || !next?.length) continue;
 
-      if (current.length === 1) {
-        const src = current[0];
-        next.forEach(dest => {
-          if (!src.connections.includes(dest.id)) src.connections.push(dest.id);
-          if (!dest.connections.includes(src.id)) dest.connections.push(src.id);
-        });
-        continue;
-      }
+      const nextCount = new Map(current.map(r => [r.id, 0]));
+      const previousCount = new Map(next.map(r => [r.id, 0]));
 
-      if (next.length === 1) {
-        const dest = next[0];
-        current.forEach(src => {
-          if (!src.connections.includes(dest.id)) src.connections.push(dest.id);
-          if (!dest.connections.includes(src.id)) dest.connections.push(src.id);
+      const connect = (src: DungeonRoom, dest: DungeonRoom): boolean => {
+        if ((nextCount.get(src.id) ?? 0) >= MAX_NEXT_CONNECTIONS) return false;
+        if ((previousCount.get(dest.id) ?? 0) >= MAX_PREVIOUS_CONNECTIONS) return false;
+        if (!src.connections.includes(dest.id)) src.connections.push(dest.id);
+        if (!dest.connections.includes(src.id)) dest.connections.push(src.id);
+        nextCount.set(src.id, (nextCount.get(src.id) ?? 0) + 1);
+        previousCount.set(dest.id, (previousCount.get(dest.id) ?? 0) + 1);
+        return true;
+      };
+
+      const byPreference = (source: DungeonRoom, candidates: DungeonRoom[]) =>
+        [...candidates].sort((a, b) => {
+          const aWasConnected = originalConnections.get(source.id)?.includes(a.id) ? -1 : 0;
+          const bWasConnected = originalConnections.get(source.id)?.includes(b.id) ? -1 : 0;
+          return aWasConnected - bWasConnected || Math.abs(a.col - source.col) - Math.abs(b.col - source.col);
         });
-        continue;
-      }
 
       current.forEach(src => {
-        const candidates = next.filter(r => Math.abs(r.col - src.col) <= 1);
-        const chosen = new Set<DungeonRoom>();
-        const same = next.find(r => r.col === src.col);
-        if (same) chosen.add(same);
-        if (candidates.length && chosen.size < 2) {
-          chosen.add(candidates[Math.floor(Math.random() * candidates.length)]);
+        for (const dest of byPreference(src, next)) {
+          if (connect(src, dest)) break;
         }
-        chosen.forEach(dest => {
-          if (!src.connections.includes(dest.id)) src.connections.push(dest.id);
-          if (!dest.connections.includes(src.id)) dest.connections.push(src.id);
-        });
       });
 
       next.forEach(dest => {
-        if (!dest.connections.length) {
-          const closest = current.reduce((a, b) =>
-            Math.abs(a.col - dest.col) <= Math.abs(b.col - dest.col) ? a : b
-          );
-          closest.connections.push(dest.id);
-          dest.connections.push(closest.id);
+        if ((previousCount.get(dest.id) ?? 0) > 0) return;
+        for (const src of byPreference(dest, current)) {
+          if (connect(src, dest)) break;
+        }
+      });
+
+      current.forEach(src => {
+        if ((nextCount.get(src.id) ?? 0) >= MAX_NEXT_CONNECTIONS) return;
+        for (const dest of byPreference(src, next)) {
+          if (src.connections.includes(dest.id)) continue;
+          if (connect(src, dest)) break;
         }
       });
     }
+
+    const normalized = byRow.flat().sort((a, b) => a.id - b.id);
+    rooms.splice(0, rooms.length, ...normalized);
+    return rooms;
   }
 
   private generateRoomName(type: RoomType, theme: DungeonTheme): string {
