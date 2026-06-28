@@ -5,7 +5,8 @@ import { MONSTER_VANTAGEM_POOLS, MonsterArchetype } from '../data/monster-vantag
 import { ALL_VANTAGENS } from '../data/vantagens.data';
 import { ITEM_CATALOG, ItemSlot } from '../models/item.model';
 import {
-  calcCombatXp, calcEnemyPP, computeGrowthScale, GrowthScale, parseCostValue, vantagemSlotsFor,
+  calcCombatXp, calcEnemyPP, CombatVerdict, computeGrowthScale, expectedDamage, GrowthScale,
+  openingStrikeDamage, parseCostValue, vantagemSlotsFor, verdictForRisk,
 } from './pp-calculator';
 
 /** Slots de equipamento que podem conceder bônus de Armadura. */
@@ -31,8 +32,8 @@ export function estimateExpectedArmor(floor: number): number {
   return Math.round(total * 10) / 10;
 }
 
-/** Média de 1d6 — usado para estimar FA/FD/dano sem precisar rodar combate. */
-const D6_AVG = 3.5;
+// expectedDamage() e openingStrikeDamage() agora vivem em pp-calculator.ts (importadas
+// acima) — são reaproveitadas por classifyCombatRisk() pra dar XP real de combate.
 
 /**
  * Quais IDs do bestiário são chefes de sala (`type: 'boss'`) naquele andar — spawna
@@ -192,7 +193,7 @@ export function auditXpPpCoherence(size = 4): XpPpCoherenceRow[] {
     const ppGapPerCharacter = (partyPPNext - partyPP) / size;
     const xpNeededPerCharacter = ppGapPerCharacter * 10;
 
-    const evenSplit = representativePartyMember(partyPP, size);
+    const evenSplit = representativePartyMember(partyPP);
     const scale = computeGrowthScale(partyPP, evenSplit, size, floor);
     const bossIds = bossIdsForFloor(floor);
     const commonMonsterPPs = Object.entries(BESTIARIO)
@@ -239,13 +240,15 @@ export interface MonsterBalanceRow {
   expectedDmgPartyToMonster: number;
   /** Dano médio esperado por ataque do monstro contra UM personagem do grupo. */
   expectedDmgMonsterToParty: number;
-  /** Quantos turnos o grupo (todos atacando) leva para derrubar o monstro. */
+  /** Dano esperado do golpe de abertura de TODO o grupo (1ª rodada, atacante fixado no d6 máximo). */
+  expectedOpeningDmg: number;
+  /** Quantos turnos o grupo (todos atacando) leva para derrubar o monstro, já contando o golpe de abertura na 1ª rodada. */
   roundsToKillMonster: number;
   /** Quantos turnos o monstro leva para derrubar UM personagem médio do grupo. */
   roundsToKillPartyMember: number;
   /** Proporção roundsToKillPartyMember / roundsToKillMonster — >1.5 = fácil, <0.8 = perigoso. */
   riskRatio: number;
-  verdict: 'trivial' | 'equilibrado' | 'arriscado' | 'mortal';
+  verdict: CombatVerdict;
   /** Presente só quando a análise foi rodada com monteCarloTrials > 0 (ver analyzeFloorBalance). */
   monteCarlo?: MonteCarloResult;
 }
@@ -327,12 +330,9 @@ export interface FloorBalanceReport {
   monsters: MonsterBalanceRow[];
 }
 
-function verdictFor(ratio: number): MonsterBalanceRow['verdict'] {
-  if (ratio >= 2.5) return 'trivial';
-  if (ratio >= 1.2) return 'equilibrado';
-  if (ratio >= 0.7) return 'arriscado';
-  return 'mortal';
-}
+// verdictFor() agora vive em pp-calculator.ts como verdictForRisk() (importada acima),
+// compartilhada com classifyCombatRisk() pra manter os limiares idênticos entre a
+// ferramenta de balanceamento e o XP real concedido em combate.
 
 /**
  * Estima os atributos de UM personagem "médio" do grupo a partir do PP médio por
@@ -389,7 +389,7 @@ function scaledAttrs(tpl: MonsterTemplate, scale: GrowthScale, isBoss: boolean) 
  * estatística não está escondendo variância perigosa.
  */
 export function analyzeFloorBalance(floor: number, profile: PartyProfile, monteCarloTrials = 0): FloorBalanceReport {
-  const member = profile.avgAttrs ?? representativePartyMember(profile.partyPP, profile.size);
+  const member = profile.avgAttrs ?? representativePartyMember(profile.partyPP);
   const scale = computeGrowthScale(profile.partyPP, member, profile.size, floor);
 
   const playerHp = member.resistencia * 5;
@@ -406,20 +406,39 @@ export function analyzeFloorBalance(floor: number, profile: PartyProfile, monteC
       const expectedDmgPartyToMonster = expectedDamage(member.poder - attrs.resistencia);
       const expectedDmgMonsterToParty = expectedDamage(attrs.poder - (member.resistencia + profile.armadura));
 
-      const expectedDmgPartyToMonster = Math.max(0, playerFA - monsterFD);
-      const expectedDmgMonsterToParty = Math.max(0, monsterFA - playerFD);
-
       // Regeneração esperada do monstro reduz o dano efetivo do grupo por rodada
       // (ele cura de volta uma fração do dano sofrido a cada turno em que sobrevive).
       const netPartyDps = expectedDmgPartyToMonster * profile.size - attrs.regenPerTurn;
-      const roundsToKillMonster = netPartyDps > 0 ? attrs.hp / netPartyDps : Infinity;
+
+      // Golpe de abertura: a 1ª rodada usa o d6 MÁXIMO do atacante (FA = Poder+6), não a
+      // média — personagens de Poder alto concentram muito dano nesse 1º golpe. As
+      // rodadas seguintes (2ª em diante) seguem usando a média (netPartyDps) normalmente.
+      const expectedOpeningDmg = Math.max(
+        0, openingStrikeDamage(member.poder - attrs.resistencia) * profile.size - attrs.regenPerTurn,
+      );
+      const hpAfterOpening = Math.max(0, attrs.hp - expectedOpeningDmg);
+
+      let roundsToKillMonster: number;
+      if (expectedOpeningDmg > 0 && hpAfterOpening <= 0) {
+        // O golpe de abertura por si só derruba o monstro — nem chega à 2ª rodada.
+        roundsToKillMonster = attrs.hp / expectedOpeningDmg;
+      } else if (expectedOpeningDmg > 0) {
+        // Abertura encosta, mas não derruba — soma 1 rodada (a abertura) + o resto no ritmo de regime.
+        roundsToKillMonster = netPartyDps > 0 ? 1 + hpAfterOpening / netPartyDps : Infinity;
+      } else {
+        // Nem o golpe de abertura (d6 máximo) arranha o monstro — sem vantagem nenhuma de abrir o combate.
+        roundsToKillMonster = netPartyDps > 0 ? attrs.hp / netPartyDps : Infinity;
+      }
+
       const roundsToKillPartyMember = expectedDmgMonsterToParty > 0
         ? playerHp / expectedDmgMonsterToParty
         : Infinity;
 
-      // Grupo nunca causa dano médio no monstro → combate nunca termina nesse modelo (softlock).
-      // Pior caso possível, mesmo que o monstro também não consiga ferir o grupo (Infinity/Infinity = NaN).
-      const riskRatio = expectedDmgPartyToMonster === 0 ? 0 : roundsToKillPartyMember / roundsToKillMonster;
+      // Grupo nunca causa dano (nem na abertura, nem em regime) → combate nunca termina nesse
+      // modelo (softlock). Pior caso possível, mesmo que o monstro também não fira o grupo
+      // (Infinity/Infinity = NaN).
+      const riskRatio = (expectedDmgPartyToMonster === 0 && expectedOpeningDmg === 0)
+        ? 0 : roundsToKillPartyMember / roundsToKillMonster;
 
       const monteCarlo = monteCarloTrials > 0
         ? simulateCombat(member, profile.armadura, profile.size, attrs, attrs.hp, attrs.regenPerTurn, monteCarloTrials)
@@ -428,10 +447,10 @@ export function analyzeFloorBalance(floor: number, profile: PartyProfile, monteC
       return {
         id, name: tpl.name,
         poder: attrs.poder, habilidade: attrs.habilidade, resistencia: attrs.resistencia, hp: attrs.hp,
-        expectedDmgPartyToMonster, expectedDmgMonsterToParty,
+        expectedDmgPartyToMonster, expectedDmgMonsterToParty, expectedOpeningDmg,
         roundsToKillMonster, roundsToKillPartyMember,
         riskRatio,
-        verdict: verdictFor(riskRatio),
+        verdict: verdictForRisk(riskRatio),
         monteCarlo,
       };
     })
@@ -472,19 +491,20 @@ export function formatReportAsMarkdown(
   const hasMonteCarlo = reports.some(r => r.monsters.some(m => m.monteCarlo));
 
   for (const r of reports) {
+    const dungeonName = DUNGEON_REGISTRY[r.floor]?.theme.godName ?? `${r.floor}`;
     lines.push(
-      `## Andar ${r.floor} (PP esperado: ${r.partyPP}, escala geral: ${r.scale.overall.toFixed(2)} — ` +
+      `## Andar ${dungeonName} (PP esperado: ${r.partyPP}, escala geral: ${r.scale.overall.toFixed(2)} — ` +
       `Poder do monstro ×${r.scale.poder.toFixed(2)}, Resistência do monstro ×${r.scale.resistencia.toFixed(2)})`
     );
     lines.push('');
     const header = hasMonteCarlo
-      ? '| Monstro | P | H | R | PV | Dano→Monstro | Dano→Grupo | Risco | Veredito | Vitória% (MC) | Rodadas (MC) | PV grupo% (MC) |'
-      : '| Monstro | P | H | R | PV | Dano→Monstro | Dano→Grupo | Risco | Veredito |';
+      ? '| Monstro | P | H | R | PV | Abertura→Monstro | Dano→Monstro | Dano→Grupo | Risco | Veredito | Vitória% (MC) | Rodadas (MC) | PV grupo% (MC) |'
+      : '| Monstro | P | H | R | PV | Abertura→Monstro | Dano→Monstro | Dano→Grupo | Risco | Veredito |';
     lines.push(header);
-    lines.push(hasMonteCarlo ? '|---|---|---|---|---|---|---|---|---|---|---|---|' : '|---|---|---|---|---|---|---|---|---|');
+    lines.push(hasMonteCarlo ? '|---|---|---|---|---|---|---|---|---|---|---|---|---|' : '|---|---|---|---|---|---|---|---|---|---|');
     for (const m of r.monsters) {
       let row = `| ${m.name} | ${m.poder} | ${m.habilidade} | ${m.resistencia} | ${m.hp} | ` +
-        `${m.expectedDmgPartyToMonster.toFixed(1)} | ${m.expectedDmgMonsterToParty.toFixed(1)} | ` +
+        `${m.expectedOpeningDmg.toFixed(1)} | ${m.expectedDmgPartyToMonster.toFixed(1)} | ${m.expectedDmgMonsterToParty.toFixed(1)} | ` +
         `${m.riskRatio === Infinity ? '∞' : m.riskRatio.toFixed(2)} | ${m.verdict} |`;
       if (hasMonteCarlo) {
         row += m.monteCarlo
@@ -511,8 +531,9 @@ export function formatReportAsMarkdown(
     lines.push('| Andar | PP atual→próximo | PP/personagem a ganhar | XP necessário | XP/combate comum | Combates necessários | Flag |');
     lines.push('|---|---|---|---|---|---|---|');
     for (const x of xpCoherence) {
+      const name = DUNGEON_REGISTRY[x.floor]?.theme.godName ?? `${x.floor}`;
       lines.push(
-        `| ${x.floor} | ${x.partyPP}→${x.partyPPNext} | ${x.ppGapPerCharacter.toFixed(1)} | ${x.xpNeededPerCharacter.toFixed(0)} | ` +
+        `| ${name} | ${x.partyPP}→${x.partyPPNext} | ${x.ppGapPerCharacter.toFixed(1)} | ${x.xpNeededPerCharacter.toFixed(0)} | ` +
         `${x.xpPerCommonCombat.toFixed(2)} | ${x.combatsNeeded === Infinity ? '∞' : x.combatsNeeded.toFixed(1)} | ${x.flag} |`
       );
     }

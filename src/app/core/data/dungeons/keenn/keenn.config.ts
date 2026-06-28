@@ -2,22 +2,37 @@ import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
 import { KEENN_ROOM_ENEMIES, rollKeennEncounter } from './keenn.monsters';
 
+// Losango compacto (1-2-3-4-3-2-1, 16 salas). Veredito por fileira (debug panel):
+//  fileira 1 (trivial): combatente_keenn
+//  fileira 2 (trivial): combatente_keenn
+//  fileira 3 (equilibrado + resgate de refém): combatente_keenn
+//  fileira 4 (arriscado): harkash
+//  fileira 5 (mortal): harkash
+//  chefe: destrukto
 export const KeennConfig: DungeonConfig = {
   floorNumber: 16,
   theme: VALKARIA_FLOORS[15],
-  roomEnemies: KEENN_ROOM_ENEMIES,
-  rollEncounter: rollKeennEncounter,
   layout: {
     floorNumber: 16,
     rooms: [
-      { id: 0, row: 0, col: 2, type: 'entrance', name: 'Entrada da Arena de Ferro',    connections: [1, 2, 3] },
-      { id: 1, row: 1, col: 1, type: 'monster',  name: 'Câmara do Golem de Ferro',     connections: [4, 5] },
-      { id: 2, row: 1, col: 2, type: 'monster',  name: 'Câmara do Paladino Renegado',  connections: [4, 5, 6] },
-      { id: 3, row: 1, col: 3, type: 'trap',     name: 'Prensa de Ferro',              connections: [5, 6] },
-      { id: 4, row: 2, col: 0, type: 'rest',     name: 'Câmara de Recuperação',        connections: [7] },
-      { id: 5, row: 2, col: 2, type: 'monster',  name: 'Câmara do Campeão',            connections: [7] },
-      { id: 6, row: 2, col: 4, type: 'treasure', name: 'Câmara das Armaduras Mágicas', connections: [7] },
-      { id: 7, row: 3, col: 2, type: 'boss',     name: 'Arena do Cavaleiro de Ferro',  connections: [] },
+      { id: 0, row: 0, col: 0, type: 'entrance', name: 'Entrada Principal', connections: [1, 2] },
+      { id: 1, row: 1, col: -1, type: 'monster', name: 'Trilha de Combatente de Keenn', connections: [0, 3] },
+      { id: 2, row: 1, col: 1, type: 'trap', name: 'Corredor Armado', connections: [0, 4] },
+      { id: 3, row: 2, col: -2, type: 'monster', name: 'Covil de Combatente de Keenn', connections: [1, 6] },
+      { id: 4, row: 2, col: 0, type: 'treasure', name: 'Câmara do Ouro', connections: [2, 5] },
+      { id: 5, row: 2, col: 2, type: 'trap', name: 'Sala das Armadilhas', connections: [4, 9] },
+      { id: 6, row: 3, col: -3, type: 'monster', name: 'Território de Combatente de Keenn', connections: [3, 7] },
+      { id: 7, row: 3, col: -1, type: 'hostage', name: 'Cela dos Cativos', connections: [6, 10] },
+      { id: 8, row: 3, col: 1, type: 'treasure', name: 'Câmara dos Segredos', connections: [9, 12] },
+      { id: 9, row: 3, col: 3, type: 'puzzle', name: 'Câmara dos Mistérios', connections: [5, 8] },
+      { id: 10, row: 4, col: -2, type: 'monster', name: 'Covil de Harkash', connections: [7, 13] },
+      { id: 11, row: 4, col: 0, type: 'merchant', name: 'O Comerciante Misterioso', connections: [12, 14] },
+      { id: 12, row: 4, col: 2, type: 'social', name: 'Os Sobreviventes', connections: [8, 11] },
+      { id: 13, row: 5, col: -1, type: 'monster', name: 'Ninho de Harkash', connections: [10, 15] },
+      { id: 14, row: 5, col: 1, type: 'rest', name: 'Fogueira Final', connections: [11, 15] },
+      { id: 15, row: 6, col: 0, type: 'boss', name: 'Câmara do Guardião Final', connections: [13, 14] },
     ],
   },
+  roomEnemies: KEENN_ROOM_ENEMIES,
+  rollEncounter: rollKeennEncounter,
 };

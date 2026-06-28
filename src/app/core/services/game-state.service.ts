@@ -7,17 +7,18 @@ import { DungeonFloor, DungeonRoom, RoomChoiceAction, RoomRequirement, VALKARIA_
 import { DungeonGeneratorService } from './dungeon-generator.service';
 import { Enemy } from '../models/combat.model';
 import { DUNGEON_REGISTRY } from '../data/dungeons/dungeon-registry';
-import { calcCharacterPP, calcCombatXp, computeGrowthScale, GrowthScale } from '../utils/pp-calculator';
+import {
+  calcCharacterPP, classifyCombatRisk, CombatVerdict, computeGrowthScale, GrowthScale, VERDICT_XP,
+} from '../utils/pp-calculator';
 
 function d6() { return Math.ceil(Math.random() * 6); }
 
 /** Resumo da recompensa de um combate, exibido ao jogador ao final da batalha. */
 export interface CombatRewardSummary {
   xpPerCharacter: number;
-  bonusXp: number;
   isBossFight: boolean;
-  totalMonsterPP: number;
-  totalPartyPP: number;
+  /** Veredito de risco do combate (trivial/equilibrado/arriscado/mortal) — define o XP fixo concedido. */
+  verdict: CombatVerdict;
   goldAmount: number;
   /** Motivo de não ter ganho XP (null se ganhou). */
   reason: string | null;
@@ -27,7 +28,6 @@ export type GameScreen =
   | 'menu'
   | 'character_select'
   | 'character_create'
-  | 'companion_select'
   | 'dungeon'
   | 'encounter'
   | 'merchant'
@@ -41,7 +41,6 @@ export class GameStateService {
   screen = signal<GameScreen>('menu');
   character = signal<Character | null>(null);
   companions = signal<Character[]>([]);
-  companionChoices = signal<Omit<Character, 'id'>[]>([]);
   currentFloor = signal<DungeonFloor | null>(null);
   currentRoomId = signal<number>(0);
   floorNumber = signal<number>(1);
@@ -56,7 +55,11 @@ export class GameStateService {
   floorGrowthScale = computed<GrowthScale>(() => {
     const party = this.party();
     const size = party.length || 1;
-    const partyPP = this.partyPPs().reduce((s, p) => s + p, 0);
+    // computeGrowthScale() espera PP médio POR PERSONAGEM (mesma convenção de
+    // growthScale()/tierForPP() — 10/20/35) — usar a soma aqui é o mesmo bug
+    // recorrente já corrigido em generateNewFloor(), só que reintroduzido nesta
+    // outra função (que passou a recalcular via computed() em vez do signal antigo).
+    const partyPP = this.partyPPs().reduce((s, p) => s + p, 0) / size;
     const avgAttrs = {
       poder:       party.reduce((s, c) => s + c.poder.current, 0)       / size,
       habilidade:  party.reduce((s, c) => s + c.habilidade.current, 0)  / size,
@@ -68,6 +71,20 @@ export class GameStateService {
 
   /** Companheiro que acabou de se juntar (exibido na transição) */
   newCompanion = signal<Character | null>(null);
+
+  /**
+   * Quantos encontros de combate já ocorreram no andar atual — usado para a chance
+   * crescente de recrutar um companheiro (ver _maybeRecruitCompanion). Reseta a
+   * cada novo andar.
+   */
+  floorEncounterCount = signal<number>(0);
+
+  /**
+   * Já apareceu um companheiro neste andar? Uma vez true, para de rolar a chance
+   * pelo resto do andar (é "uma possibilidade por masmorra", não um teste repetido
+   * sem limite). Reseta a cada novo andar.
+   */
+  companionFoundThisFloor = signal<boolean>(false);
 
   /** Grupo de inimigos para o próximo combate (null = usar geração procedural) */
   pendingEnemies = signal<Enemy[] | null>(null);
@@ -165,30 +182,46 @@ export class GameStateService {
     this.newCompanion.set(null);
     this.floorNumber.set(1);
     this.generateNewFloor();
-    this.companionChoices.set(this._generateCompanionChoices(char.kits));
-    this.screen.set('companion_select');
+
+    const floor = this.currentFloor()!;
+    this.addLog(`⚔️ ${char.name} adentra o Labirinto de Valkaria!`);
+    this.addLog(`📍 Andar 1/20 — ${floor.theme.name}`);
+    this.addLog(`🏛️ Desafio de ${floor.theme.godName}, ${floor.theme.godDomain}`);
+    if (!floor.theme.specialRule.includes('Masmorra mais simples')) {
+      this.addLog(`⚠️ REGRA ESPECIAL: ${floor.theme.specialRule}`);
+    }
+    this.screen.set('dungeon');
   }
 
-  /** Seleciona um companheiro (tela inicial ou após boss) */
-  selectCompanion(choice: Omit<Character, 'id'>): void {
-    const companion: Character = { ...choice, id: crypto.randomUUID(), isCompanion: true };
-    this.companions.update(list => [...list, companion]);
-    this.companionChoices.set([]);
-    this.newCompanion.set(companion);
+  /**
+   * Chance crescente de um companheiro aparecer por conta própria durante a
+   * exploração — começa em 0% no 1º encontro do andar e sobe gradualmente até 25%
+   * conforme a party avança pelas câmaras, parando de rolar assim que alguém
+   * aparece (uma chance por masmorra). Chamado a cada encontro de combate real
+   * (sala de monstro/chefe ou encontro aleatório).
+   */
+  private _maybeRecruitCompanion(): void {
+    if (this.companionFoundThisFloor()) return;
 
-    if (this.screen() === 'companion_select') {
-      // Vindo da seleção inicial — entra na dungeon
-      const floor = this.currentFloor()!;
-      this.addLog(`⚔️ ${this.character()!.name} adentra o Labirinto de Valkaria!`);
-      this.addLog(`🤝 ${companion.name} se junta à aventura!`);
-      this.addLog(`📍 Andar 1/20 — ${floor.theme.name}`);
-      this.addLog(`🏛️ Desafio de ${floor.theme.godName}, ${floor.theme.godDomain}`);
-      if (!floor.theme.specialRule.includes('Masmorra mais simples')) {
-        this.addLog(`⚠️ REGRA ESPECIAL: ${floor.theme.specialRule}`);
-      }
-      this.screen.set('dungeon');
-    }
-    // Se estiver em floor_transition, apenas adiciona — a tela continua mostrando
+    const floor = this.currentFloor();
+    if (!floor) return;
+
+    const encounterIndex = this.floorEncounterCount();
+    this.floorEncounterCount.set(encounterIndex + 1);
+
+    const totalChambers = Math.max(1, floor.totalRooms - 1);
+    const chance = Math.min(0.25, (encounterIndex / totalChambers) * 0.25);
+    if (Math.random() >= chance) return;
+
+    const playerKits = this.character()?.kits ?? ['guerreiro'];
+    const [pick] = this._generateCompanionChoices(playerKits);
+    if (!pick) return;
+
+    this.companionFoundThisFloor.set(true);
+    const companion: Character = { ...pick, id: crypto.randomUUID(), isCompanion: true };
+    this.companions.update(list => [...list, companion]);
+    this.newCompanion.set(companion);
+    this.addLog(`🤝 ${companion.name} aparece e se junta à aventura!`);
   }
 
   /** Gera 3 opções diversas de companheiros (excluindo o(s) kit(s) do jogador, variando entre si). */
@@ -224,6 +257,8 @@ export class GameStateService {
     this.currentFloor.set(floor);
     const entrance = floor.rooms.find(r => r.type === 'entrance')!;
     this.currentRoomId.set(entrance.id);
+    this.floorEncounterCount.set(0);
+    this.companionFoundThisFloor.set(false);
   }
 
   moveToRoom(roomId: number): void {
@@ -232,6 +267,16 @@ export class GameStateService {
 
     const target = floor.rooms.find(r => r.id === roomId);
     if (!target || !target.isVisible) return;
+
+    // Todas as salas são visíveis (pra planejar rota), mas só dá pra ANDAR pra uma sala
+    // já visitada (cleared) ou diretamente conectada à atual (conexão normal ou secreta
+    // já revelada) — visibilidade não é teleporte.
+    const current = floor.rooms.find(r => r.isCurrent);
+    const isAdjacent = !!current && (
+      current.connections.includes(roomId)
+      || (!!current.secretConnections?.includes(roomId) && !!target.isSecretRevealed)
+    );
+    if (!target.cleared && !target.isCurrent && !isAdjacent) return;
 
     if (target.requirement && !this.meetsRoomRequirement(target.requirement)) {
       this.addLog(`🔒 ${target.name} está trancada — requer ${target.requirement.label}.`);
@@ -289,13 +334,27 @@ export class GameStateService {
       this._markRoomCleared(roomId);
     }
 
-    // Apenas salas de combate (monster/boss) buscam grupos de inimigos configurados.
+    this.enterCombatRoom(roomId, target.type);
+  }
+
+  /**
+   * Configura o combate (busca o grupo de inimigos da sala) e troca pra tela de
+   * encontro. Único ponto que decide isso — usado tanto pela primeira entrada
+   * (confirmRoomEntry) quanto por qualquer retomada depois de fugir (ex.: botão
+   * "Enfrentar o Encontro" no mapa). Nunca trocar pra 'encounter' direto sem
+   * passar por aqui: pendingEnemies já é consumido (zerado) pela tela de combate
+   * na primeira visita, então uma 2ª tentativa sem refazer esta busca cairia no
+   * gerador genérico de fallback (fraco, sem relação com a masmorra real).
+   */
+  enterCombatRoom(roomId: number, type: DungeonRoom['type']): void {
+    // Apenas salas de combate (monster/boss/hostage) buscam grupos de inimigos configurados.
     // Outros tipos (treasure/trap/social/puzzle/rest) nunca devem invocar combate,
     // mesmo que o mapa de roomEnemies tenha uma entrada com o mesmo id por acaso.
-    if (target.type === 'monster' || target.type === 'boss') {
+    if (type === 'monster' || type === 'boss' || type === 'hostage') {
       const config = DUNGEON_REGISTRY[this.floorNumber()];
       const roomGroup = config?.roomEnemies?.[roomId]?.(this.floorGrowthScale()) ?? null;
       this.pendingEnemies.set(roomGroup);
+      this._maybeRecruitCompanion();
     } else {
       this.pendingEnemies.set(null);
     }
@@ -337,6 +396,7 @@ export class GameStateService {
     if (!enemies) return false;
     this.addLog(`⚠️ Encontro aleatório! ${enemies.map(e => e.name).join(', ')} aparecem!`);
     this.pendingEnemies.set(enemies);
+    this._maybeRecruitCompanion();
     this.screen.set('encounter');
     return true;
   }
@@ -428,8 +488,22 @@ export class GameStateService {
       if (room?.type === 'boss') {
         this.addLog(`🏆 Guardião derrotado: ${floor.theme.guardianName}!`);
         this._onBossDefeated();
+      } else if (room?.type === 'hostage') {
+        this._rescueHostage();
       }
     }
+  }
+
+  /** Derrotar os captores de uma sala 'hostage' liberta o refém — recrutado direto na party. */
+  private _rescueHostage(): void {
+    const playerKits = this.character()?.kits ?? ['guerreiro'];
+    const [pick] = this._generateCompanionChoices(playerKits);
+    if (!pick) return;
+
+    const companion: Character = { ...pick, id: crypto.randomUUID(), isCompanion: true };
+    this.companions.update(list => [...list, companion]);
+    this.newCompanion.set(companion);
+    this.addLog(`🎗️ ${companion.name} foi resgatado e se junta à aventura!`);
   }
 
   private _onBossDefeated(): void {
@@ -444,12 +518,7 @@ export class GameStateService {
       return;
     }
 
-    // A cada boss derrotado, o jogador escolhe um novo companheiro
-    const playerKits = this.character()?.kits ?? ['guerreiro'];
-    const choices = this._generateCompanionChoices(playerKits);
-    this.companionChoices.set(choices);
     this.newCompanion.set(null);
-
     this.floorNumber.set(next);
     this.screen.set('floor_transition');
   }
@@ -478,24 +547,26 @@ export class GameStateService {
 
   /**
    * Chamado ao fim de um combate com vitória.
-   * Concede XP a todos os membros da party seguindo a regra oficial do 3D&T Victory:
-   *   - combate comum vencido = 1 XP (objetivo menor)
-   *   - combate de chefe vencido = 5 XP (objetivo maior)
-   *   - inimigos com PP somado ≤ metade do PP da party = 0 XP (longe demais de um desafio)
-   *   - inimigos mais fortes que a party rendem XP bônus (1 a cada 10 PP de diferença, máx +5)
+   * Concede XP fixo a todos os membros da party de acordo com o RISCO REAL do combate
+   * (mesma classificação trivial/equilibrado/arriscado/mortal da ferramenta de
+   * balanceamento, mas calculada com os atributos reais da party e dos inimigos
+   * enfrentados, não um "personagem médio" hipotético):
+   *   trivial = 10 XP · equilibrado = 50 XP · arriscado = 80 XP · mortal = 200 XP
    * 10 XP acumulados = 1 PP (Ponto de Personagem) gastável em atributos/vantagens.
    *
    * Terminar a masmorra concede 1 PP extra (awardFloorCompletionPP).
    */
   awardCombatXp(defeatedEnemies: Enemy[], goldAmount: number, isBossFight: boolean): CombatRewardSummary {
-    const partyPPs = this.partyPPs();
-    if (partyPPs.length === 0) {
-      return { xpPerCharacter: 0, bonusXp: 0, isBossFight, totalMonsterPP: 0, totalPartyPP: 0, goldAmount, reason: null };
+    const party = this.party();
+    if (party.length === 0 || defeatedEnemies.length === 0) {
+      return { xpPerCharacter: 0, isBossFight, verdict: 'trivial', goldAmount, reason: null };
     }
 
-    const monsterPPs = defeatedEnemies.map(e => e.pp);
-    const result = calcCombatXp(monsterPPs, partyPPs, isBossFight);
-    const xp = result.xpPerCharacter;
+    const verdict: CombatVerdict = classifyCombatRisk({
+      party: party.map(c => ({ poder: c.poder.current, resistencia: c.resistencia.current, hp: c.pontosVida.max })),
+      enemies: defeatedEnemies.map(e => ({ poder: e.poder, resistencia: e.resistencia, hp: e.maxHp, armadura: e.armadura })),
+    });
+    const xp = VERDICT_XP[verdict];
     const PE_PER_PP = 10;
 
     if (goldAmount > 0) {
@@ -507,12 +578,6 @@ export class GameStateService {
         this.companions.update(list => list.map(c => ({ ...c, gold: c.gold + share })));
       }
       this.addLog(`💰 +${goldAmount} ouro dividido entre ${partySize} personagem${partySize > 1 ? 's' : ''} (+${share + remainder} para ${this.character()?.name}${partySize > 1 ? `, +${share} para cada companheiro` : ''})`);
-    }
-
-    if (xp <= 0) {
-      const reason = `Inimigos fracos demais: PP do grupo de inimigos (${result.totalMonsterPP}) é metade ou menos do PP da sua party (${result.totalPartyPP}). Pelas regras do 3DeT Victory, combates muito fáceis não rendem XP — procure oponentes mais fortes.`;
-      this.addLog(`⚔️ Combate resolvido. Inimigos fracos demais para gerar XP.`);
-      return { xpPerCharacter: 0, bonusXp: 0, isBossFight, totalMonsterPP: result.totalMonsterPP, totalPartyPP: result.totalPartyPP, goldAmount, reason };
     }
 
     // Personagem principal
@@ -532,18 +597,13 @@ export class GameStateService {
       return { ...c, xp: newXp, levelUpPoints: (c.levelUpPoints ?? 0) + newPP };
     }));
 
-    const bonusNote = result.bonusXp > 0 ? ` (+${result.bonusXp} XP bônus por inimigos fortes)` : '';
-    this.addLog(`✨ +${xp} XP por personagem${bonusNote} (monstros PP total: ${result.totalMonsterPP})`);
+    this.addLog(`✨ +${xp} XP por personagem (combate ${verdict})`);
 
     if (goldAmount > 0) {
       this.addLog(`💰 +${goldAmount} PO`);
     }
 
-    return {
-      xpPerCharacter: xp, bonusXp: result.bonusXp, isBossFight,
-      totalMonsterPP: result.totalMonsterPP, totalPartyPP: result.totalPartyPP,
-      goldAmount, reason: null,
-    };
+    return { xpPerCharacter: xp, isBossFight, verdict, goldAmount, reason: null };
   }
 
   /** Concede 1 PP a todos ao completar um andar (chefe derrotado). */
@@ -834,7 +894,6 @@ export class GameStateService {
     this.screen.set('menu');
     this.character.set(null);
     this.companions.set([]);
-    this.companionChoices.set([]);
     this.newCompanion.set(null);
     this.currentFloor.set(null);
     this.log.set([]);

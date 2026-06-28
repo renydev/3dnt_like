@@ -139,6 +139,10 @@
     &.room-badge-boss     { color: #c0392b; border-color: #c0392b; background: rgba(192,57,43,0.15); }
     &.room-badge-entrance { color: #27ae60; border-color: #27ae60; background: rgba(39,174,96,0.1); }
     &.room-badge-empty    { color: #666; border-color: #444; background: rgba(0,0,0,0.2); }
+    &.room-badge-puzzle   { color: #3498db; border-color: #3498db; background: rgba(52,152,219,0.1); }
+    &.room-badge-social   { color: #1abc9c; border-color: #1abc9c; background: rgba(26,188,156,0.1); }
+    &.room-badge-merchant { color: #f39c12; border-color: #f39c12; background: rgba(243,156,18,0.1); }
+    &.room-badge-hostage  { color: #e0a050; border-color: #e0a050; background: rgba(224,160,80,0.12); }
   }
 
   .info-desc {

@@ -331,14 +331,14 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
           @for (report of balanceReports(); track report.floor) {
             <div class="balance-report">
               <div class="balance-report-head">
-                Andar {{ report.floor }} — PP {{ report.partyPP }} · escala geral {{ report.scale.overall.toFixed(2) }}
+                Andar {{ floorName(report.floor) }} — PP {{ report.partyPP }} · escala geral {{ report.scale.overall.toFixed(2) }}
                 · Poder do monstro ×{{ report.scale.poder.toFixed(2) }} · Resistência do monstro ×{{ report.scale.resistencia.toFixed(2) }}
               </div>
               <table class="balance-table">
                 <thead>
                   <tr>
                     <th>Monstro</th><th>P</th><th>H</th><th>R</th><th>PV</th>
-                    <th>Dano→Monstro</th><th>Dano→Grupo</th><th>Risco</th><th>Veredito</th>
+                    <th>Abertura→Monstro</th><th>Dano→Monstro</th><th>Dano→Grupo</th><th>Risco</th><th>Veredito</th>
                     @if (balanceMonteCarloTrials > 0) {
                       <th>Vitória% (MC)</th><th>Rodadas (MC)</th><th>PV grupo% (MC)</th>
                     }
@@ -349,6 +349,7 @@ function addBidir(rooms: RoomState[], a: number, b: number): void {
                     <tr [class]="'verdict-' + m.verdict">
                       <td>{{ m.name }}</td>
                       <td>{{ m.poder }}</td><td>{{ m.habilidade }}</td><td>{{ m.resistencia }}</td><td>{{ m.hp }}</td>
+                      <td>{{ m.expectedOpeningDmg.toFixed(1) }}</td>
                       <td>{{ m.expectedDmgPartyToMonster.toFixed(1) }}</td>
                       <td>{{ m.expectedDmgMonsterToParty.toFixed(1) }}</td>
                       <td>{{ m.riskRatio === Infinity ? '∞' : m.riskRatio.toFixed(2) }}</td>
@@ -946,6 +947,11 @@ export class DebugComponent {
     floor: +k,
     name: v.theme.godName,
   })).sort((a, b) => a.floor - b.floor);
+
+  /** Nome da masmorra daquele andar (ex.: "Ragnar"), pra exibir em vez do número puro. */
+  floorName(floor: number): string {
+    return DUNGEON_REGISTRY[floor]?.theme.godName ?? `${floor}`;
+  }
 
   selectedFloor    = signal(1);
   selectedFloorStr = '1';

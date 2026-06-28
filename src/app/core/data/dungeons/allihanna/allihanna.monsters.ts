@@ -4,48 +4,53 @@ import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
 
-// ── Grupos de inimigos por câmara (andar 1) ──────────────────────────────────
-// Os templates dos monstros (atributos-base, lore, arquétipo) vivem no bestiário
-// central (core/data/bestiario.data.ts) — este arquivo só decide QUAIS monstros
-// aparecem em QUAL sala e em QUE quantidade, especificamente para Allihanna.
-
+// Os templates dos monstros vivem no bestiário central (core/data/bestiario.data.ts).
+// Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
+// especificamente para Allihanna.
+//
+// Andar em formato de losango compacto (trilhas: 1-2-3-4-3-2-1, 16 salas) — ver
+// allihanna.config.ts e o relatório de balanceamento (debug panel) para o veredito
+// de cada monstro:
+//  1  = trivial    (Dríade)
+//  3  = trivial    (Lobo-das-Cavernas)
+//  6  = equilibrado (Urso das Cavernas)
+//  7  = hostage     (resgate de refém — capturado por uma matilha de lobos)
+// 10  = arriscado  (Elefante — manada do Lago)
+// 13  = mortal     (Urso-Coruja Imenso — única trilha mortal antes do chefe)
+// 15  = chefe       (Fallandi + Leão de Fallandi + Urso Vegetal)
 export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
 function d(sides: number) { return Math.ceil(Math.random() * sides); }
 
-// IDs de sala conforme allihanna.config.ts layout:
-//  0 = O Lago            (monster)
-//  3 = Feras — Centro    (monster)
-//  6 = Feras — Esquerda  (monster)
-//  7 = Caverna dos Ursos (monster)
-//  8 = Urso-Coruja Imenso (monster) — câmara 3a
-// 13 = Druida Defensor   (boss)
-// Salas 2, 5, 9, 10, 14 são corredores vazios → apenas encontros aleatórios
 export const ALLIHANNA_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
-  // Câmara 1 — O Lago: manada de elefantes (3d6+2, cap 5)
-  0: (scale) => {
+  // Trilha da Dríade — trivial, primeiro contato do andar.
+  1: (scale) => [spawnMonster('driade', scale)],
+  // Covil dos Lobos — trivial, matilha pequena.
+  3: (scale) => {
+    const count = Math.max(1, d(6) - 3);
+    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('lobo_cavernas', scale));
+  },
+  // Caverna dos Ursos — equilibrado.
+  6: (scale) => {
+    const count = Math.max(1, d(6) - 4);
+    return Array.from({ length: Math.min(count, 2) }, () => spawnMonster('urso_cavernas', scale));
+  },
+  // Cela dos Cativos — matilha pequena guardando o refém.
+  7: (scale) => {
+    const count = Math.max(1, d(6) - 4);
+    return Array.from({ length: Math.min(count, 2) }, () => spawnMonster('lobo_cavernas', scale));
+  },
+  // O Lago — arriscado: manada de elefantes (3d6+2, cap 5).
+  10: (scale) => {
     const count = Math.min(5, d(6) + d(6) + d(6) + 2);
     return Array.from({ length: count }, () => spawnMonster('elefante', scale));
   },
-  // Câmara 2 — As Feras (centro): 1d6–1 assassinos, mínimo 1
-  3: (scale) => {
-    const count = Math.max(1, d(6) - 1);
-    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('assassino_savana', scale));
-  },
-  // Câmara 2 — As Feras (esquerda): igual à câmara central
-  6: (scale) => {
-    const count = Math.max(1, d(6) - 1);
-    return Array.from({ length: Math.min(count, 3) }, () => spawnMonster('assassino_savana', scale));
-  },
-  // Câmara 3 — Caverna dos Ursos: 1d6+5 ursos-coruja, cap 6
-  7: (scale) => {
-    const count = Math.min(6, d(6) + 5);
-    return Array.from({ length: count }, () => spawnMonster('urso_coruja', scale));
-  },
-  // Câmara 3a — Urso-Coruja Imenso (boss da câmara)
-  8: (scale) => [spawnMonster('urso_coruja_imenso', scale, true)],
-  // Câmara 4 — O Druida Defensor: Fallandi + leão + urso vegetal
-  13: (scale) => [
+  // Ninho do Urso-Coruja Imenso — mortal, a única trilha mortal do andar.
+  // Obrigações e Restrições (regra especial de Allihanna): não deve ser destruído —
+  // o cenário (ver ALLIHANNA_SCENARIOS[13]) oferece um túnel secreto pra contorná-lo.
+  13: (scale) => [spawnMonster('urso_coruja_imenso', scale, true)],
+  // Câmara do Guardião Final — chefe: Fallandi + leão + urso vegetal.
+  15: (scale) => [
     spawnMonster('fallandi', scale, true),
     spawnMonster('leao_fallandi', scale),
     spawnMonster('urso_vegetal', scale),

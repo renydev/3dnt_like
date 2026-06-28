@@ -140,6 +140,7 @@
               <div
                 class="tier-card"
                 [class.selected]="selectedTier()?.id === tier.id"
+                [class.locked]="isTierLocked(tier)"
                 [style.--tier-color]="tier.color"
                 (click)="selectTier(tier)"
               >
@@ -155,6 +156,9 @@
                   </div>
                   @if (selectedTier()?.id === tier.id) {
                     <span class="selected-check">✓</span>
+                  }
+                  @if (isTierLocked(tier)) {
+                    <span class="tier-locked-badge">🔒 Em breve</span>
                   }
                 </div>
 
@@ -385,8 +389,12 @@
                       <div class="vdi-top">
                         <span class="vdi-icon">{{ v.icon }}</span>
                         <span class="vdi-name">{{ v.name }}</span>
+                        @if (!v.implemented) {
+                          <span class="vdi-noeffect" title="Ainda sem efeito mecânico implementado — vale em roleplay/eventos.">⚠️ sem efeito</span>
+                        }
                         <span class="vdi-cost">{{ isVantagemSelected(v.id) ? '−' : '+' }}{{ vantagemCost(v) }}pt</span>
                       </div>
+                      <p class="vdi-flavor">{{ v.flavor }}</p>
                       <p class="vdi-effect">{{ v.description }}</p>
                     </div>
                   }

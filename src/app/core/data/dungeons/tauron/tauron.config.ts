@@ -2,21 +2,37 @@ import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
 import { TAURON_ROOM_ENEMIES, rollTauronEncounter } from './tauron.monsters';
 
+// Losango compacto (1-2-3-4-3-2-1, 16 salas). Veredito por fileira (debug panel):
+//  fileira 1 (trivial): guerreiro_tauron
+//  fileira 2 (trivial): guerreiro_tauron
+//  fileira 3 (equilibrado): guerreiro_tauron
+//  fileira 4 (arriscado): leao_gigante
+//  fileira 5 (mortal): quimera
+//  chefe: potentius
 export const TauronConfig: DungeonConfig = {
   floorNumber: 9,
   theme: VALKARIA_FLOORS[8],
-  roomEnemies: TAURON_ROOM_ENEMIES,
-  rollEncounter: rollTauronEncounter,
   layout: {
     floorNumber: 9,
     rooms: [
-      { id: 0, row: 0, col: 2, type: 'entrance', name: 'Entrada do Labirinto',       connections: [1, 2, 3] },
-      { id: 1, row: 1, col: 0, type: 'empty',    name: 'Corredor Sem Saída',         connections: [4] },
-      { id: 2, row: 1, col: 2, type: 'monster',  name: 'Câmara do Minotauro',        connections: [4, 5] },
-      { id: 3, row: 1, col: 4, type: 'trap',     name: 'Paredes Móveis',             connections: [5] },
-      { id: 4, row: 2, col: 1, type: 'monster',  name: 'Câmara do Berserker',        connections: [6] },
-      { id: 5, row: 2, col: 3, type: 'treasure', name: 'Tesouro do Gladiador',       connections: [6] },
-      { id: 6, row: 3, col: 2, type: 'boss',     name: 'Arena do Minotauro Supremo', connections: [] },
+      { id: 0, row: 0, col: 0, type: 'entrance', name: 'Entrada Principal', connections: [1, 2] },
+      { id: 1, row: 1, col: -1, type: 'monster', name: 'Trilha de Guerreiro de Tauron', connections: [0, 3] },
+      { id: 2, row: 1, col: 1, type: 'trap', name: 'Corredor Armado', connections: [0, 4] },
+      { id: 3, row: 2, col: -2, type: 'monster', name: 'Covil de Guerreiro de Tauron', connections: [1, 6] },
+      { id: 4, row: 2, col: 0, type: 'treasure', name: 'Câmara do Ouro', connections: [2, 5] },
+      { id: 5, row: 2, col: 2, type: 'trap', name: 'Sala das Armadilhas', connections: [4, 9] },
+      { id: 6, row: 3, col: -3, type: 'monster', name: 'Território de Guerreiro de Tauron', connections: [3, 7] },
+      { id: 7, row: 3, col: -1, type: 'treasure', name: 'Câmara do Tesouro', connections: [6, 10] },
+      { id: 8, row: 3, col: 1, type: 'treasure', name: 'Câmara dos Segredos', connections: [9, 12] },
+      { id: 9, row: 3, col: 3, type: 'puzzle', name: 'Câmara dos Mistérios', connections: [5, 8] },
+      { id: 10, row: 4, col: -2, type: 'monster', name: 'Covil de Leão Gigante', connections: [7, 13] },
+      { id: 11, row: 4, col: 0, type: 'merchant', name: 'O Comerciante Misterioso', connections: [12, 14] },
+      { id: 12, row: 4, col: 2, type: 'social', name: 'Os Sobreviventes', connections: [8, 11] },
+      { id: 13, row: 5, col: -1, type: 'monster', name: 'Ninho de Quimera', connections: [10, 15] },
+      { id: 14, row: 5, col: 1, type: 'rest', name: 'Fogueira Final', connections: [11, 15] },
+      { id: 15, row: 6, col: 0, type: 'boss', name: 'Câmara do Guardião Final', connections: [13, 14] },
     ],
   },
+  roomEnemies: TAURON_ROOM_ENEMIES,
+  rollEncounter: rollTauronEncounter,
 };

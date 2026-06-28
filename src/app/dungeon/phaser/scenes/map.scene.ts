@@ -185,7 +185,7 @@ export class MapScene extends Phaser.Scene {
     if (room.cleared) { this.gs.moveToRoom(room.id); return; }
     if (room.isCurrent && room.entered) {
       if (room.type !== 'entrance' && room.type !== 'empty') {
-        this.gs.screen.set('encounter');
+        this.gs.enterCombatRoom(room.id, room.type);
       }
       return;
     }

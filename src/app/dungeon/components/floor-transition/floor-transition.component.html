@@ -20,37 +20,6 @@
     </p>
   </div>
 
-  <!-- Seleção de companheiro após boss -->
-  @if (gs.companionChoices().length > 0) {
-    <div class="companion-picker">
-      <p class="picker-label">🤝 Escolha um novo companheiro para continuar:</p>
-      <div class="picker-cards">
-        @for (c of gs.companionChoices(); track c.kits[0]) {
-          <div class="picker-card" (click)="gs.selectCompanion(c)">
-            <span class="picker-portrait">{{ c.portraitIcon }}</span>
-            <span class="picker-name">{{ c.name }}</span>
-            <span class="picker-class">{{ kitNames(c.kits) }}</span>
-          </div>
-        }
-      </div>
-    </div>
-  }
-
-  <!-- Companheiro recém recrutado -->
-  @if (gs.newCompanion() && gs.companionChoices().length === 0) {
-    <div class="companion-join">
-      <div class="companion-icon">{{ gs.newCompanion()!.portraitIcon }}</div>
-      <div class="companion-text">
-        <p class="companion-name">{{ gs.newCompanion()!.name }}</p>
-        <p class="companion-desc">
-          {{ gs.newCompanion()!.race | titlecase }}
-          {{ kitNames(gs.newCompanion()!.kits) }}
-          se junta à sua aventura!
-        </p>
-      </div>
-    </div>
-  }
-
   <!-- Card do próximo andar -->
   @if (gs.nextTheme(); as theme) {
     <div class="next-floor-card" [style.--theme-color]="nextPaletteColor()">
@@ -99,7 +68,6 @@
 
   <button class="btn-proceed" (click)="proceed()" [disabled]="!canProceed()">
     @if (!ready()) { Preparando... }
-    @else if (gs.companionChoices().length > 0) { 🤝 Escolha um companheiro acima }
     @else { ⚔️ Adentrar o Próximo Andar }
   </button>
 

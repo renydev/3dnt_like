@@ -171,7 +171,11 @@ export function computeGrowthScale(
   // Baseline "equilibrado": o que cada atributo teria se o PP fosse dividido
   // igualmente entre Poder/Habilidade/Resistência — mesma suposição usada antes
   // de termos os atributos reais, agora só como referência de desvio.
-  const expectedAttr = Math.max(1, Math.round(partyPP / Math.max(1, size) / 3));
+  // `partyPP` já é o PP médio POR PERSONAGEM (mesma convenção de growthScale()) —
+  // dividir por `size` de novo aqui era o mesmo bug recorrente de tratar um valor
+  // já médio como se fosse o total da party, o que jogava as razões pro teto (1.8x)
+  // pra qualquer party com mais de 1 membro.
+  const expectedAttr = Math.max(1, Math.round(partyPP / 3));
 
   const clamp = (n: number) => Math.min(1.8, Math.max(0.5, n));
   const rPoder       = clamp(avgAttrs.poder       / expectedAttr);
@@ -230,4 +234,112 @@ export function calcCombatXp(
     : 0;
 
   return { xpPerCharacter: base + bonusXp, isMajorObjective: isBossFight, bonusXp, totalMonsterPP, totalPartyPP };
+}
+
+// ── Classificação de risco de combate (trivial/equilibrado/arriscado/mortal) ──
+// Mesma lógica usada pela ferramenta de balanceamento (debug panel), mas aplicada
+// aos atributos REAIS da party e dos inimigos de um combate em andamento — não a
+// um "personagem médio" hipotético. Usada pra conceder XP fixo por veredito.
+
+export type CombatVerdict = 'trivial' | 'equilibrado' | 'arriscado' | 'mortal';
+
+/** XP fixo concedido por veredito de risco do combate (substitui a fórmula antiga de PP±bônus). */
+export const VERDICT_XP: Record<CombatVerdict, number> = {
+  trivial: 10,
+  equilibrado: 50,
+  arriscado: 80,
+  mortal: 200,
+};
+
+export function verdictForRisk(ratio: number): CombatVerdict {
+  if (ratio >= 2.5) return 'trivial';
+  if (ratio >= 1.2) return 'equilibrado';
+  if (ratio >= 0.7) return 'arriscado';
+  return 'mortal';
+}
+
+/**
+ * Dano médio esperado de um confronto FA(atributo+1d6) vs FD(atributo+1d6), dada a
+ * diferença de atributos `diff` (atacante - defensor). Pré-computa as 36 combinações
+ * de dois d6 em vez de usar só a média (3.5 vs 3.5) — ver balance-analysis.ts para a
+ * justificativa completa (evita o penhasco binário trivial↔mortal perto do limiar).
+ */
+const EXPECTED_DAMAGE_CACHE = new Map<number, number>();
+export function expectedDamage(diff: number): number {
+  const cached = EXPECTED_DAMAGE_CACHE.get(diff);
+  if (cached !== undefined) return cached;
+  let total = 0;
+  for (let atk = 1; atk <= 6; atk++) {
+    for (let def = 1; def <= 6; def++) {
+      total += Math.max(0, diff + atk - def);
+    }
+  }
+  const result = total / 36;
+  EXPECTED_DAMAGE_CACHE.set(diff, result);
+  return result;
+}
+
+/** Dano esperado do golpe de abertura (atacante fixado no d6 máximo) — ver balance-analysis.ts. */
+const OPENING_DAMAGE_CACHE = new Map<number, number>();
+export function openingStrikeDamage(diff: number): number {
+  const cached = OPENING_DAMAGE_CACHE.get(diff);
+  if (cached !== undefined) return cached;
+  let total = 0;
+  for (let def = 1; def <= 6; def++) {
+    total += Math.max(0, diff + 6 - def);
+  }
+  const result = total / 6;
+  OPENING_DAMAGE_CACHE.set(diff, result);
+  return result;
+}
+
+export interface CombatRiskInput {
+  /** Atributos REAIS de cada membro vivo da party (current, já com equipamento/vantagens se aplicável). */
+  party: Array<{ poder: number; resistencia: number; hp: number }>;
+  /** Atributos REAIS de cada inimigo do grupo (já escalados pelo andar). */
+  enemies: Array<{ poder: number; resistencia: number; hp: number; armadura?: number }>;
+  /** Armadura média de equipamento da party (default 0). */
+  armadura?: number;
+}
+
+/**
+ * Classifica o risco real de um combate (trivial/equilibrado/arriscado/mortal) a partir
+ * dos atributos REAIS da party e do grupo de inimigos enfrentado — mesma fórmula da
+ * ferramenta de balanceamento, mas sem o "personagem médio" hipotético: usa a média
+ * real da party viva e o grupo de inimigos tal como apareceu no combate.
+ */
+export function classifyCombatRisk(input: CombatRiskInput): CombatVerdict {
+  const { party, enemies, armadura = 0 } = input;
+  if (party.length === 0 || enemies.length === 0) return 'mortal';
+
+  const size = party.length;
+  const avgPoder = party.reduce((s, p) => s + p.poder, 0) / size;
+  const avgResist = party.reduce((s, p) => s + p.resistencia, 0) / size;
+  const avgHp = party.reduce((s, p) => s + p.hp, 0) / size;
+
+  const avgEnemyPoder = enemies.reduce((s, e) => s + e.poder, 0) / enemies.length;
+  const avgEnemyResist = enemies.reduce((s, e) => s + e.resistencia + (e.armadura ?? 0), 0) / enemies.length;
+  const totalEnemyHp = enemies.reduce((s, e) => s + e.hp, 0);
+
+  const expectedDmgPartyToMonster = expectedDamage(avgPoder - avgEnemyResist);
+  const expectedDmgMonsterToParty = expectedDamage(avgEnemyPoder - (avgResist + armadura));
+  const netPartyDps = expectedDmgPartyToMonster * size;
+
+  const expectedOpeningDmg = Math.max(0, openingStrikeDamage(avgPoder - avgEnemyResist) * size);
+  const hpAfterOpening = Math.max(0, totalEnemyHp - expectedOpeningDmg);
+
+  let roundsToKillMonster: number;
+  if (expectedOpeningDmg > 0 && hpAfterOpening <= 0) {
+    roundsToKillMonster = totalEnemyHp / expectedOpeningDmg;
+  } else if (expectedOpeningDmg > 0) {
+    roundsToKillMonster = netPartyDps > 0 ? 1 + hpAfterOpening / netPartyDps : Infinity;
+  } else {
+    roundsToKillMonster = netPartyDps > 0 ? totalEnemyHp / netPartyDps : Infinity;
+  }
+
+  const roundsToKillPartyMember = expectedDmgMonsterToParty > 0 ? avgHp / expectedDmgMonsterToParty : Infinity;
+  const riskRatio = (expectedDmgPartyToMonster === 0 && expectedOpeningDmg === 0)
+    ? 0 : roundsToKillPartyMember / roundsToKillMonster;
+
+  return verdictForRisk(riskRatio);
 }

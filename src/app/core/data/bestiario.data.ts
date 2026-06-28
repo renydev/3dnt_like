@@ -94,24 +94,29 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Druida de Allihanna', icon: '🌱', archetype: 'conjurador', floor: 1,
     flavorText: 'Servo da Mãe Natureza. Prefere a paz, mas defende a floresta com magia e animais aliados.',
     // Alpha: F1 R2 A2 PF2 → P=floor((1+2)/2)=1, R=floor((2+2)/2)=2
-    poder: 2, habilidade: 3, resistencia: 3,
-    hp: 10,
+    // Poder e PV ajustados pra ocupar a faixa "equilibrado" na refatoração do andar 1
+    // (ver allihanna.config.ts) — Resistência intocada; o PV baixo original fazia o
+    // golpe de abertura matar o monstro antes de ele lutar, mascarando como "trivial".
+    poder: 4, habilidade: 3, resistencia: 3,
+    hp: 25,
     xpReward: 10, goldReward: 5,
   },
   ranger: {
     name: 'Ranger', icon: '🏹', archetype: 'atirador', floor: 1,
     flavorText: 'Explorador da floresta, habilidoso com arco e espada. Ataca múltiplas vezes com agilidade.',
     // Alpha: F2 R2 A2 PF3 → P=floor((2+3)/2)=2, R=2
-    poder: 3, habilidade: 3, resistencia: 3,
-    hp: 10,
+    // Poder e PV ajustados pra "equilibrado" na refatoração do andar 1 — Resistência intocada.
+    poder: 4, habilidade: 3, resistencia: 3,
+    hp: 30,
     xpReward: 10, goldReward: 3,
   },
   centauro_ranger: {
     name: 'Centauro Ranger', icon: '🐴', sprite: 'centauro-combatente.png', archetype: 'atirador', floor: 1,
     flavorText: 'Meio homem, meio cavalo — patrulha a floresta com arco na mão e casco certeiro.',
     // Alpha: F2 R2 A2 PF2 → P=2, R=2
-    poder: 2, habilidade: 3, resistencia: 3,
-    hp: 10,
+    // Poder e PV ajustados pra "equilibrado" na refatoração do andar 1 — Resistência intocada.
+    poder: 4, habilidade: 3, resistencia: 3,
+    hp: 25,
     xpReward: 11, goldReward: 0,
   },
   lobo_cavernas: {
@@ -134,8 +139,9 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Gorila', icon: '🦍', archetype: 'paquiderme', floor: 1,
     flavorText: 'Primata colossal, territorialmente agressivo. Conhecido por habitar esta masmorra.',
     // Alpha: F2 R2 A1 PF0 → P=1, R=floor((1+2)/2)=1
-    poder: 2, habilidade: 2, resistencia: 2,
-    hp: 10,
+    // Poder e PV ajustados pra "equilibrado" na refatoração do andar 1 — Resistência intocada.
+    poder: 4, habilidade: 2, resistencia: 2,
+    hp: 35,
     xpReward: 8, goldReward: 0,
   },
   driade: {
@@ -150,8 +156,9 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Tigre', icon: '🐯', archetype: 'felino', floor: 1,
     flavorText: 'Predador ágil da floresta, caça de surpresa e retira-se ao perder metade dos PVs.',
     // Alpha: F3 R2 A0 PF0 → P=1, R=1
-    poder: 3, habilidade: 3, resistencia: 2,
-    hp: 10,
+    // Poder e PV ajustados pra "equilibrado" na refatoração do andar 1 — Resistência intocada.
+    poder: 4, habilidade: 3, resistencia: 2,
+    hp: 35,
     xpReward: 9, goldReward: 0,
   },
   crocodilo: {
@@ -166,8 +173,9 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Urso das Cavernas', icon: '🐻', archetype: 'paquiderme', floor: 1,
     flavorText: 'Urso de grande porte que habita as cavernas da floresta. Poderoso e territorial.',
     // Alpha: F4 R3 A1 PF0 → P=2, R=2
-    poder: 4, habilidade: 3, resistencia: 3,
-    hp: 15,
+    // Poder e PV ajustados pra "equilibrado" na refatoração do andar 1 — Resistência intocada.
+    poder: 5, habilidade: 3, resistencia: 3,
+    hp: 20,
     xpReward: 12, goldReward: 0,
   },
 
@@ -185,14 +193,14 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
   orc_guerreiro: {
     name: 'Orc Guerreiro', icon: '👹', sprite: 'orc.png', archetype: 'dps', floor: 2,
     flavorText: 'Cinza e musculoso, treinado desde o nascimento para matar. Carrega machado de guerra com braço forte demais.',
-    poder: 3, habilidade: 2, resistencia: 3,
-    hp: 10,
+    poder: 11, habilidade: 2, resistencia: 3,
+    hp: 20,
     xpReward: 8, goldReward: 5,
   },
   orc_berserker: {
     name: 'Orc Berserker', icon: '😡', sprite: 'orc.png', archetype: 'dps', floor: 2,
     flavorText: 'Ao entrar em fúria, ignora a dor. Cada ferimento parece apenas aumentar sua brutalidade e velocidade de ataque.',
-    poder: 4, habilidade: 2, resistencia: 4,
+    poder: 8, habilidade: 2, resistencia: 4,
     hp: 15,
     xpReward: 12, goldReward: 5,
   },
@@ -282,7 +290,7 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Sharindhallenrannas', icon: '🧝', archetype: 'conjurador', floor: 3,
     flavorText: 'Maga élfica exótica de asas emplumadas, Guardiã de Glorienn — testemunhou o massacre de Lenérienn e jamais se rende.',
     // Alpha: F3(corte) H4 R3 A2 PdF1; 9 PVs, 20 PMs → P=floor((3+1)/2)=2, R=floor((2+3)/2)=2
-    poder: 3, habilidade: 4, resistencia: 4,
+    poder: 4, habilidade: 4, resistencia: 4,
     hp: 9,
     xpReward: 35, goldReward: 15,
   },
@@ -394,7 +402,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Mímico', icon: '📦', archetype: 'generico', floor: 5,
     flavorText: 'Criatura amorfa disfarçada de mobília — agarra e devora vítimas incautas com pseudópodes adesivos.',
     // Alpha: F3 H2 R4 A2 PdF0 → P=floor((3+0)/2)=1, R=floor((2+4)/2)=3
-    poder: 3, habilidade: 2, resistencia: 5,
+    poder: 4, habilidade: 2, resistencia: 5,
+    hp: 25,
     xpReward: 10, goldReward: 0,
   },
   golem_pedra: {
@@ -408,7 +417,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Gárgula', icon: '🗿', archetype: 'voador', floor: 5,
     flavorText: 'Construto alado de pedra viva, espreita do alto com sentidos sobrenaturais.',
     // Alpha: F3 H3 R4 A2 PdF0 → P=1, R=3
-    poder: 3, habilidade: 3, resistencia: 5,
+    poder: 5, habilidade: 3, resistencia: 5,
+    hp: 30,
     xpReward: 12, goldReward: 0,
   },
   phasm: {
@@ -481,7 +491,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Bardo de Marah', icon: '🎼', archetype: 'suporte', floor: 6,
     flavorText: 'Músico e artista que serve à Dama Branca, vive entre flores e música de bandolim.',
     // Alpha: F2 H3 R2 A2 PdF1 → P=floor((2+1)/2)=1, R=2
-    poder: 2, habilidade: 3, resistencia: 3,
+    poder: 6, habilidade: 3, resistencia: 3,
+    hp: 15,
     xpReward: 7, goldReward: 0,
   },
   paladino_marah: {
@@ -527,8 +538,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Prislanya', icon: '🧚‍♀️', archetype: 'conjurador', floor: 6,
     flavorText: 'Ninfa Guardiã de Marah, disfarçada de Valkaria cativa — tenta convencer os heróis a desistir, sem nenhuma intenção de feri-los.',
     // Alpha: F0 H1 R2 A0 PdF0; 10 PVs, 10 PMs → P=0, R=2
-    poder: 1, habilidade: 1, resistencia: 2,
-    hp: 10,
+    poder: 8, habilidade: 1, resistencia: 2,
+    hp: 20,
     xpReward: 20, goldReward: 0,
   },
 
@@ -546,7 +557,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Troglodita Guerreiro', icon: '🪓', archetype: 'dps', floor: 7,
     flavorText: 'Servo subterrâneo fiel de Tenebra, enxerga no escuro e nunca é incomodado pelos mortos-vivos da masmorra.',
     // Alpha: F3 H3 R3 A2 PdF1 → P=floor((3+1)/2)=2, R=floor((2+3)/2)=2
-    poder: 3, habilidade: 3, resistencia: 4,
+    poder: 4, habilidade: 3, resistencia: 4,
+    hp: 20,
     xpReward: 13, goldReward: 3,
   },
   zumbi_enorme: {
@@ -659,7 +671,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Lamia', icon: '🐍', archetype: 'furtivo', floor: 8,
     flavorText: 'Criatura de corpo centauro com torso feminino e parte inferior de serpente — egoísta e desconfiada de tudo.',
     // Alpha: F2 H3 R2 A2 PdF0 → P=1, R=2
-    poder: 2, habilidade: 3, resistencia: 3,
+    poder: 10, habilidade: 3, resistencia: 3,
+    hp: 15,
     xpReward: 11, goldReward: 0,
   },
   mumia: {
@@ -694,7 +707,7 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Enxame de Azgher', icon: '🪲', archetype: 'generico', floor: 8,
     flavorText: 'Milhares de besouros dourados disfarçados de joias, hibernam por séculos até despertar para atacar em enxame.',
     // Alpha: F0 H3 R5 A1 PdF0; 25 PVs, 25 PMs → P=0, R=3
-    poder: 1, habilidade: 3, resistencia: 5,
+    poder: 2, habilidade: 3, resistencia: 5,
     hp: 25,
     xpReward: 16, goldReward: 0,
   },
@@ -729,7 +742,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Guerreiro de Tauron', icon: '⚔️', archetype: 'dps', floor: 9,
     flavorText: 'Humano, anão ou outro prisioneiro da masmorra-labirinto, buscando vitórias que agradem ao Deus da Força.',
     // Alpha: F2 H3 R3 A2 PdF1 → P=floor((2+1)/2)=1, R=floor((2+3)/2)=2
-    poder: 2, habilidade: 3, resistencia: 4,
+    poder: 3, habilidade: 3, resistencia: 4,
+    hp: 20,
     xpReward: 10, goldReward: 0,
   },
   minotauro_selvagem: {
@@ -813,8 +827,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Liranny', icon: '🎻', archetype: 'suporte', floor: 10,
     flavorText: 'Bardo insano preso há séculos em seu próprio luto, tenta compor a canção perfeita para comover os deuses.',
     // Alpha: F2 H2 R2 A1 PdF2; 4 PVs, 4 PMs → P=floor((2+2)/2)=2, R=floor((1+2)/2)=1
-    poder: 2, habilidade: 2, resistencia: 2,
-    hp: 4,
+    poder: 9, habilidade: 2, resistencia: 2,
+    hp: 14,
     xpReward: 6, goldReward: 0,
   },
   thwor_ironfist: {
@@ -844,7 +858,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Artista Marcial', icon: '🥋', archetype: 'dps', floor: 11,
     flavorText: 'Membro da Ordem dos Defensores do Sonho, treina há séculos em combate desarmado no monastério silencioso de Lin-Wu.',
     // Estimado a partir do custo de ~11-12 pontos citado no livro (sem stats Alpha explícitos).
-    poder: 2, habilidade: 3, resistencia: 2,
+    poder: 8, habilidade: 3, resistencia: 2,
+    hp: 15,
     xpReward: 13, goldReward: 0,
   },
   yon_ude: {
@@ -872,14 +887,16 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Elemental de Wynna', icon: '🌪️', archetype: 'generico', floor: 12,
     flavorText: 'Elemental de água, fogo, terra ou ar que patrulha as áreas maiores da masmorra à espera de invasores.',
     // Estimado (livro não dá stats Alpha explícitos para este encontro aleatório).
-    poder: 3, habilidade: 3, resistencia: 3,
+    poder: 4, habilidade: 3, resistencia: 3,
+    hp: 15,
     xpReward: 18, goldReward: 0,
   },
   djinn_enorme: {
     name: 'Djinn Enorme', icon: '🧞', archetype: 'voador', floor: 12,
     flavorText: 'Gênio do ar de proporções avantajadas, um dos muitos seres mágicos a serviço de Wynna.',
     // Estimado (livro não dá stats Alpha explícitos para este encontro aleatório).
-    poder: 3, habilidade: 3, resistencia: 3,
+    poder: 8, habilidade: 3, resistencia: 3,
+    hp: 15,
     xpReward: 19, goldReward: 0,
   },
   hidra_branca: {
@@ -921,7 +938,7 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Elfo-do-Mar Ranger', icon: '🔱', archetype: 'atirador', floor: 13,
     flavorText: 'Batedor dos redutos bárbaros dos elfos-do-mar, desconfia de conjuradores e não luta ao lado de mulheres.',
     // Alpha: F3 H4 R3 A2 PdF4; 15 PVs, 12 PMs → P=floor((3+4)/2)=3, R=floor((2+3)/2)=2
-    poder: 4, habilidade: 4, resistencia: 4,
+    poder: 5, habilidade: 4, resistencia: 4,
     hp: 15,
     xpReward: 16, goldReward: 0,
   },
@@ -1002,7 +1019,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Mastim de Thyatis', icon: '🐺', archetype: 'felino', floor: 14,
     flavorText: 'Cão infernal de pelagem em brasa, caça em matilhas pelos corredores incandescentes da masmorra.',
     // Estimado (livro não dá stats Alpha explícitos para este encontro aleatório).
-    poder: 2, habilidade: 3, resistencia: 2,
+    poder: 10, habilidade: 3, resistencia: 2,
+    hp: 25,
     xpReward: 11, goldReward: 0,
   },
   salamandra_nobre: {
@@ -1016,7 +1034,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Elemental do Fogo Ancião', icon: '🔥', archetype: 'generico', floor: 14,
     flavorText: 'Forma ancestral e poderosa de elemental do fogo, vagueia pelas câmaras mais profundas da masmorra.',
     // Estimado (livro não dá stats Alpha explícitos para este encontro aleatório).
-    poder: 4, habilidade: 3, resistencia: 3,
+    poder: 5, habilidade: 3, resistencia: 3,
+    hp: 15,
     xpReward: 22, goldReward: 0,
   },
   dragao_vermelho_adulto: {
@@ -1069,14 +1088,16 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Naga', icon: '🐍', archetype: 'conjurador', floor: 15,
     flavorText: 'Naga espiritual ou negra, usuária de magia com mordida venenosa em vez de constrição.',
     // Estimado (livro não dá stats Alpha explícitos para este encontro aleatório).
-    poder: 2, habilidade: 4, resistencia: 3,
+    poder: 5, habilidade: 4, resistencia: 3,
+    hp: 15,
     xpReward: 16, goldReward: 0,
   },
   medusa_sszzaas: {
     name: 'Medusa', icon: '🐍', archetype: 'furtivo', floor: 15,
     flavorText: 'Mulher-serpente de olhar petrificante, rara nesta masmorra.',
     // Estimado (livro não dá stats Alpha explícitos para este encontro aleatório).
-    poder: 2, habilidade: 3, resistencia: 2,
+    poder: 10, habilidade: 3, resistencia: 2,
+    hp: 20,
     xpReward: 14, goldReward: 0,
   },
   dragao_negro_adulto: {
@@ -1105,7 +1126,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Combatente de Keenn', icon: '⚔️', archetype: 'dps', floor: 16,
     flavorText: 'Lutador trazido de Arton ou outros mundos para o torneio eterno de Keenn — usa equipamento com bônus +4 na Força de Ataque.',
     // Estimado a partir do custo de 12-14 pontos citado no livro (sem stats Alpha explícitos).
-    poder: 2, habilidade: 3, resistencia: 3,
+    poder: 5, habilidade: 3, resistencia: 3,
+    hp: 15,
     xpReward: 18, goldReward: 0,
   },
   harkash: {
@@ -1147,14 +1169,16 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Cubo Gelatinoso Imenso', icon: '🧊', archetype: 'generico', floor: 17,
     flavorText: 'Massa amorfa transparente que engolfa e dissolve qualquer matéria orgânica em seu caminho.',
     // Alpha (variante imensa): F2 H1 R4 A0 PdF0 → P=1, R=2
-    poder: 2, habilidade: 1, resistencia: 3,
+    poder: 6, habilidade: 1, resistencia: 3,
+    hp: 15,
     xpReward: 12, goldReward: 0,
   },
   otyugh_enorme: {
     name: 'Otyugh Enorme', icon: '👁️', archetype: 'generico', floor: 17,
     flavorText: 'Carniceiro subterrâneo grotesco, tentáculos sensoriais no topo da cabeça e mordida que transmite doenças.',
     // Alpha (variante enorme): F2 H2 R2 A3 PdF0 → P=1, R=floor((3+2)/2)=2
-    poder: 2, habilidade: 2, resistencia: 4,
+    poder: 3, habilidade: 2, resistencia: 4,
+    hp: 20,
     xpReward: 13, goldReward: 0,
   },
   tendriculo_imenso: {
@@ -1199,7 +1223,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Fera-do-Caos', icon: '🌀', archetype: 'generico', floor: 18,
     flavorText: 'Criatura amorfa de mutações constantes, nativa do Reino de Nimb — seu toque transforma vítimas em massa disforme.',
     // Alpha: F3-4 H2-3 R2-3 A1-2 PdF0 → P=floor((3+0)/2)=1, R=floor((1+2)/2)=1
-    poder: 4, habilidade: 2, resistencia: 3,
+    poder: 5, habilidade: 2, resistencia: 3,
+    hp: 15,
     xpReward: 10, goldReward: 0,
   },
   tarrasque: {
@@ -1227,8 +1252,8 @@ export const BESTIARIO: Record<string, MonsterTemplate> = {
     name: 'Clérigo de Khalmyr (ferido)', icon: '🩸', archetype: 'suporte', floor: 19,
     flavorText: 'Sacerdote leal e bondoso, gravemente ferido para testar a generosidade dos Libertadores em curá-lo (Teste da Bondade).',
     // Alpha: ~9 pontos, 10 PVs (descrito só como "clérigos de 9 pontos") → estimado P=1, R=2
-    poder: 1, habilidade: 2, resistencia: 2,
-    hp: 10,
+    poder: 8, habilidade: 2, resistencia: 2,
+    hp: 15,
     xpReward: 0, goldReward: 0,
   },
   guerreiro_anao_khalmyr: {

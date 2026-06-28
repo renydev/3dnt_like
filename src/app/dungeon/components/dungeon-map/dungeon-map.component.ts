@@ -221,7 +221,11 @@ export class DungeonMapComponent {
     return !!r && r.type === 'rest' && r.cleared;
   });
 
-  enterRoom(): void { this.gameState.screen.set('encounter'); }
+  enterRoom(): void {
+    const room = this.currentRoom();
+    if (!room) return;
+    this.gameState.enterCombatRoom(room.id, room.type);
+  }
   nextFloor(): void { this.gameState.proceedToNextFloor(); }
   restQuick(): void { this.gameState.restQuick(); }
   restDeep(): void  { this.gameState.restDeep(); }

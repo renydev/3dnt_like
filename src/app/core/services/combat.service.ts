@@ -82,6 +82,26 @@ function armorResistCheck(
   return { resisted: false, effectiveArmor: effArmor, newReduction: currentReduction };
 }
 
+/** Uma "porrada" pendente de animação contra um inimigo — uma entrada por dado que causou dano. */
+export interface HitEvent {
+  enemyId: string;
+  amounts: number[];
+}
+
+/** Mesma ideia de HitEvent, mas pro lado da party (jogador ou companheiro) sofrendo dano. */
+export interface PartyHitEvent {
+  /** 'player' ou o id do companheiro. */
+  targetId: string;
+  amounts: number[];
+}
+
+/** Um ataque que errou (alvo esquivou) — só pra animação, sem dano nenhum envolvido. */
+export interface MissEvent {
+  /** 'enemy' = um inimigo esquivou de um ataque da party; 'party' = a party esquivou de um inimigo. */
+  side: 'enemy' | 'party';
+  targetId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CombatService {
   private gs = inject(GameStateService);
@@ -124,6 +144,22 @@ export class CombatService {
 
   /** Inimigo selecionado como alvo — escrito tanto pela CombatScene (clique no canvas) quanto por menus Angular */
   selectedEnemyId = signal<string | null>(null);
+
+  /**
+   * Fila de "porradas" pendentes de animação (consumida pela CombatScene): cada ataque com
+   * múltiplos dados de dano (Luta, perícia, PAs gastos) gera uma entrada por dado que "passou"
+   * da defesa, em vez de um único número fundido — visualmente é como se fosse um golpe por dado.
+   */
+  hitEvents = signal<HitEvent[]>([]);
+
+  /** Mesma fila, mas pro lado da party sofrendo dano (jogador ou companheiro). */
+  partyHitEvents = signal<PartyHitEvent[]>([]);
+
+  /** Fila de esquivas (ataques que erraram) — só pra animação de "desvio", sem dano. */
+  missEvents = signal<MissEvent[]>([]);
+
+  /** Fila de bloqueios totais por Armadura (defesa absorve o golpe inteiro) — animação de escudo. */
+  shieldEvents = signal<{ targetId: string; isEnemy: boolean }[]>([]);
 
   // ── Estado de rodada ──────────────────────────────────────────────────────
 
@@ -787,10 +823,15 @@ export class CombatService {
     const lutaBonus = this.hasLuta(companion) ? 1 : 0;
     const totalBonusDice = bonusDice + lutaBonus;
     const dAtk = this.rollCompanionDie(companion.id);
-    const dBonus = this.rollDiceWith(totalBonusDice, () => this.rollCompanionDie(companion.id));
+    const bonusRolls = this.rollDiceListWith(totalBonusDice, () => this.rollCompanionDie(companion.id));
+    const dBonus = bonusRolls.reduce((a, b) => a + b, 0);
     const atkPower = s.poder + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
-    const bonusPart = totalBonusDice > 0 ? `+🎲${dBonus}(x${totalBonusDice}${lutaBonus ? ',🥊Luta' : ''})` : '';
+    // Cada dado mostrado separadamente (não um único 🎲 somado) — com Luta/PA gasto
+    // a soma pode passar de 6, o que pareceria um dado "impossível" se fundido num só.
+    const bonusPart = bonusRolls.length > 0
+      ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${lutaBonus ? '(🥊Luta)' : ''}`
+      : '';
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
@@ -807,6 +848,7 @@ export class CombatService {
           `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
           'player'
         );
+        this.shieldEvents.update(q => [...q, { targetId: enemy.id, isEnemy: true }]);
         this.applyDamageToEnemy(enemy.id, 1);
         return;
       }
@@ -819,7 +861,8 @@ export class CombatService {
         `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
         'player'
       );
-      this.applyDamageToEnemy(enemy.id, dmg);
+      const hits = this.splitDamageByDice(s.poder, defPower, [dAtk, ...bonusRolls]);
+      this.applyDamageToEnemy(enemy.id, dmg, hits);
     }
   }
 
@@ -946,6 +989,7 @@ export class CombatService {
           `${enemy.icon} ${enemy.name} ERRA! 🎯H${effH}vsH${effTargetH}${penaltyNote} | 🎲${hitRoll}>${threshold} — ${targetMember.name} esquivou!`,
           'miss'
         );
+        this.missEvents.update(q => [...q, { side: 'party', targetId: targetKey }]);
         continue;
       }
 
@@ -962,6 +1006,7 @@ export class CombatService {
           `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart} | 🛡️ Armadura resiste! A${effectiveArmor}>P${effP} → 1 dano!`,
           'enemy'
         );
+        this.shieldEvents.update(q => [...q, { targetId: targetKey, isEnemy: false }]);
         if (targetMember.isPlayer) {
           this.damagePlayer(1);
           if (this.checkDefeat()) return;
@@ -971,6 +1016,7 @@ export class CombatService {
               ? { ...c, pontosVida: { ...c.pontosVida, current: Math.max(0, c.pontosVida.current - 1) } }
               : c
           ));
+          this.partyHitEvents.update(q => [...q, { targetId: targetMember.id!, amounts: [1] }]);
         }
         continue;
       }
@@ -982,14 +1028,18 @@ export class CombatService {
       const defRoller = targetMember.isPlayer
         ? () => this.rollPlayerDie()
         : () => this.rollCompanionDie(targetMember.id!);
-      const dDef = this.rollDiceWith(1 + (targetMember.hasLuta ? 1 : 0), defRoller);
+      const defRolls = this.rollDiceListWith(1 + (targetMember.hasLuta ? 1 : 0), defRoller);
+      const dDef = defRolls.reduce((a, b) => a + b, 0);
       const atkPower = effP + dAtk + surpriseBonus;
       const defPower = targetMember.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrE } = this.fmtDmg(atkPower - defPower);
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
       const surpriseNote = surpriseBonus > 0 ? ' 🗡️ golpe de abertura certeiro!' : '';
+      // Cada dado é mostrado separadamente (em vez da soma num só 🎲) — com Perícia
+      // Luta a defesa rola 2d6, e um único ícone somado parecia um dado "de 7+".
+      const defDiceStr = defRolls.map(r => `🎲${r}`).join('+') + (targetMember.hasLuta ? '(🥊Luta)' : '');
       this.addLog(
-        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart}${surpriseNote} | FA: P${effP}+🎲${dAtk}${surpriseBonus ? `+${surpriseBonus}` : ''}=${atkPower} vs FD: R${targetMember.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrE} dano!`,
+        `${enemy.icon} ${enemy.name} ataca ${targetMember.name}!${hitInfo}${weakPart}${surpriseNote} | FA: P${effP}+🎲${dAtk}${surpriseBonus ? `+${surpriseBonus}` : ''}=${atkPower} vs FD: R${targetMember.resistencia}+A${effectiveArmor}${armorNote}+${defDiceStr}=${defPower} → ${dmgStrE} dano!`,
         'enemy'
       );
 
@@ -1069,6 +1119,7 @@ export class CombatService {
         `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
         'player'
       );
+      this.shieldEvents.update(q => [...q, { targetId: enemy.id, isEnemy: true }]);
       this.applyDamageToEnemy(enemy.id, 1);
       return;
     }
@@ -1082,7 +1133,8 @@ export class CombatService {
       `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
       'player'
     );
-    this.applyDamageToEnemy(enemy.id, dmg);
+    const hits = this.splitDamageByDice(s.poder, defPower, [dAtk, ...bonusRolls]);
+    this.applyDamageToEnemy(enemy.id, dmg, hits);
   }
 
   /**
@@ -1110,7 +1162,26 @@ export class CombatService {
     this.paralyzedEnemies.set(target.id, 6 + casterPoder);
   }
 
-  applyDamageToEnemy(enemyId: string, dmg: number): void {
+  /**
+   * Divide o dano total em "porradas" — uma por dado de dano do atacante (1d6 base +
+   * bônus de Luta/perícia/PA gasto), na ordem em que foram rolados. A defesa (fd) é
+   * tratada como um orçamento que absorve os primeiros dados por completo; o dado que
+   * finalmente ultrapassa esse orçamento mostra só a sobra, e os dados seguintes contam
+   * o valor cheio. A soma das porradas sempre fecha com max(0, poder+Σdados-fd) — o
+   * dano real do combate não muda, só a forma de mostrar/animar.
+   */
+  private splitDamageByDice(poder: number, fd: number, dice: number[]): number[] {
+    let running = poder - fd;
+    const hits: number[] = [];
+    for (const die of dice) {
+      const before = running;
+      running += die;
+      if (running > 0) hits.push(before > 0 ? die : running);
+    }
+    return hits;
+  }
+
+  applyDamageToEnemy(enemyId: string, dmg: number, hits?: number[]): void {
     this.enemies.update(list =>
       list.map(e => e.id === enemyId ? { ...e, hp: Math.max(0, e.hp - dmg) } : e)
     );
@@ -1118,6 +1189,8 @@ export class CombatService {
       // Confusão/Paralisia (3D&T Victory) terminam ao sofrer dano.
       this.confusedEnemies.delete(enemyId);
       this.paralyzedEnemies.delete(enemyId);
+      const amounts = hits && hits.length > 0 ? hits : [dmg];
+      this.hitEvents.update(q => [...q, { enemyId, amounts }]);
     }
     const killed = this.enemies().find(e => e.id === enemyId && e.hp === 0);
     if (killed) {
@@ -1130,6 +1203,7 @@ export class CombatService {
       ...c,
       pontosVida: { ...c.pontosVida, current: Math.max(0, c.pontosVida.current - dmg) }
     } : c);
+    if (dmg > 0) this.partyHitEvents.update(q => [...q, { targetId: 'player', amounts: [dmg] }]);
   }
 
   private healPlayer(ab: CombatAbility, char: Character): number {

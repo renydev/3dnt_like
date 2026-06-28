@@ -20,6 +20,7 @@ import { d6 } from '../../../core/utils/dice';
   <div class="floor-bar">
     <span class="floor-info">{{ floor()?.theme?.icon }} Andar {{ floorNum() }}/20 — {{ floor()?.theme?.name }}</span>
     @if (isBossRoom()) { <span class="boss-label">👑 CHEFÃO</span> }
+    @if (room()?.type === 'hostage') { <span class="hostage-label">🎗️ RESGATE — vencer liberta um companheiro</span> }
     <div class="phase-badge">
       @if (phase() === 'player_turn') { <span class="ph-player">▶ Seu Turno</span> }
       @if (phase() === 'enemy_turn')  { <span class="ph-enemy">⚡ Inimigos agem…</span> }
@@ -35,6 +36,23 @@ import { d6 } from '../../../core/utils/dice';
     <div class="battle-canvas">
       <app-game-canvas [sceneClass]="combatSceneClass" sceneKey="CombatScene" backgroundColor="#0b0b18" />
     </div>
+
+    <!-- ── Inspeção do inimigo selecionado (debug: atributos/vantagens finais já escalados) ── -->
+    @if (inspectedEnemy(); as ie) {
+      <div class="enemy-inspect">
+        <span class="ei-title">{{ ie.icon }} {{ ie.name }}{{ ie.isBoss ? ' 👑' : '' }}</span>
+        <span class="ei-stat">P{{ ie.poder }}</span>
+        <span class="ei-stat">H{{ ie.habilidade }}</span>
+        <span class="ei-stat">R{{ ie.resistencia }}</span>
+        <span class="ei-stat">A{{ ie.armadura }}</span>
+        <span class="ei-stat">PV {{ ie.hp }}/{{ ie.maxHp }}</span>
+        <span class="ei-stat">PP {{ ie.pp }}</span>
+        @if (ie.regenPerTurn) { <span class="ei-stat ei-regen">💚 Regen {{ ie.regenPerTurn }}/turno</span> }
+        @if (ie.bonusVantagens?.length) {
+          <span class="ei-vantagens">⚠️ {{ ie.bonusVantagens!.join(', ') }}</span>
+        }
+      </div>
+    }
 
     <!-- ── Barra de ações ─────────────────────────────────────────── -->
     <div class="action-bar" [class.disabled-bar]="phase() !== 'player_turn'">
@@ -247,7 +265,7 @@ import { d6 } from '../../../core/utils/dice';
       @if (vs.xpPerCharacter > 0) {
         <p class="victory-xp victory-xp--gained">
           ✨ +{{ vs.xpPerCharacter }} XP por personagem
-          @if (vs.bonusXp > 0) { <span class="victory-bonus">(+{{ vs.bonusXp }} bônus por inimigos fortes)</span> }
+          <span class="victory-bonus">(combate {{ vs.verdict }})</span>
         </p>
       } @else {
         <p class="victory-xp victory-xp--none">⚠️ Nenhum XP ganho</p>
@@ -310,6 +328,7 @@ import { d6 } from '../../../core/utils/dice';
     }
     .floor-info { flex: 1; }
     .boss-label { color: #e74c3c; font-weight: bold; letter-spacing: 0.1em; font-size: 0.7rem; }
+    .hostage-label { color: #e0a050; font-weight: bold; letter-spacing: 0.05em; font-size: 0.7rem; }
     .phase-badge { font-size: 0.75rem; font-weight: bold; }
     .ph-player { color: #7ec8e3; }
     .ph-enemy  { color: #e38989; animation: blink 0.7s infinite alternate; }
@@ -319,6 +338,20 @@ import { d6 } from '../../../core/utils/dice';
 
     /* ── Campo de batalha (canvas Phaser) ─────────────────────────── */
     .battle-canvas { min-height: 0; overflow: hidden; }
+
+    /* ── Inspeção do inimigo selecionado (debug) ──────────────────── */
+    .enemy-inspect {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+      padding: 0.3rem 0.6rem;
+      background: #0c0c1a;
+      border-top: 1px solid #1a1a2e;
+      font-size: 0.7rem;
+      flex-shrink: 0;
+    }
+    .ei-title { color: #faa; font-weight: bold; margin-right: 0.2rem; }
+    .ei-stat { color: #9aa; background: #14142a; padding: 1px 6px; border-radius: 4px; }
+    .ei-regen { color: #7ee3a0; }
+    .ei-vantagens { color: #e3c97e; }
 
     /* ── Log de combate ─────────────────────────────────────────── */
     .combat-log {
@@ -608,6 +641,13 @@ export class EncounterScreenComponent implements OnInit {
     return list.find(e => e.hp > 0) ?? null;
   });
 
+  /** Inimigo selecionado no canvas, para o painel de debug (mostra mesmo se já morreu). */
+  inspectedEnemy = computed<Enemy | null>(() => {
+    const tid = this.combat.selectedEnemyId();
+    if (!tid) return null;
+    return this.enemies().find(e => e.id === tid) ?? null;
+  });
+
   trapTotal  = signal<number | null>(null);
   trapResult = signal<number | null>(null);
   trapDmg    = signal(0);
@@ -620,7 +660,7 @@ export class EncounterScreenComponent implements OnInit {
 
   isCombat = computed(() => {
     const t = this.room()?.type;
-    return t === 'monster' || t === 'boss' || this.isRandomEncounter();
+    return t === 'monster' || t === 'boss' || t === 'hostage' || this.isRandomEncounter();
   });
 
   isBossRoom = computed(() => this.room()?.type === 'boss' || this.enemies().some(e => e.isBoss));
@@ -634,7 +674,7 @@ export class EncounterScreenComponent implements OnInit {
   ngOnInit(): void {
     const pending  = this.gs.pendingEnemies();
     const isBoss   = this.room()?.type === 'boss';
-    const roomComb = this.room()?.type === 'monster' || isBoss;
+    const roomComb = this.room()?.type === 'monster' || this.room()?.type === 'hostage' || isBoss;
 
     if (pending) {
       this.isRandomEncounter.set(!roomComb);

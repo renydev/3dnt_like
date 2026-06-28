@@ -3,14 +3,13 @@ import { CommonModule } from '@angular/common';
 import { GameStateService } from './core/services/game-state.service';
 import { GameLayoutComponent } from './dungeon/components/game-layout/game-layout.component';
 import { CharacterCreationComponent } from './dungeon/components/character-creation/character-creation.component';
-import { CompanionSelectComponent } from './dungeon/components/companion-select/companion-select.component';
 import { DebugComponent } from './debug/debug.component';
 import { PRESET_CHARACTERS } from './core/models/character.model';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, GameLayoutComponent, CharacterCreationComponent, CompanionSelectComponent, DebugComponent],
+  imports: [CommonModule, GameLayoutComponent, CharacterCreationComponent, DebugComponent],
   template: `
     @if (isDebugMap) {
       <app-debug />
@@ -64,15 +63,8 @@ import { PRESET_CHARACTERS } from './core/models/character.model';
         </div>
       }
 
-      <!-- ── SELEÇÃO DE COMPANHEIRO ──────────────────────────── -->
-      @if (gs.screen() === 'companion_select') {
-        <div class="screen">
-          <app-companion-select />
-        </div>
-      }
-
-      <!-- ── JOGO (dungeon / encounter / floor_transition) ─── -->
-      @if (['dungeon', 'encounter', 'floor_transition'].includes(gs.screen())) {
+      <!-- ── JOGO (dungeon / encounter / merchant / floor_transition) ─── -->
+      @if (['dungeon', 'encounter', 'merchant', 'floor_transition'].includes(gs.screen())) {
         <app-game-layout />
       }
 

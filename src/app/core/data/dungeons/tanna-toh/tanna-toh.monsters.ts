@@ -5,17 +5,19 @@ import { spawnMonster } from '../../bestiario.data';
 export { spawnMonster };
 
 // Os templates dos monstros vivem no bestiário central (core/data/bestiario.data.ts).
-// Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
-// especificamente para Tanna-Toh — convertido de "A Libertação de Valkaria" (pág. 69-72).
-// A masmorra é "quase desabitada" no livro — sem tabela de encontros aleatórios,
-// só os NPCs/encontros únicos abaixo.
-
+// Losango compacto (1-2-3-4-3-2-1) — ver tanna-toh.config.ts e o relatório de
+// balanceamento (debug panel) para o veredito de cada monstro.
 export type RoomEnemyGroup = (scale: GrowthScale) => Enemy[];
 
-// IDs de sala conforme tanna-toh.config.ts layout:
-//  5 = Guardião de Biblioteca (monster) — Thwor Ironfist, fugido de um livro por instantes
-//  8 = Câmara do Golem do Saber (boss) — Sathane
+function d(sides: number) { return Math.ceil(Math.random() * sides); }
+
 export const TANNA_TOH_ROOM_ENEMIES: Record<number, RoomEnemyGroup> = {
-  5: (scale) => [spawnMonster('thwor_ironfist', scale)],
-  8: (scale) => [spawnMonster('sathane', scale, true)],
+  1: (scale) => [spawnMonster('liranny', scale)],
+  3: (scale) => Array.from({ length: Math.max(1, d(6) - 4) }, () => spawnMonster('liranny', scale)),
+  6: (scale) => [spawnMonster('liranny', scale)],
+  10: (scale) => [spawnMonster('thwor_ironfist', scale)],
+  13: (scale) => [spawnMonster('thwor_ironfist', scale, true)],
+  15: (scale) => [
+    spawnMonster('sathane', scale, true),
+  ],
 };

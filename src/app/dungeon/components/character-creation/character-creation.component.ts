@@ -97,7 +97,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Humano resistente especializado em combate corpo a corpo. Usa sua força bruta para destruir inimigos à curta distância.',
     icon: '⚔️', color: '#e74c3c', tag: 'Guerreiro',
     tierId: 'iniciante', raceId: 'humano', kitIds: ['guerreiro'],
-    attrs: { poder: 3, habilidade: 1, resistencia: 1 },
+    attrs: { poder: 5, habilidade: 2, resistencia: 3 },
     vantagenIds: [], desvIds: [],
     highlights: ['Poder máximo de um Lutador', 'Combate corpo a corpo', 'Simples de jogar'],
   },
@@ -129,9 +129,9 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Elfa com imenso talento arcano. Destrói grupos de inimigos com magias poderosas, mas é frágil se cercada.',
     icon: '🔮', color: '#8e44ad', tag: 'Mago',
     tierId: 'iniciante', raceId: 'elfo', kitIds: ['mago'],
-    attrs: { poder: 1, habilidade: 1, resistencia: 1 },
+    attrs: { poder: 3, habilidade: 3, resistencia: 1 },
     vantagenIds: ['magia'], desvIds: [],
-    highlights: ['Poder 3 com bônus élfico', 'Conjura magias Comuns e Incomuns', 'Requer posicionamento'],
+    highlights: ['Poder elevado com bônus élfico', 'Conjura magias Comuns e Incomuns', 'Requer posicionamento'],
   },
   {
     id: 'mago-preset-heroi',
@@ -161,9 +161,9 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Kemono ágil e preciso. Ataca à distância com alta habilidade antes que os inimigos cheguem perto.',
     icon: '🏹', color: '#27ae60', tag: 'Patrulheiro',
     tierId: 'iniciante', raceId: 'kemono', kitIds: ['patrulheiro'],
-    attrs: { poder: 1, habilidade: 2, resistencia: 1 },
+    attrs: { poder: 2, habilidade: 5, resistencia: 2 },
     vantagenIds: [], desvIds: [],
-    highlights: ['Habilidade 3 para ataques certeiros', 'Mobilidade e alcance', 'Estilo de jogo versátil'],
+    highlights: ['Habilidade máxima (5) para ataques certeiros', 'Mobilidade e alcance', 'Estilo de jogo versátil'],
   },
   {
     id: 'arqueiro-preset-heroi',
@@ -193,7 +193,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Humano que pilota um robô gigante como extensão do próprio corpo, enfrentando kaijus e ameaças colossais de dentro de sua máquina.',
     icon: '🤖', color: '#34495e', tag: 'Piloto Mecha',
     tierId: 'iniciante', raceId: 'humano', kitIds: ['piloto-mecha'],
-    attrs: { poder: 2, habilidade: 2, resistencia: 1 },
+    attrs: { poder: 4, habilidade: 3, resistencia: 3 },
     vantagenIds: [], desvIds: [],
     highlights: ['Combate dentro de um mecha', 'Equilíbrio entre poder e precisão', 'Tema tokusatsu/mecha clássico'],
   },
@@ -225,7 +225,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Heroína que se transforma em seu traje de combate para enfrentar a escuridão com feitiços, amizade e coragem.',
     icon: '✨', color: '#ff6fa5', tag: 'Guerreira Mágica',
     tierId: 'iniciante', raceId: 'fada', kitIds: ['guerreira-magica'],
-    attrs: { poder: 1, habilidade: 2, resistencia: 1 },
+    attrs: { poder: 3, habilidade: 3, resistencia: 1 },
     vantagenIds: ['magia'], desvIds: [],
     highlights: ['Conjura magias Comuns e Incomuns', 'Magia versátil em combate', 'Tema mahou shoujo'],
   },
@@ -257,7 +257,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Guerreiro de honra disciplinada, fiel a um código e a um senhor, com a espada como extensão de sua alma.',
     icon: '⚔️', color: '#c0392b', tag: 'Samurai',
     tierId: 'iniciante', raceId: 'humano', kitIds: ['samurai'],
-    attrs: { poder: 2, habilidade: 2, resistencia: 0 },
+    attrs: { poder: 4, habilidade: 4, resistencia: 2 },
     vantagenIds: [], desvIds: [],
     highlights: ['Código de honra', 'Golpes precisos com espada', 'Tema samurai/jidaigeki'],
   },
@@ -289,7 +289,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Duelista que manifesta efeitos e criaturas de cartas mágicas (CARDs) no mundo real, como um jogo com poder de verdade.',
     icon: '🃏', color: '#16a085', tag: 'CARD Gamer',
     tierId: 'iniciante', raceId: 'humano', kitIds: ['card-gamer'],
-    attrs: { poder: 1, habilidade: 1, resistencia: 2 },
+    attrs: { poder: 3, habilidade: 3, resistencia: 4 },
     vantagenIds: [], desvIds: [],
     highlights: ['Invocação de criaturas em cartas', 'Versatilidade tática', 'Tema duelo de cartas'],
   },
@@ -321,7 +321,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Kemono treinado em artes da sombra, infiltração e assassinato silencioso, fiel a uma tradição secreta.',
     icon: '🥷', color: '#2c3e50', tag: 'Ninja',
     tierId: 'iniciante', raceId: 'kemono', kitIds: ['ninja'],
-    attrs: { poder: 1, habilidade: 3, resistencia: 0 },
+    attrs: { poder: 2, habilidade: 5, resistencia: 2 },
     vantagenIds: [], desvIds: [],
     highlights: ['Furtividade e velocidade', 'Golpes certeiros pelas sombras', 'Tema ninja clássico'],
   },
@@ -353,7 +353,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Soldado-cientista da frota espacial ORDEM, treinado para enfrentar ameaças alienígenas com armamento futurista.',
     icon: '🚀', color: '#2980b9', tag: 'Cosmonauta da ORDEM',
     tierId: 'iniciante', raceId: 'ciborgue', kitIds: ['cosmonauta-da-ordem'],
-    attrs: { poder: 2, habilidade: 1, resistencia: 1 },
+    attrs: { poder: 3, habilidade: 3, resistencia: 2 },
     vantagenIds: [], desvIds: [],
     highlights: ['Tecnologia espacial avançada', 'Combate contra ameaças alienígenas', 'Tema ficção científica'],
   },
@@ -385,7 +385,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Hospedeiro escolhido por um herói alienígena gigantesco, capaz de se transformar em um colosso de luz para enfrentar kaijus.',
     icon: '🌟', color: '#f1c40f', tag: 'Gigante da Luz',
     tierId: 'iniciante', raceId: 'humano', kitIds: ['gigante-da-luz'],
-    attrs: { poder: 3, habilidade: 0, resistencia: 2 },
+    attrs: { poder: 4, habilidade: 2, resistencia: 4 },
     vantagenIds: [], desvIds: [],
     highlights: ['Transformação em colosso', 'Combate contra kaijus', 'Tema tokusatsu (estilo Ultraman)'],
   },
@@ -417,7 +417,7 @@ export const PRESET_CHARACTERS: PresetCharacter[] = [
     description: 'Osteon que manipula as forças da morte e dos mortos-vivos, caminhando à parte sombria da magia arcana.',
     icon: '💀', color: '#8b0000', tag: 'Necromante',
     tierId: 'iniciante', raceId: 'osteon', kitIds: ['necromante'],
-    attrs: { poder: 1, habilidade: 1, resistencia: 1 },
+    attrs: { poder: 2, habilidade: 3, resistencia: 1 },
     vantagenIds: ['magia'], desvIds: [],
     highlights: ['Conjura magias Comuns e Incomuns', 'Tema gótico/horror', 'Versátil em ataque e controle'],
   },
@@ -704,7 +704,18 @@ export class CharacterCreationComponent {
 
   // ── Seleções ────────────────────────────────────────────────────────────────
 
+  /**
+   * Por ora só o tier Iniciante (10pt, padrão oficial do livro) está liberado pra criação —
+   * Herói (20pt) e Veterano (35pt) ficam visíveis mas travados. Os personagens prontos de
+   * "Início Rápido" desses dois tiers também ficam ocultos (visiblePresets filtra por
+   * selectedTier(), que nunca aponta pra eles agora).
+   */
+  isTierLocked(t: StartingTier): boolean {
+    return t.id !== 'iniciante';
+  }
+
   selectTier(t: StartingTier) {
+    if (this.isTierLocked(t)) return;
     this.selectedTier.set(t);
     this.selectedVantagens.set([]);
     this.selectedDesvantagens.set([]);

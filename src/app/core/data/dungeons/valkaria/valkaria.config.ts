@@ -2,22 +2,37 @@ import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
 import { VALKARIA_ROOM_ENEMIES, rollValkariaEncounter } from './valkaria.monsters';
 
+// Losango compacto (1-2-3-4-3-2-1, 16 salas). Veredito por fileira (debug panel):
+//  fileira 1 (trivial): bhaltan
+//  fileira 2 (trivial): bhaltan
+//  fileira 3 (equilibrado): bhaltan
+//  fileira 4 (arriscado): bhaltan
+//  fileira 5 (mortal): bhaltan
+//  chefe: avatar_valkaria
 export const ValariaFinalConfig: DungeonConfig = {
   floorNumber: 20,
   theme: VALKARIA_FLOORS[19],
-  roomEnemies: VALKARIA_ROOM_ENEMIES,
-  rollEncounter: rollValkariaEncounter,
   layout: {
     floorNumber: 20,
     rooms: [
-      { id: 0, row: 0, col: 2, type: 'entrance', name: 'Portal Final de Valkaria',     connections: [1, 2, 3] },
-      { id: 1, row: 1, col: 1, type: 'monster',  name: 'Câmara das Réplicas I',        connections: [4, 5] },
-      { id: 2, row: 1, col: 2, type: 'monster',  name: 'Câmara das Réplicas II',       connections: [4, 5, 6] },
-      { id: 3, row: 1, col: 3, type: 'trap',     name: 'Reflexo da Maior Fraqueza',    connections: [5, 6] },
-      { id: 4, row: 2, col: 0, type: 'monster',  name: 'Câmara das Réplicas III',      connections: [7] },
-      { id: 5, row: 2, col: 2, type: 'rest',     name: 'Câmara de Memórias',           connections: [7] },
-      { id: 6, row: 2, col: 4, type: 'treasure', name: 'Câmara da Lágrima de Valkaria',connections: [7] },
-      { id: 7, row: 3, col: 2, type: 'boss',     name: 'Câmara do Avatar de Valkaria', connections: [] },
+      { id: 0, row: 0, col: 0, type: 'entrance', name: 'Entrada Principal', connections: [1, 2] },
+      { id: 1, row: 1, col: -1, type: 'monster', name: 'Trilha de Bhaltan', connections: [0, 3] },
+      { id: 2, row: 1, col: 1, type: 'trap', name: 'Corredor Armado', connections: [0, 4] },
+      { id: 3, row: 2, col: -2, type: 'monster', name: 'Covil de Bhaltan', connections: [1, 6] },
+      { id: 4, row: 2, col: 0, type: 'treasure', name: 'Câmara do Ouro', connections: [2, 5] },
+      { id: 5, row: 2, col: 2, type: 'trap', name: 'Sala das Armadilhas', connections: [4, 9] },
+      { id: 6, row: 3, col: -3, type: 'monster', name: 'Território de Bhaltan', connections: [3, 7] },
+      { id: 7, row: 3, col: -1, type: 'treasure', name: 'Câmara do Tesouro', connections: [6, 10] },
+      { id: 8, row: 3, col: 1, type: 'treasure', name: 'Câmara dos Segredos', connections: [9, 12] },
+      { id: 9, row: 3, col: 3, type: 'puzzle', name: 'Câmara dos Mistérios', connections: [5, 8] },
+      { id: 10, row: 4, col: -2, type: 'monster', name: 'Covil de Bhaltan', connections: [7, 13] },
+      { id: 11, row: 4, col: 0, type: 'merchant', name: 'O Comerciante Misterioso', connections: [12, 14] },
+      { id: 12, row: 4, col: 2, type: 'social', name: 'Os Sobreviventes', connections: [8, 11] },
+      { id: 13, row: 5, col: -1, type: 'monster', name: 'Ninho de Bhaltan', connections: [10, 15] },
+      { id: 14, row: 5, col: 1, type: 'rest', name: 'Fogueira Final', connections: [11, 15] },
+      { id: 15, row: 6, col: 0, type: 'boss', name: 'Câmara do Guardião Final', connections: [13, 14] },
     ],
   },
+  roomEnemies: VALKARIA_ROOM_ENEMIES,
+  rollEncounter: rollValkariaEncounter,
 };

@@ -2,21 +2,37 @@ import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
 import { MARAH_ROOM_ENEMIES, rollMarahEncounter } from './marah.monsters';
 
+// Losango compacto (1-2-3-4-3-2-1, 16 salas). Veredito por fileira (debug panel):
+//  fileira 1 (trivial): driade_marah
+//  fileira 2 (trivial): sprite_feiticeiro_marah
+//  fileira 3 (equilibrado + resgate de refém): bardo_marah
+//  fileira 4 (arriscado): estatua_viva
+//  fileira 5 (mortal): paladino_marah
+//  chefe: prislanya
 export const MarahConfig: DungeonConfig = {
   floorNumber: 6,
   theme: VALKARIA_FLOORS[5],
-  roomEnemies: MARAH_ROOM_ENEMIES,
-  rollEncounter: rollMarahEncounter,
   layout: {
     floorNumber: 6,
     rooms: [
-      { id: 0, row: 0, col: 2, type: 'entrance', name: 'Portal das Flores',              connections: [1, 2, 3] },
-      { id: 1, row: 1, col: 1, type: 'social',   name: 'Jardim das Ninfas',               connections: [4] },
-      { id: 2, row: 1, col: 2, type: 'social',   name: 'Fonte das Fadas',                 connections: [4, 5] },
-      { id: 3, row: 1, col: 3, type: 'trap',     name: 'Encantamento de Sono',            connections: [5] },
-      { id: 4, row: 2, col: 1, type: 'treasure', name: 'Câmara das Rosas',                connections: [6] },
-      { id: 5, row: 2, col: 3, type: 'rest',     name: 'Antecâmara Perfumada',            connections: [6] },
-      { id: 6, row: 3, col: 2, type: 'boss',     name: 'Trono de Ninfa Rainha Aelindra',  connections: [] },
+      { id: 0, row: 0, col: 0, type: 'entrance', name: 'Entrada Principal', connections: [1, 2] },
+      { id: 1, row: 1, col: -1, type: 'monster', name: 'Trilha de Dríade de Marah', connections: [0, 3] },
+      { id: 2, row: 1, col: 1, type: 'trap', name: 'Corredor Armado', connections: [0, 4] },
+      { id: 3, row: 2, col: -2, type: 'monster', name: 'Covil de Sprite Feiticeiro', connections: [1, 6] },
+      { id: 4, row: 2, col: 0, type: 'treasure', name: 'Câmara do Ouro', connections: [2, 5] },
+      { id: 5, row: 2, col: 2, type: 'trap', name: 'Sala das Armadilhas', connections: [4, 9] },
+      { id: 6, row: 3, col: -3, type: 'monster', name: 'Território de Bardo de Marah', connections: [3, 7] },
+      { id: 7, row: 3, col: -1, type: 'hostage', name: 'Cela dos Cativos', connections: [6, 10] },
+      { id: 8, row: 3, col: 1, type: 'treasure', name: 'Câmara dos Segredos', connections: [9, 12] },
+      { id: 9, row: 3, col: 3, type: 'puzzle', name: 'Câmara dos Mistérios', connections: [5, 8] },
+      { id: 10, row: 4, col: -2, type: 'monster', name: 'Covil de Estátua Viva', connections: [7, 13] },
+      { id: 11, row: 4, col: 0, type: 'merchant', name: 'O Comerciante Misterioso', connections: [12, 14] },
+      { id: 12, row: 4, col: 2, type: 'social', name: 'Os Sobreviventes', connections: [8, 11] },
+      { id: 13, row: 5, col: -1, type: 'monster', name: 'Ninho de Paladino de Marah', connections: [10, 15] },
+      { id: 14, row: 5, col: 1, type: 'rest', name: 'Fogueira Final', connections: [11, 15] },
+      { id: 15, row: 6, col: 0, type: 'boss', name: 'Câmara do Guardião Final', connections: [13, 14] },
     ],
   },
+  roomEnemies: MARAH_ROOM_ENEMIES,
+  rollEncounter: rollMarahEncounter,
 };

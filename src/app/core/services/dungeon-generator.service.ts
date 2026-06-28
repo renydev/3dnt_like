@@ -13,7 +13,7 @@ export class DungeonGeneratorService {
     const config = DUNGEON_REGISTRY[floorNumber];
 
     if (config) {
-      const rooms = this.buildFromLayout(config.layout, config.theme, !!config.imageMap, config.roomScenarios);
+      const rooms = this.buildFromLayout(config.layout, config.theme, config.roomScenarios);
       return {
         floorNumber,
         theme: config.theme,
@@ -48,8 +48,13 @@ export class DungeonGeneratorService {
     return type;
   }
 
-  private buildFromLayout(layout: FloorLayout, theme: DungeonTheme, allVisible = false, scenarios?: Record<number, RoomScenario>): DungeonRoom[] {
-    const rooms: DungeonRoom[] = layout.rooms.map(r => {
+  /**
+   * Monta as salas a partir de um layout autorado. Todas as salas começam visíveis
+   * (não só a entrada e suas conexões) — o jogador precisa ver a masmorra inteira pra
+   * escolher a melhor rota, não só decidir um passo de cada vez no escuro.
+   */
+  private buildFromLayout(layout: FloorLayout, theme: DungeonTheme, scenarios?: Record<number, RoomScenario>): DungeonRoom[] {
+    return layout.rooms.map(r => {
       const type = this.resolveRoomType(r.type);
       return {
         id: r.id,
@@ -62,22 +67,13 @@ export class DungeonGeneratorService {
         secretConnections: r.secretConnections ? [...r.secretConnections] : undefined,
         col: r.col,
         row: r.row,
-        isVisible: allVisible || type === 'entrance',
+        isVisible: true,
         isCurrent: type === 'entrance',
         entered: type === 'entrance',
         scenario: scenarios?.[r.id],
         requirement: r.requirement,
       };
     });
-
-    if (!allVisible) {
-      const entrance = rooms.find(r => r.type === 'entrance')!;
-      rooms.forEach(r => {
-        if (entrance.connections.includes(r.id)) r.isVisible = true;
-      });
-    }
-
-    return rooms;
   }
 
   private generateRooms(floor: number, theme: DungeonTheme): DungeonRoom[] {
@@ -104,7 +100,8 @@ export class DungeonGeneratorService {
           connections: [],
           col,
           row,
-          isVisible: isEntrance,
+          // Todas as salas visíveis desde o início — ver comentário em generateFloor().
+          isVisible: true,
           isCurrent: isEntrance && col === Math.floor(COLS / 2),
         };
         rooms.push(room);
@@ -112,11 +109,6 @@ export class DungeonGeneratorService {
     }
 
     this.buildConnections(rooms, COLS, ROWS);
-
-    const entrance = rooms.find(r => r.type === 'entrance')!;
-    rooms.forEach(r => {
-      if (entrance.connections.includes(r.id)) r.isVisible = true;
-    });
 
     return rooms;
   }
@@ -214,6 +206,7 @@ export class DungeonGeneratorService {
       puzzle:   ['Câmara dos Enigmas', 'Sala do Teste', 'Câmara do Saber'],
       social:   ['Câmara do Encontro', 'Salão das Vozes', 'Câmara da Diplomacia'],
       merchant: ['Posto do Mercador Errante', 'Acampamento de Comércio', 'Tenda do Viajante'],
+      hostage:  ['Cela dos Cativos', 'Câmara do Refém', 'Covil dos Captores'],
     };
     const list = names[type] ?? ['Câmara Desconhecida'];
     return list[Math.floor(Math.random() * list.length)];
@@ -232,6 +225,7 @@ export class DungeonGeneratorService {
       puzzle:   'Um teste da mente. Pense antes de agir.',
       social:   'Uma criatura que pode conversar... ou não.',
       merchant: 'Um mercador errante oferece seus produtos a quem tiver ouro.',
+      hostage:  'Gritos de socorro ecoam — alguém está preso aqui, vigiado por captores.',
     };
     return `${typeDesc[type] ?? ''} ${flavor}`;
   }

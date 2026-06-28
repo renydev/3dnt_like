@@ -2,7 +2,6 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
 import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
-import { KIT_MAP } from '../../../core/data/kits.data';
 
 @Component({
   selector: 'app-floor-transition',
@@ -56,12 +55,8 @@ export class FloorTransitionComponent implements OnInit {
     return result;
   }
 
-  kitNames(kitIds: string[]): string {
-    return kitIds.map(id => KIT_MAP.get(id)?.name ?? id).join(', ');
-  }
-
   canProceed(): boolean {
-    return this.ready() && this.gs.companionChoices().length === 0;
+    return this.ready();
   }
 
   proceed(): void {

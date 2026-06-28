@@ -2,23 +2,37 @@ import { VALKARIA_FLOORS } from '../../../models/dungeon.model';
 import { DungeonConfig } from '../shared/dungeon-config.types';
 import { SSZZAAS_ROOM_ENEMIES, rollSszzaasEncounter } from './sszzaas.monsters';
 
+// Losango compacto (1-2-3-4-3-2-1, 16 salas). Veredito por fileira (debug panel):
+//  fileira 1 (trivial): naga_sszzaas
+//  fileira 2 (trivial): naga_sszzaas
+//  fileira 3 (equilibrado): naga_sszzaas
+//  fileira 4 (arriscado): medusa_sszzaas
+//  fileira 5 (mortal): cultista_sszzaas
+//  chefe: dragao_negro_adulto
 export const SszzaasConfig: DungeonConfig = {
   floorNumber: 15,
   theme: VALKARIA_FLOORS[14],
-  roomEnemies: SSZZAAS_ROOM_ENEMIES,
-  rollEncounter: rollSszzaasEncounter,
   layout: {
     floorNumber: 15,
     rooms: [
-      { id: 0, row: 0, col: 2, type: 'entrance', name: 'Entrada do Ninho',               connections: [1, 2] },
-      { id: 1, row: 1, col: 1, type: 'monster',  name: 'Câmara das Cobras Rei',          connections: [3, 4] },
-      { id: 2, row: 1, col: 3, type: 'trap',     name: 'Câmara de Gás Venenoso',         connections: [4, 5] },
-      { id: 3, row: 2, col: 0, type: 'treasure', name: 'Câmara das Escamas de Naga',     connections: [6] },
-      { id: 4, row: 2, col: 2, type: 'monster',  name: 'Câmara das Víboras',             connections: [6, 7] },
-      { id: 5, row: 2, col: 4, type: 'trap',     name: 'Poça de Ácido',                  connections: [7] },
-      { id: 6, row: 3, col: 1, type: 'rest',     name: 'Antro Temporariamente Seguro',   connections: [8] },
-      { id: 7, row: 3, col: 3, type: 'monster',  name: 'Câmara do Basilisco',            connections: [8] },
-      { id: 8, row: 3, col: 2, type: 'boss',     name: 'Câmara da Naga Rainha',          connections: [] },
+      { id: 0, row: 0, col: 0, type: 'entrance', name: 'Entrada Principal', connections: [1, 2] },
+      { id: 1, row: 1, col: -1, type: 'monster', name: 'Trilha de Naga', connections: [0, 3] },
+      { id: 2, row: 1, col: 1, type: 'trap', name: 'Corredor Armado', connections: [0, 4] },
+      { id: 3, row: 2, col: -2, type: 'monster', name: 'Covil de Naga', connections: [1, 6] },
+      { id: 4, row: 2, col: 0, type: 'treasure', name: 'Câmara do Ouro', connections: [2, 5] },
+      { id: 5, row: 2, col: 2, type: 'trap', name: 'Sala das Armadilhas', connections: [4, 9] },
+      { id: 6, row: 3, col: -3, type: 'monster', name: 'Território de Naga', connections: [3, 7] },
+      { id: 7, row: 3, col: -1, type: 'treasure', name: 'Câmara do Tesouro', connections: [6, 10] },
+      { id: 8, row: 3, col: 1, type: 'treasure', name: 'Câmara dos Segredos', connections: [9, 12] },
+      { id: 9, row: 3, col: 3, type: 'puzzle', name: 'Câmara dos Mistérios', connections: [5, 8] },
+      { id: 10, row: 4, col: -2, type: 'monster', name: 'Covil de Medusa', connections: [7, 13] },
+      { id: 11, row: 4, col: 0, type: 'merchant', name: 'O Comerciante Misterioso', connections: [12, 14] },
+      { id: 12, row: 4, col: 2, type: 'social', name: 'Os Sobreviventes', connections: [8, 11] },
+      { id: 13, row: 5, col: -1, type: 'monster', name: 'Ninho de Cultista de Sszzaaz', connections: [10, 15] },
+      { id: 14, row: 5, col: 1, type: 'rest', name: 'Fogueira Final', connections: [11, 15] },
+      { id: 15, row: 6, col: 0, type: 'boss', name: 'Câmara do Guardião Final', connections: [13, 14] },
     ],
   },
+  roomEnemies: SSZZAAS_ROOM_ENEMIES,
+  rollEncounter: rollSszzaasEncounter,
 };

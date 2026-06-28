@@ -327,6 +327,29 @@
     background: #10102a;
     box-shadow: 0 0 24px color-mix(in srgb, var(--tier-color) 25%, transparent);
   }
+
+  &.locked {
+    cursor: not-allowed;
+    opacity: 0.45;
+    filter: grayscale(0.6);
+
+    &:hover {
+      border-color: #1e1e30;
+      background: #0c0c1a;
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+.tier-locked-badge {
+  font-size: 0.65rem;
+  color: #888;
+  background: #1a1a2e;
+  border: 1px solid #2a2a40;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  white-space: nowrap;
 }
 
 .tier-header {
@@ -838,7 +861,19 @@
 }
 
 .vdi-effect      { font-size: 0.7rem; color: #6a6a8a; margin: 0; padding-left: 1.4rem; }
+.vdi-flavor      { font-size: 0.68rem; color: #8a7a5a; font-style: italic; margin: 0 0 0.15rem; padding-left: 1.4rem; }
 .desv-effect     { color: #8a5a5a; }
+
+.vdi-noeffect {
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: #1a140a;
+  border: 1px solid #3a2e1e;
+  color: #e0a050;
+  white-space: nowrap;
+}
 
 // ── Perícias (Step 6) ─────────────────────────────────────────────────────────
 

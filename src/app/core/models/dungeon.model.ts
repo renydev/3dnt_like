@@ -1,4 +1,7 @@
-export type RoomType = 'entrance' | 'monster' | 'trap' | 'treasure' | 'rest' | 'boss' | 'empty' | 'puzzle' | 'social' | 'merchant';
+export type RoomType =
+  | 'entrance' | 'monster' | 'trap' | 'treasure' | 'rest' | 'boss' | 'empty' | 'puzzle' | 'social' | 'merchant'
+  // Sala de resgate: derrotar os captores liberta um refém, que se junta à party como companheiro.
+  | 'hostage';
 
 export type RoomChoiceAction = 'enter' | 'flee' | 'safe_enter' | 'rest_wait';
 
@@ -147,26 +150,26 @@ export const VALKARIA_FLOORS: DungeonTheme[] = [
     ]
   },
   {
-    id: 'trebuck',
+    id: 'glorienn',
     floorNumber: 3,
-    godName: 'Trebuck',
-    godDomain: 'Deus dos Artesãos e da Engenharia',
-    godAlignment: 'neutro',
-    name: 'Forja-Labirinto de Trebuck',
-    description: 'Autômatos e golens de elite, erguidos por mestres artesãos élficos, defendem este labirinto de engrenagens e runas. A precisão da engenharia é mortal.',
-    guardianName: 'Golem Arcano de Precisão',
-    guardianDesc: 'Construto de alto nível combinando magia e mecanismos. H6 P2, conjura e ataca simultaneamente.',
-    specialRule: 'Inimigos atacam de longe e recuam do combate corpo a corpo. Perseguição é difícil.',
-    icon: '⚙️',
+    godName: 'Glórienn',
+    godDomain: 'Deusa da Beleza e dos Elfos',
+    godAlignment: 'bem',
+    name: 'Santuário Arcano de Glórienn',
+    description: 'Guerreiros, magos e arqueiros élficos de elite defendem este santuário de mármore e runas em nome de sua deusa. Cada patrulha é tão precisa quanto letal.',
+    guardianName: 'Sharindhallenrannas',
+    guardianDesc: 'Maga élfica exótica de asas emplumadas, Guardiã de Glórienn — testemunhou o massacre de Lenérienn e jamais se rende.',
+    specialRule: 'Os defensores élficos lutam com disciplina e coordenação — emboscadas e reforços são comuns para quem avança descuidado.',
+    icon: '🏹',
     palette: 'elven',
     challengeType: 'mixed',
-    monsterTypes: ['Autômato de Elite', 'Engenheiro Arcano', 'Golem das Sombras', 'Artesão Encantado', 'Centauro Guardião'],
-    trapTypes: ['Engrenagem Explosiva', 'Rede de Vento', 'Flechas Automáticas'],
-    treasureTypes: ['Arco Longo de Precisão', 'Manual Arcano', 'Capa de Invisibilidade'],
+    monsterTypes: ['Mago Élfico', 'Guerreiro Élfico', 'Ranger Élfico', 'Arqueiro Élfico', 'Arqueiro de Glorienn', 'Caçador de Glorienn'],
+    trapTypes: ['Rede de Vento Automática', 'Runa Élfica Bloqueante', 'Flechas Automáticas Ocultas'],
+    treasureTypes: ['Grimório Arcano Élfico', 'Flechas Encantadas', 'Joia da Fonte Sagrada'],
     flavorTexts: [
-      'A masmorra exibe uma beleza perturbadora: paredes de metal polido entalhadas com runas.',
-      'Você ouve o ranger de engrenagens antes mesmo de ver o autômato.',
-      'Trebuck valoriza a perfeição. Seus defensores medem duas vezes, cortam uma.'
+      'As paredes de mármore polido são entalhadas com runas élficas — beleza e proteção em igual medida.',
+      'Você ouve o sibilar de flechas antes de ver os arqueiros que as disparam.',
+      'Glórienn valoriza a perfeição. Seus defensores medem duas vezes, atiram uma.'
     ]
   },
   {
@@ -573,6 +576,7 @@ export const ROOM_ICONS: Record<RoomType, string> = {
   puzzle: '🔍',
   social: '💬',
   merchant: '🛒',
+  hostage: '🎗️',
 };
 
 export const ROOM_LABELS: Record<RoomType, string> = {
@@ -586,6 +590,7 @@ export const ROOM_LABELS: Record<RoomType, string> = {
   puzzle: 'Enigma',
   social: 'Encontro Social',
   merchant: 'Mercador',
+  hostage: 'Resgate de Refém',
 };
 
 // Alias para compatibilidade
