@@ -33,12 +33,13 @@ const VANTAGEM_ABILITIES: Record<string, CombatAbility> = {
 };
 
 /**
- * Magias conjuráveis por um personagem com a vantagem Magia: Comuns/Incomuns liberam
- * sozinhas ao atingir a Habilidade mínima; Raras/Lendárias só entram se concedidas
- * explicitamente em `Character.learnedSpells` (ver magias.data.ts).
+ * Magias conjuráveis por um personagem com a vantagem Magia: todas liberam ao atingir a
+ * Habilidade mínima (ver curva em magias.data.ts) — Raras/Lendárias também podem ser
+ * antecipadas via concessão explícita em `Character.learnedSpells`, mas não dependem só
+ * disso: Habilidade alta o suficiente sempre as libera por conta própria.
  */
 function isMagiaCastable(m: MagiaDef, char: Character, learned: Set<string>): boolean {
-  if (m.rarity === 'rara' || m.rarity === 'lendaria') return learned.has(m.id);
+  if (learned.has(m.id)) return true;
   return char.habilidade.current >= m.reqHabilidade;
 }
 
@@ -245,6 +246,11 @@ export class CombatService {
     return !!char.pericias?.includes('luta');
   }
 
+  /** Vantagem Magia: "Pode usar Mística em vez de Luta para ataques/defesas mágicas." */
+  private hasMistica(char: Character): boolean {
+    return !!char.pericias?.includes('mistica');
+  }
+
   // ── Vantagens "fora da curva" de monstros usadas ativamente em combate ──────
   // (ver monster-vantagens.data.ts) — os bônus passivos de atributo já estão
   // assados no spawn; aqui resolvemos as que mudam o COMPORTAMENTO da luta:
@@ -311,8 +317,18 @@ export class CombatService {
 
   canCastMagia(m: MagiaDef): boolean { return this.canUseAbility(magiaToAbility(m)); }
 
-  castMagiaTarget(m: MagiaDef, targetId: string, paSpend = 0): void {
-    this.playerUseAbilityTarget(magiaToAbility(m), targetId, paSpend);
+  /**
+   * Quanto PM extra o jogador ainda pode converter em bônus fixo nesta magia (vantagem Magia:
+   * "o bônus máximo que você pode gerar é igual à sua Habilidade"), depois de pagar o custo base.
+   */
+  maxMagiaBoostFor(m: MagiaDef): number {
+    const char = this.gs.character();
+    if (!char) return 0;
+    return Math.max(0, Math.min(char.habilidade.current, char.pontosMana.current - m.pmCost));
+  }
+
+  castMagiaTarget(m: MagiaDef, targetId: string, paSpend = 0, magiaBoost = 0): void {
+    this.playerUseAbilityTarget(magiaToAbility(m), targetId, paSpend, magiaBoost);
   }
 
   canUseAbility(ab: CombatAbility): boolean {
@@ -513,7 +529,13 @@ export class CombatService {
       }
       case 'magic_damage':
       case 'pierce': {
-        this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor);
+        if (ab.aoe) {
+          for (const e of this.enemies().filter(e => e.hp > 0)) {
+            this.resolveMeleeAttack(char, e, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor, ab.armorPierce ?? 0, true);
+          }
+        } else {
+          this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, ab.bonusDice ?? 0, ab.ignoresArmor, ab.armorPierce ?? 0, true);
+        }
         this.afterPlayerAction();
         return;
       }
@@ -534,8 +556,10 @@ export class CombatService {
   }
 
   /** Usa habilidade em um inimigo específico.
-   *  paSpend = quantos PA o jogador quer gastar (cada um = +1d6 na FA da habilidade, quando aplicável). */
-  playerUseAbilityTarget(ab: CombatAbility, targetId: string, paSpend = 0): void {
+   *  paSpend = quantos PA o jogador quer gastar (cada um = +1d6 na FA da habilidade, quando aplicável).
+   *  magiaBoost = PM extra gastos via vantagem Magia ("gastando 1PM, soma +1 em qualquer teste,
+   *  até o limite da sua Habilidade") — só vale para magias (ver magic_damage/pierce abaixo). */
+  playerUseAbilityTarget(ab: CombatAbility, targetId: string, paSpend = 0, magiaBoost = 0): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
     const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
@@ -543,7 +567,9 @@ export class CombatService {
     if (!char || !target) return;
     if (!this.canUseAbility(ab)) return;
 
+    const clampedBoost = Math.max(0, Math.min(magiaBoost, char.habilidade.current, char.pontosMana.current - ab.pmCost));
     if (ab.pmCost > 0) this.spendPM(ab.pmCost);
+    if (clampedBoost > 0) this.spendPM(clampedBoost);
     if (ab.usesPerCombat) this.abilitiesUsed.update(s => new Set([...s, ab.id]));
     const spent = this.spendPlayerPA(paSpend);
 
@@ -607,7 +633,13 @@ export class CombatService {
       }
       case 'magic_damage':
       case 'pierce': {
-        this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor);
+        if (ab.aoe) {
+          for (const e of this.enemies().filter(e => e.hp > 0)) {
+            this.resolveMeleeAttack(char, e, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor, ab.armorPierce ?? 0, true, clampedBoost);
+          }
+        } else {
+          this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor, ab.armorPierce ?? 0, true, clampedBoost);
+        }
         this.afterPlayerAction(); return;
       }
     }
@@ -798,7 +830,13 @@ export class CombatService {
       }
       case 'magic_damage':
       case 'pierce':
-        this._companionMeleeAttack(companion, target, label, ab.bonusDice ?? 0, ab.ignoresArmor);
+        if (ab.aoe) {
+          for (const e of this.enemies().filter(e => e.hp > 0)) {
+            this._companionMeleeAttack(companion, e, label, ab.bonusDice ?? 0, ab.ignoresArmor, ab.armorPierce ?? 0, true);
+          }
+        } else {
+          this._companionMeleeAttack(companion, target, label, ab.bonusDice ?? 0, ab.ignoresArmor, ab.armorPierce ?? 0, true);
+        }
         break;
       default:
         this._companionMeleeAttack(companion, target, label);
@@ -806,7 +844,7 @@ export class CombatService {
   }
 
   private _companionMeleeAttack(
-    companion: Character, enemy: Enemy, label: string, bonusDice = 0, ignoresArmor = false
+    companion: Character, enemy: Enemy, label: string, bonusDice = 0, ignoresArmor = false, armorPierce = 0, magic = false
   ): void {
     const s = getEffectiveStats(companion);
     const hPenalty = this.enemyDodgePenalties.get(enemy.id) ?? 0;
@@ -820,32 +858,34 @@ export class CombatService {
       );
       return;
     }
-    const lutaBonus = this.hasLuta(companion) ? 1 : 0;
-    const totalBonusDice = bonusDice + lutaBonus;
+    const atkAttr = s.poder;
+    const skillBonus = (magic ? this.hasMistica(companion) : this.hasLuta(companion)) ? 1 : 0;
+    const skillName = magic ? '🔮Mística' : '🥊Luta';
+    const totalBonusDice = bonusDice + skillBonus;
     const dAtk = this.rollCompanionDie(companion.id);
     const bonusRolls = this.rollDiceListWith(totalBonusDice, () => this.rollCompanionDie(companion.id));
     const dBonus = bonusRolls.reduce((a, b) => a + b, 0);
-    const atkPower = s.poder + dAtk + dBonus;
+    const atkPower = atkAttr + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${roll}≤${threshold})` : '';
     // Cada dado mostrado separadamente (não um único 🎲 somado) — com Luta/PA gasto
     // a soma pode passar de 6, o que pareceria um dado "impossível" se fundido num só.
     const bonusPart = bonusRolls.length > 0
-      ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${lutaBonus ? '(🥊Luta)' : ''}`
+      ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${skillBonus ? `(${skillName})` : ''}`
       : '';
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
     } else {
       const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-      let { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
+      let { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, atkAttr);
       this.enemyArmorReductions.set(enemy.id, newReduction);
       if (resisted) {
         this.addLog(
-          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
+          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${atkAttr} → 1 dano em ${enemy.name}!`,
           'player'
         );
         this.shieldEvents.update(q => [...q, { targetId: enemy.id, isEnemy: true }]);
@@ -853,15 +893,16 @@ export class CombatService {
         return;
       }
       effectiveArmor += this.enemyDefenseBonus(enemy);
+      if (armorPierce > 0) effectiveArmor = Math.max(0, effectiveArmor - armorPierce);
       const dDef = d6();
       const defPower = enemy.resistencia + effectiveArmor + dDef;
       const { dmg, str: dmgStrM } = this.fmtDmg(atkPower - defPower);
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
       this.addLog(
-        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
         'player'
       );
-      const hits = this.splitDamageByDice(s.poder, defPower, [dAtk, ...bonusRolls]);
+      const hits = this.splitDamageByDice(atkAttr, defPower, [dAtk, ...bonusRolls]);
       this.applyDamageToEnemy(enemy.id, dmg, hits);
     }
   }
@@ -1072,7 +1113,10 @@ export class CombatService {
     enemy: Enemy,
     label = '⚔️ Ataque',
     bonusDice = 0,
-    ignoresArmor = false
+    ignoresArmor = false,
+    armorPierce = 0,
+    magic = false,
+    magiaBoost = 0
   ): void {
     const s = getEffectiveStats(char);
     const hPenalty = this.enemyDodgePenalties.get(enemy.id) ?? 0;
@@ -1087,23 +1131,29 @@ export class CombatService {
       return;
     }
 
-    const lutaBonus = this.hasLuta(char) ? 1 : 0;
-    const totalBonusDice = bonusDice + lutaBonus;
+    // Manual (vantagem Magia): "seu teste de ataque é normal" — o atributo de ataque
+    // continua sendo Poder, igual a qualquer ataque. O que muda é o bônus de perícia
+    // (Mística em vez de Luta) e o boost de Magia (PM→bônus fixo, ver magiaBoost abaixo).
+    const atkAttr = s.poder;
+    const skillBonus = (magic ? this.hasMistica(char) : this.hasLuta(char)) ? 1 : 0;
+    const skillName = magic ? '🔮Mística' : '🥊Luta';
+    const totalBonusDice = bonusDice + skillBonus;
     const dAtk = this.rollPlayerDie();
     const bonusRolls = this.rollDiceListWith(totalBonusDice, () => this.rollPlayerDie());
-    const dBonus = bonusRolls.reduce((a, b) => a + b, 0);
-    const atkPower = s.poder + dAtk + dBonus;
+    const dBonus = bonusRolls.reduce((a, b) => a + b, 0) + magiaBoost;
+    const atkPower = atkAttr + dAtk + dBonus;
     const hitInfo = threshold > 0 ? ` 🎯(🎲${hitRoll}≤${threshold})` : '';
     // Cada PA gasto sempre rola seu próprio d6 — mostramos cada dado em vez de um total fundido,
     // para deixar claro que não é "1 dado vezes N", e sim N dados somados.
     const bonusPart = bonusRolls.length > 0
-      ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${lutaBonus ? '(🥊Luta)' : ''}`
+      ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${skillBonus ? `(${skillName})` : ''}`
       : '';
+    const magiaPart = magiaBoost > 0 ? `+${magiaBoost}(✨Magia)` : '';
 
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}${magiaPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -1112,11 +1162,11 @@ export class CombatService {
 
     // Resistir com Armadura
     const armorRed = this.enemyArmorReductions.get(enemy.id) ?? 0;
-    let { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, s.poder);
+    let { resisted, effectiveArmor, newReduction } = armorResistCheck(enemy.armadura, armorRed, atkAttr);
     this.enemyArmorReductions.set(enemy.id, newReduction);
     if (resisted) {
       this.addLog(
-        `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${s.poder} → 1 dano em ${enemy.name}!`,
+        `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${atkAttr} → 1 dano em ${enemy.name}!`,
         'player'
       );
       this.shieldEvents.update(q => [...q, { targetId: enemy.id, isEnemy: true }]);
@@ -1124,16 +1174,17 @@ export class CombatService {
       return;
     }
     effectiveArmor += this.enemyDefenseBonus(enemy);
+    if (armorPierce > 0) effectiveArmor = Math.max(0, effectiveArmor - armorPierce);
 
     const dDef = d6();
     const defPower = enemy.resistencia + effectiveArmor + dDef;
     const { dmg, str: dmgStrMel } = this.fmtDmg(atkPower - defPower);
     const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
     this.addLog(
-      `${label}${hitInfo} | FA: P${s.poder}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
+      `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}${magiaPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
       'player'
     );
-    const hits = this.splitDamageByDice(s.poder, defPower, [dAtk, ...bonusRolls]);
+    const hits = this.splitDamageByDice(atkAttr, defPower, [dAtk, ...bonusRolls]);
     this.applyDamageToEnemy(enemy.id, dmg, hits);
   }
 

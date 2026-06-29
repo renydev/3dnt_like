@@ -5,7 +5,7 @@ import { Character, DEFAULT_CHAR_COLOR } from '../../../core/models/character.mo
 import { KIT_MAP } from '../../../core/data/kits.data';
 import { ALL_ARQUETIPOS } from '../../../core/data/arquetipos.data';
 import { getEffectiveStats, mergeBonus, allEquipItems, EquipSlot, equipSlotLabel } from '../../../core/models/item.model';
-import { getPowerScale, powerScaleSymbol, powerScaleLabel, formatAttributeAbacus } from '../../../core/utils/power-scale';
+import { getPowerScale, powerScaleSymbol, powerScaleLabel } from '../../../core/utils/power-scale';
 
 export type SpendableAttr = 'poder' | 'habilidade' | 'resistencia';
 
@@ -147,10 +147,26 @@ export class CharacterDialogComponent {
     });
   }
 
+  /**
+   * Custo para o PRÓXIMO ponto: 1PE até o 5º; acima de 5, o custo é igual ao
+   * próprio valor de destino (6º ponto custa 6PE, 7º custa 7PE...) — precisa
+   * espelhar exatamente attrUpgradeCost() em game-state.service.ts.
+   */
+  /**
+   * Valor usado pra desenhar os círculos: em Ningen é o valor cheio; em escalas
+   * acima (Sugoi/Kiodai/Kami) os círculos reiniciam e mostram só o "resto" dentro
+   * da escala atual (o símbolo ⭐/☁️/👑 ao lado do número já indica a escala em si).
+   */
+  tierDots(attr: SpendableAttr): number {
+    const value = ATTR_ROWS.find(r => r.key === attr)!.value(this.char()!);
+    return getPowerScale(value) === 'ningen' ? value : value % 10;
+  }
+
   upgradeCost(attr: SpendableAttr): number {
     const c = this.char()!;
     const base = c[attr].base - this.racialMod(attr);
-    return base < 5 ? 1 : 2;
+    const target = base + 1;
+    return target <= 5 ? 1 : target;
   }
 
   canSpend(attr: SpendableAttr): boolean {
@@ -282,7 +298,6 @@ export class CharacterDialogComponent {
 
   scaleSymbol(attr: SpendableAttr): string { return powerScaleSymbol(this.effectiveValue(attr)); }
   scaleLabel(attr: SpendableAttr): string { return powerScaleLabel(this.effectiveValue(attr)); }
-  scaleAbacus(attr: SpendableAttr): string { return formatAttributeAbacus(this.effectiveValue(attr)); }
 
   /** Armadura é 100% equipamento no 3D&T Victory — exibida fora da grade de atributos. */
   armorBonus(): number {

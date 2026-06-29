@@ -4,7 +4,7 @@ import { spawnMonster } from '../../bestiario.data';
 
 export { spawnMonster };
 
-// Os templates dos monstros vivem no bestiário central (core/data/bestiario.data.ts).
+// Os templates dos monstros vem do bestiario da campanha Valkaria via JSON.
 // Este arquivo só decide quais monstros aparecem em qual sala e em que quantidade,
 // especificamente para Allihanna.
 //

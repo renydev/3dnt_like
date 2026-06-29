@@ -23,7 +23,7 @@ type Tab = 'buy' | 'sell';
         <p class="merchant-subtitle">"Tudo tem um preço, aventureiro..."</p>
       </div>
       <div class="merchant-gold">
-        💰 {{ gs.character()?.gold ?? 0 }} PO
+        💰 {{ gs.character()?.gold ?? 0 }} {{ currency() }}
       </div>
     </div>
 
@@ -47,7 +47,7 @@ type Tab = 'buy' | 'sell';
               @if (item.statBonus) {
                 <span class="item-bonus">{{ statBonusLabel(item.statBonus) }}</span>
               }
-              <span class="item-price">{{ item.price }} PO</span>
+              <span class="item-price">{{ item.price }} {{ currency() }}</span>
             </div>
           </div>
         }
@@ -75,7 +75,7 @@ type Tab = 'buy' | 'sell';
             <button class="btn-buy"
               [disabled]="(gs.character()?.gold ?? 0) < (s.price ?? 0)"
               (click)="buy(s)">
-              Comprar por {{ s.price }} PO
+              Comprar por {{ s.price }} {{ currency() }}
             </button>
           </div>
         </div>
@@ -95,7 +95,7 @@ type Tab = 'buy' | 'sell';
               <span class="item-name" [style.color]="rarityColor(item.rarity)">{{ item.name }}</span>
               <span class="item-rarity">{{ rarityLabel(item.rarity) }}</span>
             </div>
-            <span class="item-price sell">{{ itemSvc.sellPrice(item) }} PO</span>
+            <span class="item-price sell">{{ itemSvc.sellPrice(item) }} {{ currency() }}</span>
           </div>
         }
       </div>
@@ -105,7 +105,7 @@ type Tab = 'buy' | 'sell';
           <p class="detail-desc">{{ s.description }}</p>
           <div class="detail-actions">
             <button class="btn-sell" (click)="sell(s)">
-              Vender por {{ itemSvc.sellPrice(s) }} PO
+              Vender por {{ itemSvc.sellPrice(s) }} {{ currency() }}
             </button>
           </div>
         </div>
@@ -208,6 +208,7 @@ type Tab = 'buy' | 'sell';
 export class MerchantScreenComponent {
   gs      = inject(GameStateService);
   itemSvc = inject(ItemService);
+  currency = computed(() => this.gs.campaign.activeCampaign().texts.currency);
 
   tab      = signal<Tab>('buy');
   selected = signal<Item | null>(null);

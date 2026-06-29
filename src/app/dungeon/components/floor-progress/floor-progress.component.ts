@@ -1,7 +1,6 @@
 import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
 
 @Component({
   selector: 'app-floor-progress',
@@ -10,11 +9,11 @@ import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
   template: `
     <div class="floor-progress-panel">
       <div class="progress-title">
-        <span>📜 Labirinto de Valkaria</span>
+        <span>{{ gameState.campaign.activeCampaign().texts.floorProgressTitle }}</span>
         <span class="floor-count">{{ gameState.floorNumber() }}/{{ gameState.TOTAL_FLOORS }}</span>
       </div>
       <div class="floors-grid">
-        @for (floor of floors; track floor.floorNumber) {
+        @for (floor of floors(); track floor.floorNumber) {
           <div
             class="floor-pip"
             [class.done]="floor.floorNumber < gameState.floorNumber()"
@@ -83,5 +82,5 @@ import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
 })
 export class FloorProgressComponent {
   gameState = inject(GameStateService);
-  floors = VALKARIA_FLOORS;
+  floors = computed(() => this.gameState.campaign.floors());
 }

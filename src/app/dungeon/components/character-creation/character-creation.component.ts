@@ -6,7 +6,7 @@ import { ArquetiposService } from '../../../core/services/arquetipos.service';
 import { Character } from '../../../core/models/character.model';
 import { Arquetipo, ALL_ARQUETIPOS, ARQUETIPO_MAP } from '../../../core/data/arquetipos.data';
 import { KitDef, ALL_KITS, KIT_MAP, kitsCost } from '../../../core/data/kits.data';
-import { VALKARIA_FLOORS, DungeonTheme } from '../../../core/models/dungeon.model';
+import { DungeonTheme } from '../../../core/models/dungeon.model';
 import { ALL_VANTAGENS, VANTAGEM_CATEGORIES, VantagemDef, VantagemCategory } from '../../../core/data/vantagens.data';
 import { ALL_DESVANTAGENS, DesvantagemDef } from '../../../core/data/desvantagens.data';
 import { parseCostValue } from '../../../core/utils/pp-calculator';
@@ -487,7 +487,7 @@ export class CharacterCreationComponent {
     { n: 8, label: 'Devoção'      },
   ];
 
-  gods = VALKARIA_FLOORS;
+  gods = computed(() => this.gameState.campaign.floors());
 
   step                 = signal(1);
   charName             = 'Aventureiro';

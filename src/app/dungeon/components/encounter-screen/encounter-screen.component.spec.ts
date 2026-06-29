@@ -97,6 +97,15 @@ describe('EncounterScreenComponent', () => {
       party: signal([character]),
       currentFloor: signal(floor),
       floorNumber: signal(1),
+      TOTAL_FLOORS: 20,
+      campaign: {
+        activeCampaign: signal({
+          texts: {
+            currency: 'PO',
+            defeatMessage: 'Derrota.',
+          },
+        }),
+      },
       pendingEnemies: signal<Enemy[] | null>(null),
       addLog: jasmine.createSpy('addLog'),
       resolveEncounter: jasmine.createSpy('resolveEncounter'),
@@ -110,6 +119,10 @@ describe('EncounterScreenComponent', () => {
       hasMagia: computed(() => false),
       availableMagias: computed(() => []),
       lockedMagias: computed(() => []),
+      victorySummary: signal(null),
+      pendingDefeat: signal(false),
+      selectedEnemyId: signal(null),
+      playerPA: signal(0),
       initCombat: jasmine.createSpy('initCombat'),
       playerAttackTarget: jasmine.createSpy('playerAttackTarget'),
       playerUseAbilityTarget: jasmine.createSpy('playerUseAbilityTarget'),
@@ -117,6 +130,8 @@ describe('EncounterScreenComponent', () => {
       canUseAbility: jasmine.createSpy('canUseAbility').and.returnValue(false),
       canCastMagia: jasmine.createSpy('canCastMagia').and.returnValue(false),
       castMagiaTarget: jasmine.createSpy('castMagiaTarget'),
+      confirmVictory: jasmine.createSpy('confirmVictory'),
+      confirmDefeat: jasmine.createSpy('confirmDefeat'),
     };
 
     await TestBed.configureTestingModule({
@@ -131,13 +146,13 @@ describe('EncounterScreenComponent', () => {
     fixture.detectChanges();
   });
 
-  it('keeps the party column separated from the 1px battle divider', () => {
-    const battleField: HTMLElement = fixture.nativeElement.querySelector('.battle-field');
-    const children = Array.from(battleField.children) as HTMLElement[];
+  it('keeps combat rendering separated from action controls', () => {
+    const battleCanvas: HTMLElement = fixture.nativeElement.querySelector('.battle-canvas');
+    const actionBar: HTMLElement = fixture.nativeElement.querySelector('.action-bar');
 
-    expect(children.length).toBe(3);
-    expect(children[0].classList).toContain('enemies-side');
-    expect(children[1].classList).toContain('battle-divider');
-    expect(children[2].classList).toContain('party-side');
+    expect(battleCanvas).toBeTruthy();
+    expect(battleCanvas.querySelector('app-game-canvas')).toBeTruthy();
+    expect(actionBar).toBeTruthy();
+    expect(battleCanvas.contains(actionBar)).toBeFalse();
   });
 });

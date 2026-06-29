@@ -1,7 +1,6 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { GameStateService } from '../../../core/services/game-state.service';
-import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
 
 @Component({
   selector: 'app-debug-dialog',
@@ -20,7 +19,7 @@ import { VALKARIA_FLOORS } from '../../../core/models/dungeon.model';
         <p class="debug-hint">Selecione um andar para ir diretamente. O personagem atual é mantido.</p>
 
         <div class="floor-grid">
-          @for (theme of floors; track theme.floorNumber) {
+          @for (theme of floors(); track theme.floorNumber) {
             <button
               class="floor-btn"
               [class.active]="gs.floorNumber() === theme.floorNumber"
@@ -179,7 +178,7 @@ export class DebugDialogComponent {
   gs = inject(GameStateService);
   close = output<void>();
 
-  floors = VALKARIA_FLOORS;
+  floors = this.gs.campaign.floors;
 
   jump(floorNumber: number): void {
     this.gs.debugJumpToFloor(floorNumber);

@@ -243,12 +243,18 @@ export function calcCombatXp(
 
 export type CombatVerdict = 'trivial' | 'equilibrado' | 'arriscado' | 'mortal';
 
-/** XP fixo concedido por veredito de risco do combate (substitui a fórmula antiga de PP±bônus). */
+/**
+ * XP fixo concedido por veredito de risco do combate (substitui a fórmula antiga de PP±bônus).
+ * Calibrado para a regra real do manual (3DeT Victory, p.127: "10XP valem 1 ponto de
+ * personagem") — um combate mortal vale 2PP, não 20PP. Os valores antigos (10/50/80/200)
+ * foram definidos por engano assumindo 100XP=1PP; com a conversão real de 10XP=1PP eles
+ * inflavam a progressão em 10x (um único "rato" mortal dava 20PP).
+ */
 export const VERDICT_XP: Record<CombatVerdict, number> = {
-  trivial: 10,
-  equilibrado: 50,
-  arriscado: 80,
-  mortal: 200,
+  trivial: 1,
+  equilibrado: 5,
+  arriscado: 8,
+  mortal: 20,
 };
 
 export function verdictForRisk(ratio: number): CombatVerdict {

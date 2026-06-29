@@ -43,6 +43,10 @@ export interface CombatAbility {
   isRanged?: boolean;
   ignoresArmor?: boolean;
   bonusDice?: number;
+  /** Reduz a armadura efetiva do alvo nesta defesa (não persiste como a redução normal por acerto). */
+  armorPierce?: number;
+  /** Atinge todos os inimigos vivos (cada um com sua própria rolagem de ataque/defesa), não só o alvo selecionado. */
+  aoe?: boolean;
 }
 
 // Sem classes — habilidades de combate vêm das Vantagens compradas (não de classe/kit),
