@@ -317,8 +317,18 @@ export class CombatService {
 
   canCastMagia(m: MagiaDef): boolean { return this.canUseAbility(magiaToAbility(m)); }
 
-  castMagiaTarget(m: MagiaDef, targetId: string, paSpend = 0): void {
-    this.playerUseAbilityTarget(magiaToAbility(m), targetId, paSpend);
+  /**
+   * Quanto PM extra o jogador ainda pode converter em bônus fixo nesta magia (vantagem Magia:
+   * "o bônus máximo que você pode gerar é igual à sua Habilidade"), depois de pagar o custo base.
+   */
+  maxMagiaBoostFor(m: MagiaDef): number {
+    const char = this.gs.character();
+    if (!char) return 0;
+    return Math.max(0, Math.min(char.habilidade.current, char.pontosMana.current - m.pmCost));
+  }
+
+  castMagiaTarget(m: MagiaDef, targetId: string, paSpend = 0, magiaBoost = 0): void {
+    this.playerUseAbilityTarget(magiaToAbility(m), targetId, paSpend, magiaBoost);
   }
 
   canUseAbility(ab: CombatAbility): boolean {
@@ -546,8 +556,10 @@ export class CombatService {
   }
 
   /** Usa habilidade em um inimigo específico.
-   *  paSpend = quantos PA o jogador quer gastar (cada um = +1d6 na FA da habilidade, quando aplicável). */
-  playerUseAbilityTarget(ab: CombatAbility, targetId: string, paSpend = 0): void {
+   *  paSpend = quantos PA o jogador quer gastar (cada um = +1d6 na FA da habilidade, quando aplicável).
+   *  magiaBoost = PM extra gastos via vantagem Magia ("gastando 1PM, soma +1 em qualquer teste,
+   *  até o limite da sua Habilidade") — só vale para magias (ver magic_damage/pierce abaixo). */
+  playerUseAbilityTarget(ab: CombatAbility, targetId: string, paSpend = 0, magiaBoost = 0): void {
     if (this.phase() !== 'player_turn') return;
     const char = this.gs.character();
     const target = this.enemies().find(e => e.id === targetId && e.hp > 0)
@@ -555,7 +567,9 @@ export class CombatService {
     if (!char || !target) return;
     if (!this.canUseAbility(ab)) return;
 
+    const clampedBoost = Math.max(0, Math.min(magiaBoost, char.habilidade.current, char.pontosMana.current - ab.pmCost));
     if (ab.pmCost > 0) this.spendPM(ab.pmCost);
+    if (clampedBoost > 0) this.spendPM(clampedBoost);
     if (ab.usesPerCombat) this.abilitiesUsed.update(s => new Set([...s, ab.id]));
     const spent = this.spendPlayerPA(paSpend);
 
@@ -621,10 +635,10 @@ export class CombatService {
       case 'pierce': {
         if (ab.aoe) {
           for (const e of this.enemies().filter(e => e.hp > 0)) {
-            this.resolveMeleeAttack(char, e, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor, ab.armorPierce ?? 0, true);
+            this.resolveMeleeAttack(char, e, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor, ab.armorPierce ?? 0, true, clampedBoost);
           }
         } else {
-          this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor, ab.armorPierce ?? 0, true);
+          this.resolveMeleeAttack(char, target, `${ab.icon} ${ab.name}`, (ab.bonusDice ?? 0) + spent, ab.ignoresArmor, ab.armorPierce ?? 0, true, clampedBoost);
         }
         this.afterPlayerAction(); return;
       }
@@ -844,8 +858,7 @@ export class CombatService {
       );
       return;
     }
-    const atkAttr = magic ? s.habilidade : s.poder;
-    const atkTag = magic ? 'H' : 'P';
+    const atkAttr = s.poder;
     const skillBonus = (magic ? this.hasMistica(companion) : this.hasLuta(companion)) ? 1 : 0;
     const skillName = magic ? '🔮Mística' : '🥊Luta';
     const totalBonusDice = bonusDice + skillBonus;
@@ -862,7 +875,7 @@ export class CombatService {
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: ${atkTag}${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -872,7 +885,7 @@ export class CombatService {
       this.enemyArmorReductions.set(enemy.id, newReduction);
       if (resisted) {
         this.addLog(
-          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>${atkTag}${atkAttr} → 1 dano em ${enemy.name}!`,
+          `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${atkAttr} → 1 dano em ${enemy.name}!`,
           'player'
         );
         this.shieldEvents.update(q => [...q, { targetId: enemy.id, isEnemy: true }]);
@@ -886,7 +899,7 @@ export class CombatService {
       const { dmg, str: dmgStrM } = this.fmtDmg(atkPower - defPower);
       const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
       this.addLog(
-        `${label}${hitInfo} | FA: ${atkTag}${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrM} dano em ${enemy.name}!`,
         'player'
       );
       const hits = this.splitDamageByDice(atkAttr, defPower, [dAtk, ...bonusRolls]);
@@ -1135,11 +1148,12 @@ export class CombatService {
     const bonusPart = bonusRolls.length > 0
       ? `+${bonusRolls.map(r => `🎲${r}`).join('+')}${skillBonus ? `(${skillName})` : ''}`
       : '';
+    const magiaPart = magiaBoost > 0 ? `+${magiaBoost}(✨Magia)` : '';
 
     if (ignoresArmor) {
       const dmg = Math.max(1, atkPower);
       this.addLog(
-        `${label}${hitInfo} | FA: ${atkTag}${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
+        `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}${magiaPart}=${atkPower} (ignora A) → ${dmg} dano em ${enemy.name}!`,
         'player'
       );
       this.applyDamageToEnemy(enemy.id, dmg);
@@ -1152,7 +1166,7 @@ export class CombatService {
     this.enemyArmorReductions.set(enemy.id, newReduction);
     if (resisted) {
       this.addLog(
-        `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>${atkTag}${atkAttr} → 1 dano em ${enemy.name}!`,
+        `${label}${hitInfo} | 🛡️ Armadura resiste! A${effectiveArmor}>P${atkAttr} → 1 dano em ${enemy.name}!`,
         'player'
       );
       this.shieldEvents.update(q => [...q, { targetId: enemy.id, isEnemy: true }]);
@@ -1167,7 +1181,7 @@ export class CombatService {
     const { dmg, str: dmgStrMel } = this.fmtDmg(atkPower - defPower);
     const armorNote = armorRed > 0 ? `(A-${armorRed})` : '';
     this.addLog(
-      `${label}${hitInfo} | FA: ${atkTag}${atkAttr}+🎲${dAtk}${bonusPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
+      `${label}${hitInfo} | FA: P${atkAttr}+🎲${dAtk}${bonusPart}${magiaPart}=${atkPower} vs FD: R${enemy.resistencia}+A${effectiveArmor}${armorNote}+🎲${dDef}=${defPower} → ${dmgStrMel} dano em ${enemy.name}!`,
       'player'
     );
     const hits = this.splitDamageByDice(atkAttr, defPower, [dAtk, ...bonusRolls]);

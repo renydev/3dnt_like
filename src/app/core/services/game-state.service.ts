@@ -604,8 +604,9 @@ export class GameStateService {
    * (mesma classificação trivial/equilibrado/arriscado/mortal da ferramenta de
    * balanceamento, mas calculada com os atributos reais da party e dos inimigos
    * enfrentados, não um "personagem médio" hipotético):
-   *   trivial = 10 XP · equilibrado = 50 XP · arriscado = 80 XP · mortal = 200 XP
-   * 10 XP acumulados = 1 PP (Ponto de Personagem) gastável em atributos/vantagens.
+   *   trivial = 1 XP · equilibrado = 5 XP · arriscado = 8 XP · mortal = 20 XP (ver VERDICT_XP)
+   * 10 XP acumulados = 1 PP (Ponto de Personagem) gastável em atributos/vantagens — regra real
+   * do manual (3DeT Victory, p.127: "10XP valem 1 ponto de personagem").
    *
    * Terminar a masmorra concede 1 PP extra (awardFloorCompletionPP).
    */
@@ -673,10 +674,15 @@ export class GameStateService {
   }
 
   /**
-   * Custo para ir de N para N+1 (3D&T Victory): 1PP por ponto até o 5º,
-   * 2PP por ponto acima de 5 (equivalente a 20XP/ponto, já que 10XP = 1PP).
+   * Custo para ir de N para N+1: 1PP por ponto até o 5º; acima de 5, o custo em PP
+   * é igual ao próprio valor de destino (6º ponto custa 6PP, 7º custa 7PP, e assim
+   * por diante) — recebe currentValue (valor ANTES do incremento) e calcula o custo
+   * para alcançar currentValue+1.
    */
-  private attrUpgradeCost(currentValue: number): number { return currentValue < 5 ? 1 : 2; }
+  private attrUpgradeCost(currentValue: number): number {
+    const target = currentValue + 1;
+    return target <= 5 ? 1 : target;
+  }
 
   /** Gasta pontos de level-up em um atributo do personagem principal. */
   spendLevelUpPoint(attr: 'poder' | 'habilidade' | 'resistencia'): void {

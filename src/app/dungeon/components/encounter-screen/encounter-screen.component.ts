@@ -61,7 +61,7 @@ import { d6 } from '../../../core/utils/dice';
           <span class="pa-label">🔷 PA disponíveis: {{ playerPA() }}</span>
         </div>
       }
-      @if (!showMagicMenu() && !showInventory() && !showGrimoire()) {
+      @if (!showMagicMenu() && !showInventory()) {
         <div class="action-btns">
           <div class="atk-segmented">
             <button class="atk-seg atk-seg-minus"
@@ -114,43 +114,6 @@ import { d6 } from '../../../core/utils/dice';
             }
           </div>
         </div>
-      } @else if (showGrimoire()) {
-        <!-- Sub-menu do Grimório: magias disponíveis em cima, bloqueadas embaixo -->
-        <div class="magic-menu grimoire-menu">
-          <button class="back-btn" (click)="showGrimoire.set(false)">← Voltar</button>
-          @if (playerPA() > 0) {
-            <div class="pa-stepper">
-              <span class="pa-stepper-label">🔷 PA no dano da magia:</span>
-              <button class="pa-stepper-btn" [disabled]="paSpendNext() <= 0" (click)="decPaSpend()">−</button>
-              <span class="pa-stepper-val">{{ paSpendNext() }}</span>
-              <button class="pa-stepper-btn" [disabled]="paSpendNext() >= playerPA()" (click)="incPaSpend()">+</button>
-            </div>
-          }
-          <div class="ability-list">
-            @for (m of availableMagias(); track m.id) {
-              <button class="ab-btn magia-card" [disabled]="!canCastMagia(m)" (click)="onCastMagia(m)">
-                <span class="ab-icon">{{ m.icon }}</span>
-                <span class="ab-name">{{ m.name }}</span>
-                <span class="ab-cost magia-rarity" [style.color]="magiaRarityColor[m.rarity]">{{ magiaRarityLabel[m.rarity] }} · {{ m.pmCost }}PM</span>
-                <span class="ab-desc">{{ m.description }}</span>
-              </button>
-            }
-            @if (availableMagias().length === 0) {
-              <p style="color:#555;font-size:12px;text-align:center;padding:12px">Nenhuma magia disponível ainda.</p>
-            }
-            @if (lockedMagias().length > 0) {
-              <p class="grimoire-divider">— Magias ainda não disponíveis —</p>
-              @for (m of lockedMagias(); track m.id) {
-                <div class="ab-btn magia-card locked">
-                  <span class="ab-icon">{{ m.icon }}</span>
-                  <span class="ab-name">{{ m.name }}</span>
-                  <span class="ab-cost magia-rarity" [style.color]="magiaRarityColor[m.rarity]">{{ magiaRarityLabel[m.rarity] }}</span>
-                  <span class="ab-desc">{{ magiaRequirementLabel(m) }}</span>
-                </div>
-              }
-            }
-          </div>
-        </div>
       } @else {
         <!-- Sub-menu de habilidades -->
         <div class="magic-menu">
@@ -179,6 +142,62 @@ import { d6 } from '../../../core/utils/dice';
         </div>
       }
     </div>
+
+    <!-- ── Grimório: dialog grande, separado da barra de ações ──────── -->
+    @if (showGrimoire()) {
+      <div class="grimoire-overlay" (click)="showGrimoire.set(false)">
+        <div class="grimoire-dialog" (click)="$event.stopPropagation()">
+          <div class="grimoire-header">
+            <span class="grimoire-title">📖 Grimório</span>
+            <button class="grimoire-close" (click)="showGrimoire.set(false)">✕</button>
+          </div>
+          @if (maxMagiaBoost() > 0) {
+            <div class="pa-stepper magia-stepper">
+              <span class="pa-stepper-label">✨ Boost de Magia (PM extra, até Habilidade {{ maxMagiaBoost() }}):</span>
+              <button class="pa-stepper-btn" [disabled]="magiaBoostNext() <= 0" (click)="decMagiaBoost()">−</button>
+              <span class="pa-stepper-val">{{ magiaBoostNext() }}</span>
+              <button class="pa-stepper-btn" [disabled]="magiaBoostNext() >= maxMagiaBoost()" (click)="incMagiaBoost()">+</button>
+            </div>
+          }
+          <div class="grimoire-list">
+            @for (m of availableMagias(); track m.id) {
+              <div class="atk-segmented magia-segmented" [class.disabled-bar]="!canCastMagia(m)">
+                <button class="atk-seg atk-seg-minus"
+                  [disabled]="!canCastMagia(m) || getMagiaPa(m.id) <= 0"
+                  (click)="decMagiaPa(m.id)">−</button>
+                <button class="atk-seg atk-seg-main magia-seg-main"
+                  [disabled]="!canCastMagia(m)"
+                  (click)="onCastMagia(m)">
+                  <span class="act-icon">{{ m.icon }}</span>
+                  <span class="magia-seg-info">
+                    <span class="act-lbl">{{ m.name }}{{ getMagiaPa(m.id) > 0 ? ' (+' + getMagiaPa(m.id) + 'd6)' : '' }}</span>
+                    <span class="magia-seg-meta" [style.color]="magiaRarityColor[m.rarity]">{{ magiaRarityLabel[m.rarity] }} · {{ m.pmCost }}PM</span>
+                    <span class="magia-seg-desc">{{ m.description }}</span>
+                  </span>
+                </button>
+                <button class="atk-seg atk-seg-plus"
+                  [disabled]="!canCastMagia(m) || getMagiaPa(m.id) >= playerPA()"
+                  (click)="incMagiaPa(m.id)">+</button>
+              </div>
+            }
+            @if (availableMagias().length === 0) {
+              <p style="color:#555;font-size:12px;text-align:center;padding:12px">Nenhuma magia disponível ainda.</p>
+            }
+            @if (lockedMagias().length > 0) {
+              <p class="grimoire-divider">— Magias ainda não disponíveis —</p>
+              @for (m of lockedMagias(); track m.id) {
+                <div class="ab-btn magia-card locked">
+                  <span class="ab-icon">{{ m.icon }}</span>
+                  <span class="ab-name">{{ m.name }}</span>
+                  <span class="ab-cost magia-rarity" [style.color]="magiaRarityColor[m.rarity]">{{ magiaRarityLabel[m.rarity] }}</span>
+                  <span class="ab-desc">{{ magiaRequirementLabel(m) }}</span>
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
   }
 
   <!-- ═══════════════════════════════════════════════════════════════ -->
@@ -479,6 +498,10 @@ import { d6 } from '../../../core/utils/dice';
       &:not(:disabled):hover { filter: brightness(1.3); }
     }
     .pa-stepper-val { min-width: 1.2rem; text-align: center; font-weight: 700; }
+    .magia-stepper {
+      color: #c39bd3;
+      .pa-stepper-btn { border-color: #6a3a8a; background: rgba(195,155,211,0.12); color: #c39bd3; }
+    }
     .ability-list {
       display: flex; gap: 0.3rem; flex-wrap: wrap;
     }
@@ -517,6 +540,47 @@ import { d6 } from '../../../core/utils/dice';
       margin: 0.3rem 0 0; font-size: 0.65rem; color: #666; text-align: center;
       font-style: italic; width: 100%;
     }
+
+    /* ── Grimório: dialog grande ──────────────────────────────────── */
+    .grimoire-overlay {
+      position: fixed; inset: 0; z-index: 90;
+      background: rgba(0,0,0,0.7);
+      display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.2s ease;
+      padding: 1.5rem;
+    }
+    .grimoire-dialog {
+      background: #0c0a14; border: 1px solid #4a3a6a; border-radius: 10px;
+      width: min(640px, 100%); max-height: min(80vh, 700px);
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 50px rgba(142,68,173,0.25);
+    }
+    .grimoire-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.7rem 1rem; border-bottom: 1px solid #2a1a3a; flex-shrink: 0;
+    }
+    .grimoire-title { font-family: var(--font-display, serif); color: #f0d585; font-size: 1.1rem; }
+    .grimoire-close {
+      background: none; border: 1px solid #3a2a4a; color: #999;
+      width: 1.8rem; height: 1.8rem; border-radius: 5px; cursor: pointer; font-size: 0.9rem;
+      &:hover { color: #e0d0b0; border-color: #555; }
+    }
+    .grimoire-list {
+      display: flex; flex-direction: column; gap: 0.5rem;
+      padding: 0.8rem 1rem; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #3a2a4a transparent;
+    }
+    .magia-segmented { border-color: #6a3a8a; }
+    .magia-segmented .atk-seg { background: rgba(142,68,173,0.1); color: #c39bd3; }
+    .magia-segmented .atk-seg-minus, .magia-segmented .atk-seg-plus { border-color: rgba(142,68,173,0.4); }
+    .magia-seg-main {
+      flex-direction: row !important; align-items: center; text-align: left;
+      gap: 0.6rem; padding: 0.5rem 0.7rem !important;
+      .act-icon { font-size: 1.6rem; }
+    }
+    .magia-seg-info { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+    .magia-seg-meta { font-size: 0.65rem; font-weight: bold; }
+    .magia-seg-desc { font-size: 0.68rem; color: #888; font-style: italic; line-height: 1.3; }
 
     /* ── Encontros simples ──────────────────────────────────────── */
     .simple-encounter {
@@ -736,6 +800,33 @@ export class EncounterScreenComponent implements OnInit {
     if (this.paSpendNext() > 0) this.paSpendNext.update(n => n - 1);
   }
 
+  /**
+   * PM extra que o jogador escolheu converter em bônus fixo na próxima magia, via vantagem
+   * Magia ("gastando 1PM, soma +1 em qualquer teste, até o limite da sua Habilidade").
+   */
+  magiaBoostNext = signal(0);
+  maxMagiaBoost = computed(() => this.char()?.habilidade?.current ?? 0);
+
+  incMagiaBoost(): void {
+    if (this.magiaBoostNext() < this.maxMagiaBoost()) this.magiaBoostNext.update(n => n + 1);
+  }
+  decMagiaBoost(): void {
+    if (this.magiaBoostNext() > 0) this.magiaBoostNext.update(n => n - 1);
+  }
+
+  /** PA escolhido por magia (cada uma tem seu próprio segmentado [−][nome][+], igual ao ataque). */
+  private magiaPaSpend = signal<Record<string, number>>({});
+
+  getMagiaPa(id: string): number { return this.magiaPaSpend()[id] ?? 0; }
+  incMagiaPa(id: string): void {
+    const cur = this.getMagiaPa(id);
+    if (cur < this.playerPA()) this.magiaPaSpend.update(m => ({ ...m, [id]: cur + 1 }));
+  }
+  decMagiaPa(id: string): void {
+    const cur = this.getMagiaPa(id);
+    if (cur > 0) this.magiaPaSpend.update(m => ({ ...m, [id]: cur - 1 }));
+  }
+
   onAttack(): void {
     const t = this.target();
     if (!t) return;
@@ -760,8 +851,9 @@ export class EncounterScreenComponent implements OnInit {
   onCastMagia(m: MagiaDef): void {
     const t = this.target();
     if (!t) return;
-    this.combat.castMagiaTarget(m, t.id, this.paSpendNext());
-    this.paSpendNext.set(0);
+    this.combat.castMagiaTarget(m, t.id, this.getMagiaPa(m.id), this.magiaBoostNext());
+    this.magiaPaSpend.set({});
+    this.magiaBoostNext.set(0);
     this.showGrimoire.set(false);
   }
 

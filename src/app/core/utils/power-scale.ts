@@ -37,19 +37,3 @@ export function powerScaleSymbol(value: number): string {
 export function powerScaleLabel(value: number): string {
   return POWER_SCALE_LABEL[getPowerScale(value)];
 }
-
-/**
- * Notação em ábaco do valor do atributo: cada ordem de grandeza completa vira
- * uma letra (A=Sugoi/dezena, B=Kiodai/centena, C=Kami/milhar) e o resto (0–9)
- * é mostrado em círculos — ex.: 11 = "A" + 1 preenchido = "A●○○○○○○○○".
- */
-export function formatAttributeAbacus(value: number): string {
-  const v = Math.max(0, Math.floor(value));
-  const thousands = Math.floor(v / 1000);
-  const hundreds = Math.floor((v % 1000) / 100);
-  const tens = Math.floor((v % 100) / 10);
-  const units = v % 10;
-  const tierLetters = 'C'.repeat(thousands) + 'B'.repeat(hundreds) + 'A'.repeat(tens);
-  const circles = '●'.repeat(units) + '○'.repeat(9 - units);
-  return tierLetters + circles;
-}
